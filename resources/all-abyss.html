@@ -1,0 +1,1141 @@
+{{extend defaultLayout}}
+
+{{block 'css'}}
+<link rel="stylesheet" type="text/css" href="{{_miao_path}}/stat/common.css?v=1.0"/>
+<style>
+@font-face {
+  font-family: "SR";
+  src: url("{{_miao_path}}common/font/HYWJ-85W.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+body, .container {
+  width: 1200px;
+  padding: 0;
+  background: #0a0e1a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.all-abyss-body {
+  width: 1200px;
+  min-height: 100%;
+  padding: 20px 12px 8px;
+  color: #eef5ff;
+  font-family: "SR", "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
+  background-color: #0a0e1a;
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.all-abyss-body::before {
+  display: none;
+}
+
+/* 统一顶部标题 */
+.all-abyss-header {
+  text-align: center;
+  padding: 8px 0 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.all-abyss-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #f6e7bf;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.all-abyss-uid {
+  margin-top: 8px;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.all-abyss-uid b {
+  color: #fff;
+}
+
+/* 三列布局 */
+.all-abyss-columns {
+  display: flex;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.all-abyss-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 通用卡片样式 */
+.story-body {
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 8px 6px;
+  color: #eef5ff;
+  background: transparent;
+}
+
+.story-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 6px 10px;
+}
+
+.story-head-left, .story-head-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.story-head-right {
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 3px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.story-title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #f6e7bf;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.story-time {
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.story-summary {
+  position: relative;
+  margin: 0 4px 10px;
+  padding: 10px 12px 12px;
+  min-height: 80px;
+  border: none;
+  border-radius: 0 20px 0 0;
+  overflow: hidden;
+  background: url("{{_miao_path}}stat/imgs/bg2.png") top center / 100% auto no-repeat;
+  box-shadow: none;
+}
+
+.story-summary::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 0 20px 0 0;
+  pointer-events: none;
+}
+
+.summary-title {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.summary-panel {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 50px;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.summary-cell {
+  border: 1px solid rgba(255, 255, 255, 0.36);
+}
+
+.summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 40%;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.summary-text.summary-cell {
+  margin-left: -1px;
+}
+
+.summary-icon img {
+  width: 28px;
+  height: 28px;
+}
+
+.summary-text {
+  display: flex;
+  flex: 0 0 60%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 16px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.summary-text div {
+  display: flex;
+  align-items: center;
+}
+
+.summary-text span {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.summary-text b {
+  color: #fff;
+  font-weight: 900;
+}
+
+.summary-boss-list {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  margin: 6px 0 0;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.summary-boss-list::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.summary-boss-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 32px;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.summary-boss-item:last-child {
+  border-right: 0;
+}
+
+.summary-boss-item span {
+  width: 32px;
+  padding-left: 5px;
+  font-size: 9px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.summary-boss-item img {
+  width: 100%;
+  height: 32px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.floor-card {
+  overflow: hidden;
+  margin: 0 4px 10px;
+  border: 1px solid rgba(92, 145, 210, 0.58);
+  border-radius: 0 20px 0 0;
+  background: #271930;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22);
+}
+
+.floor-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 50px;
+  padding: 8px 10px 8px 12px;
+  background: #5b458e;
+  border-bottom: 1px solid rgba(172, 213, 255, 0.28);
+  border-top-right-radius: 20px;
+}
+
+.floor-head::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(206, 230, 255, 0.28);
+  border-top-right-radius: 20px;
+  pointer-events: none;
+}
+
+.floor-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #e9f7ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.floor-sub {
+  margin-top: 3px;
+  padding: 1px 0;
+  font-size: 10px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.floor-fast {
+  color: rgba(240, 201, 100, 1);
+  font-weight: 900;
+}
+
+.floor-fast-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  padding: 1px 4px;
+  border: 1px solid rgba(248, 219, 106, 0.55);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #f8db6a;
+  font-size: 10px;
+  line-height: 1.2;
+  vertical-align: 2px;
+}
+
+.floor-meta {
+  text-align: right;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.floor-meta b {
+  color: #f8db6a;
+}
+
+.floor-stars {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+  min-height: 18px;
+  margin-bottom: 2px;
+}
+
+.floor-stars img {
+  width: 16px;
+  height: 16px;
+}
+
+.star-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.node-card {
+  margin: 10px 8px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(140, 165, 200, 0.24);
+}
+
+.node-card:last-child {
+  border-bottom: 0;
+  margin-bottom: 4px;
+}
+
+.node-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+}
+
+.node-name {
+  color: #f2f7ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.node-time {
+  margin-left: 4px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+}
+
+.node-score b {
+  color: #f7dc74;
+}
+
+.avatar-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.avatar-card {
+  width: 82px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(130, 165, 210, 0.38);
+  border-radius: 3px 8px 5px 5px;
+  background: rgba(12, 17, 28, 0.42);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.avatar-inner {
+  position: relative;
+  width: 100%;
+  height: 76px;
+  overflow: hidden;
+  border-radius: 0 7px 0 0;
+}
+
+.rarity-5 .avatar-inner {
+  background: url("{{_miao_path}}common/item/bg5.png") center/130% no-repeat padding-box;
+}
+
+.rarity-4 .avatar-inner {
+  background: url("{{_miao_path}}common/item/bg4.png") center/130% no-repeat padding-box;
+}
+
+.avatar-elem {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(35, 35, 35, 0.6);
+}
+
+.avatar-elem img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.avatar-life {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 0 6px 0 5px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.life-0 { background: rgba(80, 80, 80, 0.85); }
+.life-1 { background: rgba(100, 200, 240, 0.92); }
+.life-2 { background: rgba(110, 175, 30, 0.92); }
+.life-3 { background: rgba(30, 160, 215, 0.92); }
+.life-4 { background: rgba(225, 90, 90, 0.92); }
+.life-5 { background: rgba(110, 90, 220, 0.92); }
+.life-6 { background: rgba(235, 60, 25, 0.92); }
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.avatar-bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  padding: 2px 0 4px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(42, 47, 71, 0.7), rgba(22, 27, 42, 0.85));
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.avatar-level {
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.avatar-rarity-bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 6;
+  height: 2px;
+}
+
+.rarity-5 .avatar-rarity-bar { background: #ffd170; }
+.rarity-4 .avatar-rarity-bar { background: linear-gradient(90deg, #8e54d8, #d3a8ff); }
+
+.avatar-talent {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 2px;
+  background: rgba(15, 22, 36, 0.85);
+  border-top: 1px solid rgba(120, 160, 210, 0.20);
+}
+
+.talent-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.16));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.talent-sm { font-size: 9px; }
+.talent-xs { font-size: 8px; }
+
+.talent-max {
+  color: #ff8c1a;
+  background: linear-gradient(135deg, rgba(255, 190, 80, 0.58), rgba(230, 150, 40, 0.34));
+  border-color: rgba(230, 160, 50, 0.55);
+}
+
+.avatar-equip {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  min-height: 42px;
+  padding: 2px 2px 4px;
+  background: rgba(9, 14, 24, 0.75);
+  border-top: 1px solid rgba(120, 160, 210, 0.18);
+}
+
+.equip-lc, .equip-relic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.equip-lc-bg, .relic-pair {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  background: #2a2630;
+}
+
+.lc-star-5, .relic-pair {
+  background: #2a2630 url("{{_miao_path}}common/item/bg5.png") center/120% no-repeat;
+  border-color: rgba(220, 180, 90, 0.42);
+}
+
+.lc-star-4 {
+  background: #2a2630 url("{{_miao_path}}common/item/bg4.png") center/120% no-repeat;
+  border-color: rgba(170, 110, 230, 0.42);
+}
+
+.lc-star-3 {
+  background: #2a2630 url("{{_miao_path}}common/item/bg3.png") center/120% no-repeat;
+  border-color: rgba(180, 180, 180, 0.35);
+}
+
+.equip-lc-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.equip-lc-affix {
+  position: absolute;
+  right: -0.5px;
+  bottom: -0.5px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 4px 0 3px 0;
+  background: rgba(230, 100, 40, 0.9);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.affix-1 { background: rgba(100, 200, 240, 0.92) !important; }
+.affix-2 { background: rgba(110, 175, 30, 0.92) !important; }
+.affix-3 { background: rgba(30, 160, 215, 0.92) !important; }
+.affix-4 { background: rgba(225, 90, 90, 0.92) !important; }
+.affix-5 { background: rgba(235, 60, 25, 0.92) !important; }
+
+.relic-pair {
+  overflow: hidden;
+}
+
+.relic-img {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.relic-img:first-child {
+  top: 0;
+  left: 0;
+  transform: scale(0.72);
+  transform-origin: left top;
+}
+
+.relic-img:last-child {
+  right: 0;
+  bottom: 0;
+  transform: scale(0.72);
+  transform-origin: right bottom;
+}
+
+.equip-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 10px;
+}
+
+.buff-box {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  overflow: visible;
+}
+
+.buff-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.buff-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.buff-name {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #fff;
+  font-weight: 900;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.buff-name span {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.buff-mechanism {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.buff-mechanism b {
+  color: #fff;
+  font-weight: 900;
+}
+
+.buff-mechanism span {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 400;
+}
+
+.copyright {
+  margin-top: -14px;
+  padding: 6px 0;
+  background: transparent !important;
+}
+</style>
+{{/block}}
+
+{{block 'main'}}
+<div class="all-abyss-body" style="background-image: url({{ppath}}background.png)">
+  <!-- 统一顶部标题 -->
+  <div class="all-abyss-header">
+    <div class="all-abyss-title">UID: {{uid}} 的全部深渊数据</div>
+  </div>
+
+  <!-- 三列布局 -->
+  <div class="all-abyss-columns">
+    <!-- 左侧：混沌回忆 -->
+    <div class="all-abyss-col">
+      {{if chaosData}}
+      <div class="story-body">
+        <div class="story-header">
+          <div class="story-head-left">
+            <div class="story-title">忘却之庭挑战回顾</div>
+            <div class="story-time">统计周期：{{timeCalc(chaosData?.group?.begin_time)}} - {{timeCalc(chaosData?.group?.end_time)}}</div>
+          </div>
+          <div class="story-head-right">
+            <div>UID: {{uid}}</div>
+          </div>
+        </div>
+
+        <div class="story-summary">
+          <div class="summary-title">混沌回忆挑战回顾</div>
+          <div class="summary-panel">
+            <div class="summary-cell summary-icon">
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              <span>× {{chaosData.totalStar || 0}}</span>
+            </div>
+            <div class="summary-cell summary-text">
+              <div><span>最高关卡：</span><b>{{chaosData.bestFloor}}</b></div>
+              <div><span>挑战次数：</span><b>{{chaosData.battleNum || '-'}}</b></div>
+            </div>
+          </div>
+        </div>
+
+        {{each chaosData.floors floor floorIndex}}
+        <div class="floor-card">
+          <div class="floor-head">
+            <div>
+              <div class="floor-name">{{floor.name}}</div>
+              <div class="floor-sub {{if floor.isFast}}floor-fast{{/if}}">{{if floor.isFast}}快速通关{{else}}使用轮次：{{floor.roundNum || 0}}{{/if}}</div>
+            </div>
+            <div class="floor-meta">
+              <div class="floor-stars">
+                {{each Array(floor.star || 0) i}}
+                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+                {{/each}}
+              </div>
+            </div>
+          </div>
+
+          {{set nodeList = floor.node3 && floor.node3.avatars && floor.node3.avatars.length ? [floor.node1, floor.node2, floor.node3] : [floor.node1, floor.node2]}}
+          {{each nodeList node nodeIndex}}
+          {{if node && node.avatars && node.avatars.length}}
+          <div class="node-card">
+            <div class="node-top">
+              <div>
+                <span class="node-name">节点{{nodeIndex + 1}}</span>
+                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
+              </div>
+            </div>
+
+            <div class="avatar-row">
+              {{each node.avatars a}}
+              {{set av = avatars[a.id]}}
+              {{if av || a}}
+              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+                <div class="avatar-inner">
+                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
+                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+                  <div class="avatar-bottom">
+                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
+                  </div>
+                  <div class="avatar-rarity-bar"></div>
+                </div>
+                {{if !mysFailed && av?.talent}}
+                <div class="avatar-talent">
+                  {{each av.talent k idx}}
+                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+                  {{/each}}
+                </div>
+                {{/if}}
+                {{if !mysFailed}}
+                <div class="avatar-equip">
+                  {{if av?.weapon || av?.artisSet}}
+                  <div class="equip-lc">
+                    {{if av?.weapon && av.weapon.img}}
+                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
+                    </div>
+                    {{/if}}
+                  </div>
+                  <div class="equip-relic">
+                    <div class="relic-pair">
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                      {{/if}}
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{else}}
+                  <div class="equip-empty"><span>暂无数据</span></div>
+                  {{/if}}
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{/each}}
+            </div>
+
+            {{if node.buff || node.maze_buff || node.buff_list}}
+            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
+            <div class="buff-box">
+              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
+              <div>
+                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- 中间：末日幻影 -->
+    <div class="all-abyss-col">
+      {{if bossData}}
+      <div class="story-body">
+        <div class="story-header">
+          <div class="story-head-left">
+            <div class="story-title">末日幻影挑战回顾</div>
+            <div class="story-time">统计周期：{{timeCalc(bossData?.group?.begin_time)}} - {{timeCalc(bossData?.group?.end_time)}}</div>
+          </div>
+          <div class="story-head-right">
+            <div>UID: {{uid}}</div>
+          </div>
+        </div>
+
+        <div class="story-summary">
+          <div class="summary-title">末日幻影挑战回顾</div>
+          <div class="summary-panel">
+            <div class="summary-cell summary-icon">
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              <span>{{bossData.totalStar || 0}}</span>
+              {{if bossData.extraStar}}
+              <span class="star-sep"></span>
+              {{/if}}
+              {{each Array(bossData.extraStar || 0) i}}
+              <img class="summary-abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+              {{/each}}
+            </div>
+            <div class="summary-cell summary-text">
+              <div><span>最高关卡：</span><b>{{bossData.bestFloor}}</b></div>
+              <div><span>挑战次数：</span><b>{{bossData.battleNum || '-'}}</b></div>
+            </div>
+          </div>
+          <div class="summary-boss-list">
+            {{if bossData?.group?.upper_boss}}
+            <div class="summary-boss-item"><span>节点1</span><img src="{{bossData.group.upper_boss.icon}}" alt=""></div>
+            {{/if}}
+            {{if bossData?.group?.lower_boss}}
+            <div class="summary-boss-item"><span>节点2</span><img src="{{bossData.group.lower_boss.icon}}" alt=""></div>
+            {{/if}}
+            {{if bossData?.group?.tierce_boss}}
+            <div class="summary-boss-item"><span>节点3</span><img src="{{bossData.group.tierce_boss.icon}}" alt=""></div>
+            {{/if}}
+          </div>
+        </div>
+
+        {{each bossData.floors floor floorIndex}}
+        <div class="floor-card">
+          <div class="floor-head">
+            <div>
+              <div class="floor-name">{{floor.name}}</div>
+            </div>
+            <div class="floor-meta">
+              <div class="floor-stars">
+                {{each Array(floor.star || 0) i}}
+                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+                {{/each}}
+                {{if floor.extraStar}}
+                <span class="star-sep"></span>
+                {{/if}}
+                {{each Array(floor.extraStar || 0) i}}
+                <img class="abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+                {{/each}}
+               </div>
+              <div>总分：<b>{{floor.score || 0}}</b></div>
+            </div>
+          </div>
+
+          {{set nodeList = floor.node3 && floor.node3.avatars && floor.node3.avatars.length ? [floor.node1, floor.node2, floor.node3] : [floor.node1, floor.node2]}}
+          {{each nodeList node nodeIndex}}
+          {{if node && node.avatars && node.avatars.length}}
+          <div class="node-card">
+            <div class="node-top">
+              <div>
+                <span class="node-name">节点{{nodeIndex + 1}}</span>
+                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
+              </div>
+              <div class="node-score">积分：<b>{{node.score || 0}}</b></div>
+            </div>
+
+            <div class="avatar-row">
+              {{each node.avatars a}}
+              {{set av = avatars[a.id]}}
+              {{if av || a}}
+              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+                <div class="avatar-inner">
+                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
+                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+                  <div class="avatar-bottom">
+                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
+                  </div>
+                  <div class="avatar-rarity-bar"></div>
+                </div>
+                {{if !mysFailed && av?.talent}}
+                <div class="avatar-talent">
+                  {{each av.talent k idx}}
+                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+                  {{/each}}
+                </div>
+                {{/if}}
+                {{if !mysFailed}}
+                <div class="avatar-equip">
+                  {{if av?.weapon || av?.artisSet}}
+                  <div class="equip-lc">
+                    {{if av?.weapon && av.weapon.img}}
+                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
+                    </div>
+                    {{/if}}
+                  </div>
+                  <div class="equip-relic">
+                    <div class="relic-pair">
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                      {{/if}}
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{else}}
+                  <div class="equip-empty"><span>暂无数据</span></div>
+                  {{/if}}
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{/each}}
+            </div>
+
+            {{if node.buff || node.maze_buff || node.buff_list}}
+            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
+            <div class="buff-box">
+              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
+              <div>
+                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- 右侧：虚构叙事 -->
+    <div class="all-abyss-col">
+      {{if storyData}}
+      <div class="story-body">
+        <div class="story-header">
+          <div class="story-head-left">
+            <div class="story-title">虚构叙事挑战回顾</div>
+            <div class="story-time">统计周期：{{timeCalc(storyData?.group?.begin_time)}} - {{timeCalc(storyData?.group?.end_time)}}</div>
+          </div>
+          <div class="story-head-right">
+            <div>UID: {{uid}}</div>
+          </div>
+        </div>
+
+        <div class="story-summary">
+          <div class="summary-title">虚构叙事挑战回顾</div>
+          <div class="summary-panel">
+            <div class="summary-cell summary-icon">
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              <span>× {{storyData.totalStar || 0}}</span>
+              {{if storyData.extraStar}}
+              <span class="summary-star-sep"></span>
+              {{/if}}
+              {{each Array(storyData.extraStar || 0) i}}
+              <img class="summary-abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+              {{/each}}
+            </div>
+            <div class="summary-cell summary-text">
+              <div><span>最高关卡：</span><b>{{storyData.bestFloor}}</b></div>
+              <div><span>挑战次数：</span><b>{{storyData.battleNum || '-'}}</b></div>
+            </div>
+          </div>
+        </div>
+
+        {{each storyData.floors floor floorIndex}}
+        <div class="floor-card">
+          <div class="floor-head">
+            <div>
+              <div class="floor-name">{{floor.name}}</div>
+              <div class="floor-sub">使用轮次：{{floor.roundNum || 0}}</div>
+            </div>
+            <div class="floor-meta">
+              <div class="floor-stars">
+                {{each Array(floor.star || 0) i}}
+                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+                {{/each}}
+                {{if floor.extraStar}}
+                <span class="star-sep"></span>
+                {{/if}}
+                {{each Array(floor.extraStar || 0) i}}
+                <img class="abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+                {{/each}}
+              </div>
+              <div>总分：<b>{{floor.score || 0}}</b></div>
+            </div>
+          </div>
+
+          {{set nodeList = [floor.node1, floor.node2, floor.node3]}}
+          {{each nodeList node nodeIndex}}
+          {{if node && node.avatars && node.avatars.length}}
+          <div class="node-card">
+            <div class="node-top">
+              <div>
+                <span class="node-name">节点{{nodeIndex + 1}}</span>
+                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
+              </div>
+              <div class="node-score">积分：<b>{{node.score || 0}}</b></div>
+            </div>
+
+            <div class="avatar-row">
+              {{each node.avatars a}}
+              {{set av = avatars[a.id]}}
+              {{if av || a}}
+              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+                <div class="avatar-inner">
+                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
+                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+                  <div class="avatar-bottom">
+                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
+                  </div>
+                  <div class="avatar-rarity-bar"></div>
+                </div>
+                {{if !mysFailed && av?.talent}}
+                <div class="avatar-talent">
+                  {{each av.talent k idx}}
+                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+                  {{/each}}
+                </div>
+                {{/if}}
+                {{if !mysFailed}}
+                <div class="avatar-equip">
+                  {{if av?.weapon || av?.artisSet}}
+                  <div class="equip-lc">
+                    {{if av?.weapon && av.weapon.img}}
+                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
+                    </div>
+                    {{/if}}
+                  </div>
+                  <div class="equip-relic">
+                    <div class="relic-pair">
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                      {{/if}}
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{else}}
+                  <div class="equip-empty"><span>暂无数据</span></div>
+                  {{/if}}
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{/each}}
+            </div>
+
+            {{if node.buff || node.maze_buff || node.buff_list}}
+            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
+            <div class="buff-box">
+              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
+              <div>
+                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+{{/block}}

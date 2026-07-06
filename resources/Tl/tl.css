@@ -1,0 +1,456 @@
+@font-face {
+  font-family: 'yuan';
+  src: url('../font/yuan.ttf');
+}
+
+@font-face {
+  font-family: 'NotoCJK';
+  src: url('../font/NotoSansCJKsc-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'xhhFallback';
+  src: local('WenQuanYi Zen Hei'), local('Droid Sans Fallback'), local('Noto Sans SC'), local('Noto Sans CJK SC'), local('Unifont');
+}
+
+@font-face {
+  font-family: 'RareCJK';
+  src: url('../font/unifont.otf') format('opentype');
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-size: 14px;
+  font-family: 'NotoCJK', 'yuan', 'xhhFallback', 'WenQuanYi Zen Hei', 'Droid Sans Fallback', 'Noto Sans SC', 'Noto Sans CJK SC', 'Unifont', 'RareCJK', sans-serif;
+  width: 480px;
+  transform-origin: 0 0;
+}
+
+.container {
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  padding: 16px 8px 8px 8px;
+  width: 480px;
+}
+
+.xhh_box {
+  width: 450px;
+  padding: 8px 16px 4px 16px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 8px 32px 0 rgba(51, 51, 52, 0.5),
+    inset 6px 6px 20px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  border-radius: 24px;
+}
+
+.one_box {
+  display: flex;
+  width: 450px;
+  height: 140px;
+  position: relative;
+}
+
+.tx {
+  width: 108px;
+  height: 108px;
+  padding: 8px;
+  position: relative;
+}
+
+.tx .qq_tx {
+  width: 108px;
+  height: 108px;
+  position: relative;
+  border-radius: 50%;
+}
+
+.tx .tx_xhh {
+  width: 124px;
+  height: 124px;
+  left: 0;
+  top: 0;
+  position: absolute;
+}
+
+.zi {
+  width: 325px;
+  height: 140px;
+}
+
+.zi p {
+  background: pink;
+  border-radius: 8px;
+  padding: 2px;
+  display: inline-block;
+}
+
+.zi_ p {
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 2px 2px 6.6px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.zi .name {
+  padding: 16px 0 5px 3px;
+  font-size: 25px;
+  color: #ffca8e;
+  background: none;
+  text-shadow: 3px 3px 6px #170c0c;
+  font-weight: bolder;
+  box-shadow: none;
+}
+
+.zi .n_time {
+  margin-top: 2px;
+  padding-left: 3px;
+  background: rgb(94, 215, 220);
+}
+
+.zi .n_time_ {
+  margin-top: 2px;
+}
+
+.zi .game_list {
+  padding: 2px 6px;
+  background: pink;
+  display: inline-block;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.zi .xhh {
+  position: absolute;
+  right: -15px;
+  top: 0px;
+  width: 134px;
+  height: 140px;
+}
+
+.__box {
+  margin-bottom: 8px;
+  border-radius: 28px;
+  padding: 2px;
+  border: 1px solid #add8e6;
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 3px 3px 10px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.__box .game {
+  min-height: 26px;
+  padding: 4px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.__box .game img {
+  width: 24px;
+  height: 24px;
+  box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.game p {
+  background: #c6f4b2;
+  border-radius: 4px;
+  padding: 1px 5px;
+  height: 18px;
+  display: inline-block;
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 2px 2px 6.6px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  top: 4px;
+  margin-left: 8px;
+  position: relative;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 12px;
+}
+
+.game p:nth-of-type(1) { max-width: none; }
+.game p:nth-of-type(2) { max-width: none; }
+.game p:nth-of-type(3) { max-width: none; }
+
+.game .game-nick {
+  flex: 0 0 auto;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.game .sign {
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  background: pink;
+  display: flex;
+  border-radius: 4px;
+  padding: 1px;
+  height: 18px;
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 2px 2px 6.6px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  text-align: bottom;
+}
+
+.game .sign img {
+  width: 16px;
+  height: 16px;
+  box-shadow: none;
+}
+
+.__box ._box {
+  display: flex;
+  padding: 0 12px 4px 12px;
+}
+
+._box .left_box {
+  width: 155px;
+  height: 130px;
+  padding-top: 16px;
+  border-radius: 28px;
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 3px 3px 10px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+._box .left_box .tl {
+  width: 62px;
+  height: 62px;
+}
+
+.left_box .top_box {
+  height: 62px;
+  display: flex;
+}
+
+.left_box .top_box p {
+  font-size: 11px;
+  color: #81888a;
+  top: 16px;
+  left: -8px;
+  text-align: center;
+  position: relative;
+}
+
+.k .k_ {
+  position: relative;
+  top: 32px;
+  font-size: 15px;
+  width: 56px;
+  text-align: right;
+  padding-right: 16px;
+  text-shadow: 0.5px 0.5px 1px #170c0c;
+}
+
+strong {
+  display: block;
+  text-align: center;
+  font-weight: 500;
+}
+
+.huifu {
+  color: #81888a;
+  font-size: 11px;
+  top: 20px;
+  position: relative;
+}
+
+.huifu_time {
+  top: 20px;
+  left: 0px;
+  font-size: 12px;
+  position: relative;
+}
+
+._box .right_box {
+  width: 355px;
+  height: 132px;
+  margin-left: 4px;
+  padding: 4px 12px 8px 12px;
+  border-radius: 28px;
+  box-shadow:
+    2px 2px 4px 0 rgba(51, 51, 52, 0.5),
+    inset 3px 3px 10px 0px rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.right_box ._box_ {
+  height: 18px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  display: flex;
+  font-size: 12px;
+}
+
+._box_ img {
+  width: 16px;
+  height: 16px;
+}
+
+._box_ .right_ {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  text-shadow: 0.5px 0.5px 1px #000000;
+}
+
+.xhh_box .mianju {
+  position: absolute;
+  left: 0px;
+  bottom: 0;
+  width: 39px;
+  height: 39px;
+}
+
+.zi hr {
+  height: 5px;
+  width: 232px;
+  border: none;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background-image: linear-gradient(to right, pink, red);
+}
+
+.red {
+  color: #ee1e1e;
+}
+
+.blue {
+  color: #51b7b7;
+}
+
+.left_box .top_box .bh3-stamina-icon {
+  width: 74px;
+  height: 74px;
+  margin-left: -6px;
+  margin-top: -6px;
+}
+
+/* 顶部游戏列表限制在左侧，避免崩坏3标签被右上角小花火遮挡 */
+.zi_ .game-tags {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.zi_ .game_label {
+  padding: 1px 6px;
+  background: #4a90e2;
+  border-radius: 4px;
+  color: #fff;
+  display: inline-block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zi_ .game-tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+.zi_ .game-tags-grid p {
+  padding: 1px 5px;
+  background: pink;
+  border-radius: 4px;
+  color: #fff;
+  margin: 0;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zi_ .time-line {
+  position: relative;
+  z-index: 2;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.zi_ .time_label {
+  padding: 1px 6px;
+  background: #4a90e2;
+  border-radius: 4px;
+  color: #fff;
+  display: inline-block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zi_ .time_value {
+  padding: 1px 6px;
+  background: pink;
+  border-radius: 4px;
+  color: #fff;
+  display: inline-block;
+  margin: 0;
+  font-size: 12px;
+}
+
+/* 崩三历练值图标 */
+._box_ .bh3-note-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.95);
+  background: linear-gradient(135deg, #5fd9ff, #9b77ff 52%, #ff7ab8);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.18);
+}
+
+._box_ .bh3-note-icon svg {
+  width: 13px;
+  height: 13px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+
+._box_ .bh3-abyss-icon {
+  background: linear-gradient(135deg, #67e8ff, #4fa7ff 55%, #7b6cff);
+}
+
+._box_ .bh3-battle-icon {
+  background: linear-gradient(135deg, #ffd36c, #ff8f5e 55%, #ff5d9f);
+}
+
+._box_ .bh3-godwar-icon {
+  background: linear-gradient(135deg, #7df1b5, #4fc08d 55%, #2a9d8f);
+}

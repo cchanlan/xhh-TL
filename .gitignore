@@ -1,0 +1,5 @@
+node_modules/
+*.backup.*
+*.tmp
+.DS_Store
+data/
