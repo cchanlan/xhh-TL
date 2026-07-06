@@ -73,9 +73,9 @@
               <img src="{{ppath}}Tl/imgs/冒险委托.png" />
               <p>冒险委托</p>
               <div class="right_">
-                <p class="{{$value.finished_task_num<$value.total_task_num ? 'red' : 'blue'}}">
+                <span class="{{$value.finished_task_num<$value.total_task_num ? 'red' : 'blue'}}">
                   {{$value.finished_task_num}}
-                </p>
+                </span>
                 /{{$value.total_task_num}}
               </div>
             </div>
@@ -84,9 +84,9 @@
               <img src="{{ppath}}Tl/imgs/冒险委托.png" />
               <p>委托奖励</p>
               <div class="right_">
-                <p class="{{$value.is_extra_task_reward_received ? 'blue' : 'red' }}">
+                <span class="{{$value.is_extra_task_reward_received ? 'blue' : 'red' }}">
                   {{$value.is_extra_task_reward_received ? '已' : '未'}}领取
-                </p>
+                </span>
               </div>
             </div>
 
@@ -94,9 +94,9 @@
               <img src="{{ppath}}Tl/imgs/洞天宝钱.png" />
               <p>洞天宝钱</p>
               <div class="right_">
-                <p class="{{$value.current_home_coin>2000 ? 'red' : 'blue'}}">
+                <span class="{{$value.current_home_coin>2000 ? 'red' : 'blue'}}">
                   {{$value.current_home_coin}}
-                </p>
+                </span>
                 /{{$value.max_home_coin}}
               </div>
             </div>
@@ -113,9 +113,9 @@
               <img src="{{ppath}}Tl/imgs/探索派遣.png" />
               <p>派遣完成</p>
               <div class="right_">
-                <p class="{{$value.expeditions_ ? 'red' : ''}}">
+                <span class="{{$value.expeditions_ ? 'red' : ''}}">
                   {{$value.expeditions_ ? '已全部完成' : '未完成'}}
-                </p>
+                </span>
               </div>
             </div>
           </div>
@@ -158,9 +158,9 @@
               <img src="{{ppath}}Tl/imgs/每日实训.png" />
               <p>每日实训</p>
               <div class="right_">
-                <p class="{{$value.current_train_score<$value.max_train_score ? 'red' : 'blue'}}">
+                <span class="{{$value.current_train_score<$value.max_train_score ? 'red' : 'blue'}}">
                   {{$value.current_train_score}}
-                </p>
+                </span>
                 /{{$value.max_train_score}}
               </div>
             </div>
@@ -169,9 +169,9 @@
               <img src="{{ppath}}Tl/imgs/模拟宇宙.png" />
               <p>模拟宇宙</p>
               <div class="right_">
-                <p class="{{$value.current_rogue_score<$value.max_rogue_score ? 'red' : 'blue' }}">
+                <span class="{{$value.current_rogue_score<$value.max_rogue_score ? 'red' : 'blue' }}">
                   {{$value.current_rogue_score}}
-                </p>
+                </span>
                 /{{$value.max_rogue_score}}
               </div>
             </div>
@@ -188,9 +188,9 @@
               <img src="{{ppath}}Tl/imgs/委托执行.png" />
               <p>委托是否全部完成</p>
               <div class="right_">
-                <p class="{{$value.expeditions_ ? 'red' : ''}}">
+                <span class="{{$value.expeditions_ ? 'red' : ''}}">
                   {{$value.expeditions_ ? '已全部完成' : '还有委托未完成'}}
-                </p>
+                </span>
               </div>
             </div>
 
@@ -198,7 +198,7 @@
               <img src="{{ppath}}Tl/imgs/后备开拓力.png" />
               <p>后备开拓力</p>
               <div class="right_">
-                <p>{{$value.current_reserve_stamina}}</p>
+                <span>{{$value.current_reserve_stamina}}</span>
               </div>
             </div>
           </div>
@@ -241,9 +241,9 @@
               <img src="{{ppath}}Tl/imgs/活跃度.png" />
               <p>今日活跃度</p>
               <div class="right_">
-                <p class="{{$value.vitality.current<$value.vitality.max ? 'red' : 'blue'}}">
+                <span class="{{$value.vitality.current<$value.vitality.max ? 'red' : 'blue'}}">
                   {{$value.vitality.current}}
-                </p>
+                </span>
                 /{{$value.vitality.max}}
               </div>
             </div>
@@ -252,9 +252,9 @@
               <img src="{{ppath}}Tl/imgs/zzz.png" />
               <p>占卜/刮刮卡</p>
               <div class="right_">
-                <p class="{{$value.card_sign=='CardSignDone' ? 'blue' : 'red' }}">
+                <span class="{{$value.card_sign=='CardSignDone' ? 'blue' : 'red' }}">
                   {{$value.card_sign=='CardSignDone' ? '今日已签' : '尚未签到'}}
-                </p>
+                </span>
               </div>
             </div>
 
@@ -271,9 +271,9 @@
               <img src="{{ppath}}Tl/imgs/zzz.png" />
               <p>悬赏委托</p>
               <div class="right_">
-                <p class="{{$value.s2_bounty_commission.num<$value.s2_bounty_commission.total ? 'red' : '' }}">
+                <span class="{{$value.s2_bounty_commission.num<$value.s2_bounty_commission.total ? 'red' : '' }}">
                   {{$value.s2_bounty_commission.num}}
-                </p>
+                </span>
                 /{{$value.s2_bounty_commission.total}}
               </div>
             </div>
@@ -283,9 +283,9 @@
               <p>丽都周纪积分</p>
               <div class="right_">
                 {{if $value.weekly_task}}
-                <p class="{{$value.weekly_task.cur_point<800 ? 'red' : 'blue' }}">
+                <span class="{{$value.weekly_task.cur_point<800 ? 'red' : 'blue' }}">
                   {{$value.weekly_task.cur_point}}
-                </p>
+                </span>
                 /{{$value.weekly_task.max_point}}{{else}}未解锁{{/if}}
               </div>
             </div>
@@ -333,7 +333,7 @@
               </span>
               <p>历练值</p>
               <div class="right_">
-                <p class="{{$value.current_train_score<$value.max_train_score ? 'red' : 'blue'}}">{{$value.current_train_score}}</p>
+                <span class="{{$value.current_train_score<$value.max_train_score ? 'red' : 'blue'}}">{{$value.current_train_score}}</span>
                 /{{$value.max_train_score}}
               </div>
             </div>
