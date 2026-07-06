@@ -304,12 +304,19 @@ strong {
   margin-top: 10px;
   margin-bottom: 2px;
   display: flex;
+  align-items: center;
   font-size: 12px;
+}
+
+._box_ p {
+  margin: 0 0 0 6px;
+  line-height: 16px;
 }
 
 ._box_ img {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
 }
 
 ._box_ .right_ {
