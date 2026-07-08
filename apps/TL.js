@@ -12,13 +12,6 @@ import plugin from '../../../lib/plugins/plugin.js';
 import NoteUser from '../../genshin/model/mys/NoteUser.js';
 import common from '../../../lib/common/common.js';
 
-// 导入全部深渊功能模块
-import { allAbyss } from './allAbyssModule.js';
-import { miniChaos } from './miniChaos.js';
-import { miniStory } from './miniStory.js';
-import { miniBoss } from './miniBoss.js';
-import { miniPeak } from './miniPeak.js';
-
 // ============ 本地配置 ============
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = pluginDir + '/config/config.yaml';
@@ -335,26 +328,6 @@ export class TL extends plugin {
           fnc: 'updatePlugin',
         },
         {
-          reg: '^.*?(全部深渊|深渊总览|深渊汇总|星铁深渊|混沌.*虚构.*末日).*$',
-          fnc: 'allAbyss',
-        },
-        {
-          reg: '^#*(喵喵)?(\\*|星铁)?小(混沌|混沌回忆)(.*)$',
-          fnc: 'miniChaos',
-        },
-        {
-          reg: '^#*(喵喵)?(\\*|星铁)?小(虚构|虚构叙事)(.*)$',
-          fnc: 'miniStory',
-        },
-        {
-          reg: '^#*(喵喵)?(\\*|星铁)?小(末日|末日幻影)(.*)$',
-          fnc: 'miniBoss',
-        },
-        {
-          reg: '^#*(喵喵)?(\\*|星铁)?小(异相|异相仲裁)(.*)$',
-          fnc: 'miniPeak',
-        },
-        {
           reg: '^#*(开启|打开)体力uid$',
           fnc: 'toggleUidDisplay',
         },
@@ -563,7 +536,7 @@ export class TL extends plugin {
         // 总卡片数超过阈值 → 全部合并转发
         if (allGameSegments.length > cardsPerMsg) {
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-          return e.reply(forwardMsg);
+          return e.reply(forwardMsg, true);
         }
         if (allGameSegments.length === 1) return e.reply(allGameSegments[0]);
         return e.reply(allGameSegments);
@@ -606,7 +579,7 @@ export class TL extends plugin {
           }
           if (allGameSegments.length === 1) return e.reply(allGameSegments[0]);
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-          return e.reply(forwardMsg);
+          return e.reply(forwardMsg, true);
         }
       }
 
@@ -622,8 +595,8 @@ export class TL extends plugin {
         }
         await this.hideUidIfNeeded(combinedData, displayQq);
 
-        return e.runtime.render('小花火', 'Tl/Tl', combinedData, {
-          retType: 'default',
+        const renderResult = await e.runtime.render('小花火', 'Tl/Tl', combinedData, {
+          retType: 'base64',
           beforeRender({ data }) {
             return {
               sys: { scale: `style=transform:scale(${(imgQuality / 100) * 2.5 || 2.0})` },
@@ -634,6 +607,10 @@ export class TL extends plugin {
             };
           },
         });
+        if (renderResult && Buffer.isBuffer(renderResult.file)) {
+          return e.reply(segment.image(renderResult.file), true);
+        }
+        return true;
       }
 
       // 有游戏存在多个UID → 每个游戏一张图，合并转发
@@ -665,7 +642,7 @@ export class TL extends plugin {
 
       if (allGameSegments.length > 1) {
         const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-        return e.reply(forwardMsg);
+        return e.reply(forwardMsg, true);
       }
       return e.reply(allGameSegments[0]);
     }
@@ -682,8 +659,8 @@ export class TL extends plugin {
     const imgQuality = config().img_quality || 80;
     await this.hideUidIfNeeded(listData, displayQq);
 
-    return e.runtime.render('小花火', 'Tl/Tl', listData, {
-      retType: 'default',
+    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', listData, {
+      retType: 'base64',
       beforeRender({ data }) {
         return {
           sys: {
@@ -696,6 +673,10 @@ export class TL extends plugin {
         };
       },
     });
+    if (renderResult && Buffer.isBuffer(renderResult.file)) {
+      return e.reply(segment.image(renderResult.file), true);
+    }
+    return true;
   }
 
   // 获取当前QQ某游戏的所有绑定UID的体力数据
@@ -1115,28 +1096,4 @@ export class TL extends plugin {
     return data;
   }
 
-  // 全部深渊功能：调用 allAbyss 模块
-  async allAbyss(e) {
-    return await allAbyss(e);
-  }
-
-  // 小混沌功能：调用 miniChaos 模块
-  async miniChaos(e) {
-    return await miniChaos(e);
-  }
-
-  // 小虚构功能：调用 miniStory 模块
-  async miniStory(e) {
-    return await miniStory(e);
-  }
-
-  // 小末日功能：调用 miniBoss 模块
-  async miniBoss(e) {
-    return await miniBoss(e);
-  }
-
-  // 小异相功能：调用 miniPeak 模块
-  async miniPeak(e) {
-    return await miniPeak(e);
-  }
 }

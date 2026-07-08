@@ -68,7 +68,7 @@ function ensureChallengeMethods(mysInstance) {
   if (!mysInstance) return mysInstance;
 
   // 如果分支版本已有这些方法，直接返回
-  if (mysInstance.getChallengeChaos && mysInstance.getChallengeStory && mysInstance.getChallengeBoss) {
+  if (mysInstance.getChallengeChaos && mysInstance.getChallengeStory && mysInstance.getChallengeBoss && mysInstance.getChallengePeak) {
     return mysInstance;
   }
 
@@ -88,6 +88,12 @@ function ensureChallengeMethods(mysInstance) {
   if (!mysInstance.getChallengeBoss) {
     mysInstance.getChallengeBoss = async function(type = 1) {
       return await this.getData('challengeBoss', { schedule_type: type });
+    };
+  }
+
+  if (!mysInstance.getChallengePeak) {
+    mysInstance.getChallengePeak = async function(type = 1) {
+      return await this.getData('challengePeak', { schedule_type: type === 2 ? 3 : 1 });
     };
   }
 
@@ -202,7 +208,62 @@ function processChallengeData(res, tag, type) {
   };
 }
 
-// 全部深渊功能：混沌、虚构、末日三合一
+// 处理异相仲裁数据
+function processPeakData(res) {
+  if (!res || typeof res !== 'object') return null;
+
+  const record = res?.challenge_peak_records?.[0];
+  if (!record?.has_challenge_record) return null;
+
+  const recordBrief = res?.challenge_peak_best_record_brief || {};
+  const bossInfo = record?.boss_info || {};
+  const bossRecord = record?.boss_record || {};
+  const mobInfos = record?.mob_infos || [];
+  const mobRecords = record?.mob_records || [];
+
+  const normalizeAvatars = (avatars) => {
+    if (!avatars) return [];
+    return lodash.map(avatars, a => {
+      const char = Character.get(a.id, true);
+      if (char) {
+        a.name = a.name || char.name;
+        a.abbr = a.abbr || char.abbr;
+      }
+      return a;
+    });
+  };
+
+  return {
+    nickname: res?.role?.nickname || '',
+    bossName: bossInfo.name || '将杀王棋',
+    bossIcon: bossInfo.icon || '',
+    bossStars: bossRecord?.star_num || 0,
+    mobStars: recordBrief.mob_stars || 0,
+    totalStars: (bossRecord?.star_num || 0) + (recordBrief.mob_stars || 0),
+    bossRound: bossRecord?.round_num || 0,
+    bossAvatars: normalizeAvatars(bossRecord?.avatars),
+    mobs: mobInfos.map((info, idx) => {
+      const mobRecord = mobRecords[idx] || {};
+      return {
+        index: idx + 1,
+        name: info.name || `关卡${idx + 1}`,
+        icon: info.icon || '',
+        round: mobRecord?.round_num || 0,
+        stars: mobRecord?.star_num || 0,
+        avatars: normalizeAvatars(mobRecord?.avatars)
+      };
+    })
+  };
+}
+
+// 处理开拓者ID兼容
+function matchTrailblazerId(playerAvatarIds, apiId) {
+  let id = apiId * 1;
+  let baseId = id % 2 === 0 ? id - 1 : id;
+  return [baseId, baseId + 1].find(i => playerAvatarIds.includes(i + "")) || apiId;
+}
+
+// 全部深渊功能：混沌、虚构、末日、异相四合一
 export async function allAbyss(e) {
     try {
       // 加载 miao-plugin 模块
@@ -235,13 +296,14 @@ export async function allAbyss(e) {
       const bgImageMatch = msg.match(/背景[：:]?\s*(.+)/);
       const bgImage = bgImageMatch ? bgImageMatch[1].trim() : '';
 
-      // 获取三个深渊模式的数据
-      let chaosRes, storyRes, bossRes;
+      // 获取四个深渊模式的数据
+      let chaosRes, storyRes, bossRes, peakRes;
       try {
-        [chaosRes, storyRes, bossRes] = await Promise.all([
+        [chaosRes, storyRes, bossRes, peakRes] = await Promise.all([
           mys.getChallengeChaos(type),
           mys.getChallengeStory(type),
-          mys.getChallengeBoss(type)
+          mys.getChallengeBoss(type),
+          mys.getChallengePeak(type)
         ]);
       } catch (err) {
         logger.error('[xhh-TL][allAbyss] 获取深渊数据失败:', err);
@@ -255,15 +317,18 @@ export async function allAbyss(e) {
       const storyData = processChallengeData(storyRes, 'story', type);
       // 处理末日幻影数据
       const bossData = processChallengeData(bossRes, 'boss', type);
+      // 处理异相仲裁数据
+      const peakData = processPeakData(peakRes);
 
       // 检查是否有数据
-      if (!chaosData && !storyData && !bossData) {
+      if (!chaosData && !storyData && !bossData && !peakData) {
         e.reply(`暂未获得${type === 2 ? '上期' : '本期'}深渊挑战数据...`);
         return false;
       }
 
       // 获取角色信息
       const avatarIds = [];
+      const playerAvatarIds = player.getAvatarIds();
       const addAvatarId = (a) => {
         if (!a?.id) return a;
         if (!avatarIds.includes(a.id)) avatarIds.push(a.id);
@@ -273,6 +338,11 @@ export async function allAbyss(e) {
           a.abbr = a.abbr || char.abbr;
         }
         return a;
+      };
+      const addPeakAvatarId = (a) => {
+        if (!a?.id) return a;
+        if (a.id > 8000) a.id = matchTrailblazerId(playerAvatarIds, a.id);
+        return addAvatarId(a);
       };
 
       // 收集所有角色ID
@@ -296,6 +366,10 @@ export async function allAbyss(e) {
             if (node?.avatars) lodash.forEach(node.avatars, addAvatarId);
           });
         });
+      }
+      if (peakData) {
+        lodash.forEach(peakData.bossAvatars, addPeakAvatarId);
+        lodash.forEach(peakData.mobs, mob => lodash.forEach(mob.avatars, addPeakAvatarId));
       }
 
       // 刷新角色天赋
@@ -325,7 +399,7 @@ export async function allAbyss(e) {
 
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
-      const renderScale = isMobile ? 1.2 : 1.4;
+      const renderScale = isMobile ? 1.2 : 1.2;
       const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
@@ -333,6 +407,7 @@ export async function allAbyss(e) {
         chaosData,
         storyData,
         bossData,
+        peakData,
         avatars: avatarData,
         save_id: uid,
         uid,
@@ -344,8 +419,8 @@ export async function allAbyss(e) {
         timeCalc
       };
       try {
-        await e.runtime.render('xhh-TL', templateName, renderData, {
-          retType: 'default',
+        const renderResult = await e.runtime.render('xhh-TL', templateName, renderData, {
+          retType: 'base64',
           beforeRender({ data }) {
             const localPath = ppath;
             return {
@@ -358,6 +433,10 @@ export async function allAbyss(e) {
             };
           }
         });
+
+        if (renderResult && Buffer.isBuffer(renderResult.file)) {
+          return e.reply(segment.image(renderResult.file), true);
+        }
       } catch (err) {
         logger.error('[xhh-TL][allAbyss] 渲染三合一深渊失败:', err);
         e.reply('深渊数据渲染失败，请稍后重试');

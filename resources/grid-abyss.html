@@ -1,0 +1,130 @@
+{{extend defaultLayout}}
+
+{{block 'css'}}
+<style>
+body, .container {
+  width: 1400px;
+  padding: 0;
+  background: #0a0e1a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.grid-abyss-body {
+  width: 1400px;
+  min-height: 100%;
+  padding: 20px 16px 16px;
+  background-color: #0a0e1a;
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  position: relative;
+  font-family: "SR", "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
+}
+
+.grid-abyss-body::before { display: none; }
+
+.grid-abyss-header {
+  text-align: center;
+  padding: 8px 0 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-abyss-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #f6e7bf;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* 田字格 */
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* 3张图：上2下1居中 */
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-3 .grid-cell:last-child {
+  grid-column: 1 / -1;
+  max-width: 50%;
+  justify-self: center;
+}
+
+/* 2张图：横排 */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-cell {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(10, 14, 26, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.grid-cell img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* 隐藏 footer */
+.copyright, .footer, .powered-by, [class*="footer"], [class*="copyright"] {
+  display: none !important;
+}
+</style>
+{{/block}}
+
+{{block 'main'}}
+<div class="grid-abyss-body" style="background-image: url({{ppath}}background.png)">
+  <div class="grid-abyss-header">
+    <div class="grid-abyss-title">UID: {{uid}} 的全部深渊数据</div>
+  </div>
+
+  {{if count === 4}}
+  <div class="grid-2x2">
+    <div class="grid-cell"><img src="file://{{img1}}"></div>
+    <div class="grid-cell"><img src="file://{{img2}}"></div>
+    <div class="grid-cell"><img src="file://{{img3}}"></div>
+    <div class="grid-cell"><img src="file://{{img4}}"></div>
+  </div>
+  {{else if count === 3}}
+  <div class="grid-3">
+    <div class="grid-cell"><img src="file://{{img1}}"></div>
+    <div class="grid-cell"><img src="file://{{img2}}"></div>
+    <div class="grid-cell"><img src="file://{{img3}}"></div>
+  </div>
+  {{else if count === 2}}
+  <div class="grid-2">
+    <div class="grid-cell"><img src="file://{{img1}}"></div>
+    <div class="grid-cell"><img src="file://{{img2}}"></div>
+  </div>
+  {{else if count === 1}}
+  <div class="grid-cell" style="max-width: 50%; margin: 0 auto;"><img src="file://{{img1}}"></div>
+  {{/if}}
+</div>
+{{/block}}

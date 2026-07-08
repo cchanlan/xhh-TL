@@ -12,7 +12,7 @@
 }
 
 body, .container {
-  width: 1200px;
+  width: 1700px;
   padding: 0;
   background: #0a0e1a;
 }
@@ -25,8 +25,7 @@ body, .container {
 }
 
 .all-abyss-body {
-  width: 1200px;
-  min-height: 100%;
+  width: 1700px;
   padding: 20px 12px 8px;
   color: #eef5ff;
   font-family: "SR", "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
@@ -70,6 +69,7 @@ body, .container {
 .all-abyss-columns {
   display: flex;
   gap: 10px;
+  align-items: flex-start;
   position: relative;
   z-index: 1;
 }
@@ -262,7 +262,7 @@ body, .container {
   margin: 0 4px 10px;
   border: 1px solid rgba(92, 145, 210, 0.58);
   border-radius: 0 20px 0 0;
-  background: #271930;
+  background: rgba(39, 25, 48, 0.7);
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22);
 }
 
@@ -355,6 +355,9 @@ body, .container {
   margin: 10px 8px;
   padding: 0 0 10px;
   border-bottom: 1px solid rgba(140, 165, 200, 0.24);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .node-card:last-child {
@@ -390,7 +393,7 @@ body, .container {
 
 .avatar-row {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 4px;
 }
 
@@ -707,11 +710,94 @@ body, .container {
   font-weight: 400;
 }
 
-.copyright {
-  margin-top: -14px;
-  padding: 6px 0;
-  background: transparent !important;
+.copyright, .footer, .powered-by {
+  display: none !important;
 }
+
+/* 异相仲裁专用样式 */
+.peak-section {
+  margin: 0 4px 10px;
+  border: 1px solid rgba(92, 145, 210, 0.58);
+  border-radius: 0 20px 0 0;
+  background: rgba(39, 25, 48, 0.7);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.peak-boss-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 50px;
+  padding: 8px 10px 8px 12px;
+  background: rgba(91, 69, 142, 0.7);
+  border-bottom: 1px solid rgba(172, 213, 255, 0.28);
+  border-top-right-radius: 20px;
+  position: relative;
+  width: 100%;
+}
+
+.peak-boss-header::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(206, 230, 255, 0.28);
+  border-top-right-radius: 20px;
+  pointer-events: none;
+}
+
+.peak-boss-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #e9f7ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.peak-boss-stars {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.peak-boss-stars img {
+  width: 16px;
+  height: 16px;
+}
+
+.peak-mob-section {
+  margin: 10px 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(140, 165, 200, 0.24);
+}
+
+.peak-mob-section:last-child {
+  border-bottom: 0;
+  margin-bottom: 4px;
+}
+
+.peak-mob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.peak-mob-name {
+  font-size: 12px;
+  font-weight: 900;
+  color: #f2f7ff;
+}
+
+.peak-mob-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.peak-mob-meta b { color: #f7dc74; }
 </style>
 {{/block}}
 
@@ -722,8 +808,8 @@ body, .container {
     <div class="all-abyss-title">UID: {{uid}} 的全部深渊数据</div>
   </div>
 
-  <!-- 三列布局 -->
-  <div class="all-abyss-columns">
+  <!-- 四列布局 -->
+  <div class="all-abyss-columns" style="{{if !peakData}}justify-content: center;{{/if}}">
     <!-- 左侧：混沌回忆 -->
     <div class="all-abyss-col">
       {{if chaosData}}
@@ -1136,6 +1222,176 @@ body, .container {
       </div>
       {{/if}}
     </div>
+
+    <!-- 右2：异相仲裁 -->
+    {{if peakData}}
+    <div class="all-abyss-col">
+      <div class="story-body">
+        <div class="story-header">
+          <div class="story-head-left">
+            <div class="story-title">异相仲裁挑战回顾</div>
+          </div>
+          <div class="story-head-right">
+            <div>UID: {{uid}}</div>
+          </div>
+        </div>
+
+        <div class="story-summary">
+          <div class="summary-title">异相仲裁挑战回顾</div>
+          <div class="summary-panel">
+            <div class="summary-cell summary-icon">
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              <span>x{{peakData.totalStars || 0}}</span>
+            </div>
+            <div class="summary-cell summary-text">
+              <div><span>Boss：</span><b>{{peakData.bossName}}</b></div>
+              <div><span>轮次：</span><b>{{peakData.bossRound || '-'}}</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boss 关卡 -->
+        {{if peakData.bossAvatars && peakData.bossAvatars.length}}
+        <div class="peak-section">
+          <div class="peak-boss-header">
+            <div class="peak-boss-name">{{peakData.bossName}}</div>
+            <div class="peak-boss-stars">
+              {{each Array(peakData.bossStars || 0) i}}
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              {{/each}}
+            </div>
+          </div>
+          <div class="node-card">
+            <div class="node-top">
+              <div><span class="node-name">Boss</span></div>
+              <div class="node-score">轮次：<b>{{peakData.bossRound || 0}}</b></div>
+            </div>
+            <div class="avatar-row">
+              {{each peakData.bossAvatars a}}
+              {{set av = avatars[a.id]}}
+              {{if av || a}}
+              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+                <div class="avatar-inner">
+                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+                  <div class="avatar-bottom">
+                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
+                  </div>
+                  <div class="avatar-rarity-bar"></div>
+                </div>
+                {{if !mysFailed && av?.talent}}
+                <div class="avatar-talent">
+                  {{each av.talent k idx}}
+                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+                  {{/each}}
+                </div>
+                {{/if}}
+                {{if !mysFailed}}
+                <div class="avatar-equip">
+                  {{if av?.weapon || av?.artisSet}}
+                  <div class="equip-lc">
+                    {{if av?.weapon && av.weapon.img}}
+                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
+                    </div>
+                    {{/if}}
+                  </div>
+                  <div class="equip-relic">
+                    <div class="relic-pair">
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                      {{/if}}
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{else}}
+                  <div class="equip-empty"><span>暂无数据</span></div>
+                  {{/if}}
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{/each}}
+            </div>
+          </div>
+        </div>
+        {{/if}}
+
+        <!-- Mob 关卡 -->
+        {{each peakData.mobs mob}}
+        <div class="peak-section">
+          <div class="peak-boss-header">
+            <div class="peak-boss-name">{{mob.name}}</div>
+            <div class="peak-boss-stars">
+              {{each Array(mob.stars || 0) i}}
+              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+              {{/each}}
+            </div>
+          </div>
+          <div class="node-card">
+            <div class="node-top">
+              <div><span class="node-name">{{mob.name}}</span></div>
+              <div class="node-score">轮次：<b>{{mob.round || 0}}</b></div>
+            </div>
+            <div class="avatar-row">
+              {{each mob.avatars a}}
+              {{set av = avatars[a.id]}}
+              {{if av || a}}
+              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+                <div class="avatar-inner">
+                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+                  <div class="avatar-bottom">
+                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
+                  </div>
+                  <div class="avatar-rarity-bar"></div>
+                </div>
+                {{if !mysFailed && av?.talent}}
+                <div class="avatar-talent">
+                  {{each av.talent k idx}}
+                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+                  {{/each}}
+                </div>
+                {{/if}}
+                {{if !mysFailed}}
+                <div class="avatar-equip">
+                  {{if av?.weapon || av?.artisSet}}
+                  <div class="equip-lc">
+                    {{if av?.weapon && av.weapon.img}}
+                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
+                    </div>
+                    {{/if}}
+                  </div>
+                  <div class="equip-relic">
+                    <div class="relic-pair">
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                      {{/if}}
+                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{else}}
+                  <div class="equip-empty"><span>暂无数据</span></div>
+                  {{/if}}
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{/each}}
+            </div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
   </div>
 </div>
 {{/block}}
