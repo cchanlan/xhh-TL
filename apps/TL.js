@@ -538,8 +538,8 @@ export class TL extends plugin {
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
           return e.reply(forwardMsg, true);
         }
-        if (allGameSegments.length === 1) return e.reply(allGameSegments[0]);
-        return e.reply(allGameSegments);
+        if (allGameSegments.length === 1) return e.reply(allGameSegments[0], true);
+        return e.reply(allGameSegments, true);
       }
 
       // 默认合并模式：每个游戏的所有UID合并进一张图
@@ -577,7 +577,7 @@ export class TL extends plugin {
               if (segment) allGameSegments.push(segment);
             }
           }
-          if (allGameSegments.length === 1) return e.reply(allGameSegments[0]);
+          if (allGameSegments.length === 1) return e.reply(allGameSegments[0], true);
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
           return e.reply(forwardMsg, true);
         }
@@ -644,7 +644,7 @@ export class TL extends plugin {
         const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
         return e.reply(forwardMsg, true);
       }
-      return e.reply(allGameSegments[0]);
+      return e.reply(allGameSegments[0], true);
     }
 
     // 原始单图模式：数据转 _list 格式
@@ -865,7 +865,7 @@ export class TL extends plugin {
 
     const ticket = res.data.ticket;
     const img = segment.image((await toDataURL(res.data.url)).replace('data:image/png;base64,', 'base64://'));
-    await e.reply(['请在60秒内使用手机米游社扫码绑定崩坏3\n谁触发谁扫码，不要帮别人绑定！', img]);
+    await e.reply(['请在60秒内使用手机米游社扫码绑定崩坏3\n谁触发谁扫码，不要帮别人绑定！', img], true);
 
     await sleep(2000);
 
