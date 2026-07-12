@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="{{ppath}}role_combat/role_combat.css" />
+</head>
+<body {{sys.scale}}>
+<div class="page" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
+<div class="bg-orb one"></div><div class="bg-orb two"></div>
+<main class="card">
+<header class="hero">
+<div>
+<div class="eyebrow">GENSHIN IMPACT · IMAGINARIUM THEATER</div>
+<h1>幻想真境剧诗</h1>
+<p>{{month}} {{if queryUser}}{{queryUser}} (UID:{{queryUid}}) 拥有的可用角色{{else}}当期全部可用角色{{/if}}</p>
+</div>
+</header>
+{{if fallback}}
+<div class="warn">请求月份 {{requestedMonth}} 不在 Nanoka 数据库中，已展示最新收录月份。可查询范围：{{range}}</div>
+{{/if}}
+<section class="summary">
+<div class="summary-item"><span>限制元素</span><b>{{each elements el}}<i class="elem {{el}}">{{el === 'pyro' ? '火' : el === 'hydro' ? '水' : el === 'dendro' ? '草' : el === 'electro' ? '雷' : el === 'cryo' ? '冰' : el === 'anemo' ? '风' : '岩'}}</i>{{/each}}</b></div>
+<div class="summary-item"><span>开幕角色</span><b>{{opening.length}}</b></div>
+<div class="summary-item"><span>特邀角色</span><b>{{invite.length}}</b></div>
+<div class="summary-item"><span>可用角色</span><b>{{available.length}}</b></div>
+</section>
+
+<section class="block">
+<div class="title"><span>OPENING</span><h2>开幕角色</h2></div>
+<div class="char-grid featured">
+{{each opening c}}<div class="char"><img src="{{c.face}}"><div class="name">{{c.name}}</div><div class="meta {{c.elemClass}}">{{c.elemName}} · {{c.star}}★</div></div>{{/each}}
+</div>
+</section>
+
+<section class="block">
+<div class="title"><span>INVITE</span><h2>特邀角色</h2></div>
+<div class="char-grid featured">
+{{each invite c}}<div class="char invite"><img src="{{c.face}}"><div class="name">{{c.name}}</div><div class="meta {{c.elemClass}}">{{c.elemName}} · {{c.star}}★</div></div>{{/each}}
+</div>
+</section>
+
+{{if monsters && monsters.length}}
+<section class="block monster-block">
+<div class="title"><span>ENEMY</span><h2>关键关卡怪物</h2></div>
+<div class="monster-grid">
+{{each monsters m}}<div class="monster"><b>{{m.stage}}</b><span>{{m.names.join(' / ')}}</span></div>{{/each}}
+</div>
+</section>
+{{/if}}
+
+<section class="block">
+<div class="title"><span>AVAILABLE</span><h2>{{if queryUser}}拥有的可用角色 ({{available.length}}个){{else}}限制元素 + 特邀可用角色{{/if}}</h2></div>
+<div class="mini-grid">
+{{each available c}}<div class="mini"><img src="{{c.face}}"><span>{{c.name}}</span><em class="{{c.elemClass}}">{{c.elemName}}</em></div>{{/each}}
+</div>
+{{if queryUser && !available.length}}
+<p style="text-align:center;color:#8b949e;padding:20px;">暂无符合条件的角色</p>
+{{/if}}
+</section>
+<footer>数据来源：Nanoka · v{{version}} · 获取时间 {{generatedAt}} · from 小花火</footer>
+</main>
+</div>
+</body>
+</html>

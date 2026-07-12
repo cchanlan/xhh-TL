@@ -7,5 +7,6 @@ import { miniChaos } from './apps/miniChaos.js';
 import { miniStory } from './apps/miniStory.js';
 import { miniBoss } from './apps/miniBoss.js';
 import { miniPeak } from './apps/miniPeak.js';
+import { role_combat } from './apps/role_combat.js';
 
-export { TL, Abyss, allAbyss, miniAllAbyss, miniChaos, miniStory, miniBoss, miniPeak };
+export { TL, Abyss, allAbyss, miniAllAbyss, miniChaos, miniStory, miniBoss, miniPeak, role_combat };
