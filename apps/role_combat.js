@@ -95,6 +95,47 @@ function uniqById(list = []) {
   return [...map.values()];
 }
 
+function mergeStart(avatars, initialAvatarIds) {
+  let initialAvatars = [];
+  for (const id of initialAvatarIds) {
+    const char = Character.get(id);
+    if (char) {
+      initialAvatars.push({
+        id,
+        name: char.name,
+        elem: char.elem,
+        abbr: char.abbr,
+        star: char.star,
+        face: char.face,
+        level: 80,
+        cons: 0,
+        talent: {
+          a: { level: 8, original: 8 },
+          e: { level: 8, original: 8 },
+          q: { level: 8, original: 8 }
+        }
+      });
+    }
+  }
+
+  // 合并逻辑：求 avatars 和 initialAvatars 的并集
+  const avatarMap = new Map();
+  avatars.forEach(avatar => avatarMap.set(avatar.id, avatar));
+  
+  initialAvatars.forEach(initialAvatar => {
+    if (avatarMap.has(initialAvatar.id)) {
+      // 如果 id 相同，比较 level，选取较大的元素
+      const existingAvatar = avatarMap.get(initialAvatar.id);
+      avatarMap.set(initialAvatar.id, existingAvatar.level >= initialAvatar.level ? existingAvatar : initialAvatar);
+    } else {
+      // 如果 id 不同，直接加入
+      avatarMap.set(initialAvatar.id, initialAvatar);
+    }
+  });
+
+  return Array.from(avatarMap.values());
+}
+
 function extractCharacters(raw = {}) {
   const cfg = raw.avatar_config || raw.AvatarConfig || {};
   const openingIds = (cfg.buff_avatar_list || cfg.BuffAvatarList || []).map(v => Number(v.id || v.Id || v) + (Number(v.id || v.Id || v) < 10000000 ? 10000000 : 0));
@@ -104,13 +145,38 @@ function extractCharacters(raw = {}) {
   const invite = uniqById(inviteIds.map(charById).filter(Boolean));
   const inviteSet = new Set(invite.map(v => v.id));
   const available = [];
+  const travelerIds = [10000005, 10000007];
+  const travelerAdded = new Set();
   Character.forEach(char => {
     if (!char?.isRelease || char.game !== 'gs') return true;
-    if ([10000005, 10000007].includes(Number(char.id))) return true;
+    // 主角：为每个限制元素添加一个对应元素的主角
+    if (travelerIds.includes(Number(char.id))) {
+      for (const elem of elements) {
+        const key = `${char.id}_${elem}`;
+        if (travelerAdded.has(key)) continue;
+        travelerAdded.add(key);
+        available.push({
+          id: char.id,
+          name: char.name,
+          elem: elem,
+          elemName: ELEMENT_CN[elem] || '',
+          elemClass: ELEMENT_CLASS[elem] || '',
+          star: char.star || 4,
+          face: char.face ? `file://${process.cwd()}/plugins/miao-plugin/resources${char.face}` : '',
+        });
+      }
+      return true;
+    }
     if (elements.includes(char.elem) || inviteSet.has(char.id)) available.push(charById(char.id));
     return true;
   }, 'release', 'gs');
-  return { elements: [...new Set(elements)], opening, invite, available: uniqById(available) };
+  // available 使用 id+elem 去重，因为主角可能有多个元素条目
+  const availMap = new Map();
+  for (const item of available) {
+    const key = `${item.id}_${item.elem}`;
+    if (!availMap.has(key)) availMap.set(key, item);
+  }
+  return { elements: [...new Set(elements)], opening, invite, available: [...availMap.values()] };
 }
 
 function extractMonsters(raw = {}) {
@@ -225,14 +291,28 @@ export class role_combat extends plugin {
       if (mys && mys.uid && await mys.checkCk()) {
         // 以 mys.uid 为准，确保过滤与展示的是同一个人（@目标已通过 e.at 传入）
         const player = Player.create(e);
-        await player.refreshProfile(2, true);
-        const avatarIds = player.getAvatarIds();
-        const avatarData = player.getAvatarData(avatarIds);
-        userAvatars = Object.values(avatarData).map(a => ({
+        // 使用与#喵喵统计相同的方法获取角色数据
+        const avatarRet = await player.refreshAndGetAvatarData({
+          index: 2,
+          detail: 1,
+          talent: 1,
+          rank: true,
+          materials: false,
+          retType: "array",
+          sort: true,
+          isRole: true
+        }, 'gs');
+        
+        // 合并开幕角色（确保开幕角色总是显示）
+        const openingIds = data.opening.map(c => c.id);
+        const mergedAvatars = mergeStart(avatarRet, openingIds);
+        
+        userAvatars = mergedAvatars.map(a => ({
           id: a.id,
           name: a.name,
           elem: a.elem,
           star: a.star,
+          level: a.level || 0,
         }));
         // 统一以 MysInfo 解析出的 uid 作为展示 uid，避免两条路径不一致
         queryUserUid = mys.uid;
@@ -250,8 +330,25 @@ export class role_combat extends plugin {
     let filteredAvailable = data.available;
     let filterApplied = false;
     if (userAvatars) {
-      const userCharIds = new Set(userAvatars.map(c => c.id));
-      filteredAvailable = data.available.filter(c => userCharIds.has(c.id));
+      const userCharMap = new Map(userAvatars.map(c => [c.id, c]));
+      const inviteSet = new Set(data.invite.map(c => c.id));
+      const elementSet = new Set(data.elements);
+      const travelerIds = [10000005, 10000007];
+      
+      filteredAvailable = data.available.filter(c => {
+        const userChar = userCharMap.get(c.id);
+        const level = userChar?.level;
+        // 主角特殊处理：需要匹配用户主角的实际元素
+        if (travelerIds.includes(c.id)) {
+          if (!userChar || userChar.level < 70) return false;
+          return userChar.elem === c.elem && elementSet.has(c.elem);
+        }
+        // 检查是否满足条件：是特邀角色或元素匹配，且等级≥70，且不是人偶
+        const isInvite = inviteSet.has(c.id);
+        const isElementMatch = elementSet.has(c.elem);
+        const isNotManekin = c.id !== 10000117 && c.id !== 10000118;
+        return (isInvite || isElementMatch) && level !== undefined && level >= 70 && isNotManekin;
+      });
       filterApplied = true;
     }
 
