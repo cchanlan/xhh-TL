@@ -178,6 +178,8 @@ export class role_combat extends plugin {
         break;
       }
     }
+    // 将 @目标写回 e.at，确保 MysInfo/MysApi 查询的是被@的人而非发送者
+    if (targetQq) e.at = String(targetQq);
 
     // 获取被@用户的昵称和UID
     if (targetQq && e.group) {
@@ -213,13 +215,15 @@ export class role_combat extends plugin {
       return e.reply('本期幻想真境剧诗数据不完整，请稍后再试或更换数据源。');
     }
 
-    // 获取当前用户的角色列表并过滤
+    // 获取查询目标的角色列表并过滤
     let userAvatars = null;
+    let ckMissing = false;
     let queryUserName = targetName;
     let queryUserUid = targetUid;
     try {
       const mys = await MysApi.init(e, 'cookie');
-      if (mys && await mys.checkCk()) {
+      if (mys && mys.uid && await mys.checkCk()) {
+        // 以 mys.uid 为准，确保过滤与展示的是同一个人（@目标已通过 e.at 传入）
         const player = Player.create(e);
         await player.refreshProfile(2, true);
         const avatarIds = player.getAvatarIds();
@@ -230,21 +234,25 @@ export class role_combat extends plugin {
           elem: a.elem,
           star: a.star,
         }));
-        // 如果没有@人，显示当前用户信息
-        if (!queryUserName) {
-          queryUserName = e.user?.nickname || '当前用户';
-          queryUserUid = mys.uid;
-        }
+        // 统一以 MysInfo 解析出的 uid 作为展示 uid，避免两条路径不一致
+        queryUserUid = mys.uid;
+        if (!queryUserName) queryUserName = e.user?.nickname || '当前用户';
+      } else {
+        // 有查询目标但拿不到可用 CK，无法读取角色列表
+        ckMissing = true;
       }
     } catch (err) {
+      ckMissing = true;
       logger.debug('[xhh][role_combat] 获取用户角色列表失败:', err.message);
     }
 
-    // 过滤用户拥有的角色
+    // 过滤用户拥有的角色；无法读取角色时保持全量并标记，避免误导为"全部拥有"
     let filteredAvailable = data.available;
+    let filterApplied = false;
     if (userAvatars) {
       const userCharIds = new Set(userAvatars.map(c => c.id));
       filteredAvailable = data.available.filter(c => userCharIds.has(c.id));
+      filterApplied = true;
     }
 
     // 获取自定义背景图（支持子文件夹，仅原神角色）
@@ -297,6 +305,8 @@ export class role_combat extends plugin {
       generatedAt: moment().format('MM-DD HH:mm'),
       queryUser: queryUserName,
       queryUid: queryUserUid,
+      filterApplied,
+      ckMissing,
       bgImage,
     };
     const imgQuality = config().img_quality || 100;
