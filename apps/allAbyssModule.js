@@ -399,7 +399,7 @@ export async function allAbyss(e) {
 
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
-      const renderScale = isMobile ? 1.2 : 1.2;
+      const renderScale = isMobile ? 1.6 : 2.0;
       const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';

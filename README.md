@@ -1,6 +1,6 @@
 # xhh-TL (小花火体力小组件)
 
-> Yunzai Bot 插件 —— 米游社实时体力查询 支持 / 星穹铁道 / 绝区零 / 崩坏3 四游戏 ；星铁全部深渊四合一渲染 + 星铁独立深渊查询 。
+> Yunzai Bot 插件 —— 米游社实时体力查询（原神 / 星穹铁道 / 绝区零 / 崩坏3）；星铁全部深渊四合一；原神全部深渊三合一；幻想真境剧诗。
 
 ## 来源
 
@@ -19,29 +19,34 @@
 
 ### 星铁全部深渊（四合一）
 - 支持 `*深渊` `*小深渊` / `深渊总览` / `深渊汇总` / `星铁深渊` 等指令
-- 一次性查询星铁三个深渊模式：混沌回忆、虚构叙事、末日幻影
-- 四列并排渲染成一张图，包含角色、光锥、遗器、天赋等详细信息
+- 一次性查询星铁深渊模式：混沌回忆、虚构叙事、末日幻影、异相仲裁
 - 支持上期数据查询：`*全部深渊 上期`
-- 
+- 指令建议带 `*` 或「星铁」，避免与原神 `#全部深渊` 冲突
 
 ### 原神全部深渊（三合一）
-再给我3年
+- 指令：`#全部深渊` / `#全部深渊上期` / `#原神全部深渊` / `#全部深渊 最高层`
+- 一张图合并：
+  - **深境螺旋**：默认 9–12 层全层（加「最高层」可只显示最高层）；角色天赋 / 武器 / 圣遗物
+  - **幽境危战**：队伍、Boss 图、最强一击 / 最高总伤、机制说明全文、赋光 UP
+  - **幻想剧诗关键关**：第 3/6/8/10 幕 + 双圣牌通关队伍
+- 三列体力毛玻璃风格；背景与剧诗共用 `role_combat_bg_folder`
+- 开关：`gs_all_abyss: true`（锅巴可配）
 
 ### 星铁独立深渊查询
 - **小混沌**：`*小混沌` / `*小混沌上期` — 查询混沌回忆，渲染角色、光锥、遗器
 - **小虚构**：`*小虚构` / `*小虚构上期` — 查询虚构叙事，显示积分和星数
 - **小末日**：`*小末日` / `*小末日上期` — 查询末日幻影，显示节点分数和星数
-- **小异相**：`*小异相` / `*小异相上期` — 查询异相仲裁，显示Boss和关卡详情
+- **小异相**：`*小异相` / `*小异相上期` — 查询异相仲裁，显示 Boss 和关卡详情
 - 支持自定义背景图：`*小混沌 背景:图片URL`
 
 ### 原神幻想真境剧诗
-- 支持 `#幻想剧诗` / `#幻想202607` / `#幻想角色` 等指令查询当期可用角色
-- 支持指定月份查询：`#幻想剧诗202607`
-- 支持 @他人查询：`#幻想剧诗@某人` — 显示对方拥有的可用角色
-- 支持自定义背景图：在锅巴配置 `role_combat_bg_folder` 指定文件夹路径
-- 背景图支持子文件夹，自动识别原神角色面板图（如果使用这个miao-plugin/resources/profile/normal-character路径的话）
-- 毛玻璃卡片效果，渲染精度跟随 `img_quality` 配置
-
+- **可用角色**：`#幻想剧诗` / `#幻想角色` / `#幻想202607` 等 — 当期限制元素、开幕/特邀/可用角色（Nanoka 数据）
+- **小剧诗 / 小幻想**：`#小剧诗` / `#小幻想` / `#小剧诗上期` / `#上期小幻想`
+  - 个人通关关键关（3/6/8/10 + 圣牌）
+  - 角色卡：头像、命座、等级、天赋、武器、圣遗物（与全部深渊同款）
+  - 支持 @他人（需对方绑定 Cookie）
+- 自定义背景：锅巴配置 `role_combat_bg_folder`（子文件夹名为角色名，随机抽图）
+- 渲染精度跟随 `img_quality`；非体力功能已提高渲染 scale 以减轻模糊
 
 ## 安装
 
@@ -52,6 +57,8 @@ cd xhh-TL && npm install --no-save
 ```
 
 > `--no-save` 不会修改 Yunzai 的 package.json。云崽已内置大部分依赖，通常无需手动安装，仅在插件缺少依赖时执行。
+
+依赖：`miao-plugin`（角色数据 / MysApi / 面板）、原神 Cookie 绑定。
 
 ## 更新
 
@@ -72,7 +79,7 @@ cd plugins/xhh-TL && git pull
 ```yaml
 # 体力小组件配置
 Tl: true                 # 是否启用体力查询
-img_quality: 80          # 图片渲染质量 (1-100)
+img_quality: 100         # 图片渲染质量 (1-100)，也参与 scale 计算
 tl_priority: -999        # 插件优先级 (数字越小越优先)
 show_all_bindings: true  # 多账号模式：同一游戏的多个UID渲染进同一张图
 
@@ -82,14 +89,19 @@ tl_merge_uids_per_image: 0  # 合并模式：每张图最多渲染几个UID（0=
 tl_uids_per_image: 2     # 独立模式：每张图渲染几个UID
 tl_cards_per_msg: 3      # 独立模式：一条消息发几张卡片，超过则合并转发
 
-# 全部深渊功能配置
-all_abyss: true          # 是否启用全部深渊查询（混沌、虚构、末日三合一）
-all_abyss_render_mode: desktop  # 桌面端(1200px)或手机端(480px)
+# 星铁全部深渊
+all_abyss: true
+all_abyss_render_mode: desktop  # 桌面端或手机端
 
-# 幻想真境剧诗配置
-role_combat: true        # 是否启用幻想真境剧诗查询
-role_combat_bg_folder: /root/Yunzai/plugins/miao-plugin/resources/profile/normal-character  # 背景图文件夹
+# 幻想真境剧诗 / 小剧诗 / 原神全部深渊 共用背景
+role_combat: true
+role_combat_bg_folder: plugins/miao-plugin/resources/profile/normal-character  # 可写绝对路径
+
+# 原神全部深渊三合一
+gs_all_abyss: true
 ```
+
+也可在 **锅巴** 中配置：体力、全部深渊、剧诗开关与背景路径。
 
 ## 崩坏3 绑定
 
@@ -102,19 +114,21 @@ role_combat_bg_folder: /root/Yunzai/plugins/miao-plugin/resources/profile/normal
 
 ## 文件说明
 
-- `TL.js` - 主插件文件，包含体力和深渊规则
-- `allAbyssModule.js` - 全部深渊功能的核心实现
-- `miniChaos.js` - 混沌回忆独立查询模块
-- `miniStory.js` - 虚构叙事独立查询模块
-- `miniBoss.js` - 末日幻影独立查询模块
-- `miniPeak.js` - 异相仲裁独立查询模块
-- `role_combat.js` - 幻想真境剧诗查询模块
+- `apps/TL.js` - 体力查询
+- `apps/Abyss.js` - 星铁深渊指令入口
+- `apps/allAbyssModule.js` - 星铁全部深渊核心
+- `apps/miniChaos.js` / `miniStory.js` / `miniBoss.js` / `miniPeak.js` - 星铁独立深渊
+- `apps/miniAllAbyss.js` - 星铁小深渊网格
+- `apps/role_combat.js` - 幻想真境剧诗可用角色
+- `apps/miniRoleCombat.js` - 小剧诗 / 小幻想（个人通关关键关）
+- `apps/gsAllAbyss.js` - 原神全部深渊三合一
 - `config/config.yaml` - 配置文件
-- `resources/all-abyss.html` - 全部深渊三合一渲染模板（桌面版）
-- `resources/all-abyss-mobile.html` - 全部深渊三合一渲染模板（手机版）
-- `resources/role_combat/` - 幻想真境剧诗渲染模板和样式
-- `resources/Tl/` - 体力渲染模板和资源
-- `resources/jysy/` - 独立深渊查询模板和图标资源
+- `guoba.support.js` - 锅巴配置项
+- `resources/Tl/` - 体力模板
+- `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板
+- `resources/jysy/` - 星铁独立深渊模板
+- `resources/role_combat/` - 剧诗 / 小剧诗模板
+- `resources/gs_all_abyss/` - 原神全部深渊模板
 
 ## 混沌回忆显示所有楼层
 
@@ -147,6 +161,7 @@ spiralAbyss: {
 - 原项目：[xhh](https://github.com/YUYUYUYU2147/xhh/tree/v2) by YUYUYUYU2147
 - [StarRail-plugin](https://github.com/TsukinaKasumi/StarRail-plugin) - 星铁深渊 API 参考
 - [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin) - 角色数据和渲染框架
+- 剧诗静态配置数据：[Nanoka](https://static.nanoka.cc/)
 
 ## License
 

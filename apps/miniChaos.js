@@ -246,7 +246,7 @@ export async function miniChaos(e) {
     const renderMode = config().mini_chaos_render_mode || 'desktop';
     const isMobile = renderMode === 'mobile';
     const templateName = 'game_exact';
-    const renderScale = isMobile ? 1.2 : 2.0;
+    const renderScale = isMobile ? 1.6 : 2.2;
     const tplFile = pluginDir + '/resources/jysy/game_exact.html';
     const ppath = '../../../../plugins/xhh-TL/resources/jysy/';
 

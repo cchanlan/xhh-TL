@@ -144,18 +144,24 @@ export function supportGuoba() {
         },
         {
           field: 'role_combat',
-          label: '启用幻想真境剧诗查询',
-          bottomHelpMessage: '是否启用原神幻想真境剧诗角色查询',
+          label: '启用幻想真境剧诗 / 小剧诗',
+          bottomHelpMessage: '是否启用 #幻想角色、#小剧诗 等原神幻想真境剧诗相关查询',
           component: 'Switch'
         },
         {
           field: 'role_combat_bg_folder',
-          label: '幻想真境剧诗背景图文件夹',
-          bottomHelpMessage: '自定义背景图文件夹路径，支持绝对路径或相对于插件目录的路径。留空则使用默认背景',
+          label: '剧诗背景图文件夹',
+          bottomHelpMessage: '#幻想角色、#小剧诗、#全部深渊 共用。填角色面板图目录（子文件夹名为角色名）。支持绝对/相对路径；留空则无自定义背景',
           component: 'Input',
           componentProps: {
             placeholder: '如 /root/Yunzai/plugins/miao-plugin/resources/profile/normal-character'
           }
+        },
+        {
+          field: 'gs_all_abyss',
+          label: '启用原神全部深渊',
+          bottomHelpMessage: '是否启用 #全部深渊（深境螺旋 + 幽境危战 + 小剧诗关键关）',
+          component: 'Switch'
         }
       ],
       getConfigData() {

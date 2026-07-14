@@ -246,7 +246,7 @@ export async function miniStory(e) {
     const renderMode = config().mini_story_render_mode || 'desktop';
     const isMobile = renderMode === 'mobile';
     const templateName = 'game_story';
-    const renderScale = isMobile ? 1.2 : 2.0;
+    const renderScale = isMobile ? 1.6 : 2.2;
     const tplFile = pluginDir + '/resources/jysy/game_story.html';
     const ppath = '../../../../plugins/xhh-TL/resources/jysy/';
 

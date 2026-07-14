@@ -12,7 +12,7 @@
 <div>
 <div class="eyebrow">GENSHIN IMPACT · IMAGINARIUM THEATER</div>
 <h1>幻想真境剧诗</h1>
-<p>{{month}} {{if queryUser}}{{queryUser}} (UID:{{queryUid}}) 拥有的可用角色{{else}}当期全部可用角色{{/if}}</p>
+<p>{{month}} {{if filterApplied}}{{queryUser}} (UID:{{queryUid}}) 拥有的可用角色{{else}}当期全部可用角色{{/if}}</p>
 </div>
 </header>
 {{if fallback}}
@@ -49,12 +49,15 @@
 {{/if}}
 
 <section class="block">
-<div class="title"><span>AVAILABLE</span><h2>{{if queryUser}}拥有的可用角色 ({{available.length}}个){{else}}限制元素 + 特邀可用角色{{/if}}</h2></div>
+<div class="title"><span>AVAILABLE</span><h2>{{if filterApplied}}拥有的可用角色 ({{available.length}}个){{else}}限制元素 + 特邀可用角色{{/if}}</h2></div>
 <div class="mini-grid">
 {{each available c}}<div class="mini"><img src="{{c.face}}"><span>{{c.name}}</span><em class="{{c.elemClass}}">{{c.elemName}}</em></div>{{/each}}
 </div>
-{{if queryUser && !available.length}}
+{{if filterApplied && !available.length}}
 <p style="text-align:center;color:#8b949e;padding:20px;">暂无符合条件的角色</p>
+{{/if}}
+{{if ckMissing}}
+<p style="text-align:center;color:#d29922;padding:20px;">未读取到{{if queryUser}} {{queryUser}} {{/if}}的角色数据（未绑定Cookie或获取失败），以下为当期全部可用角色，未按拥有情况过滤。发送 <b>#扫码登录</b> 绑定后即可只看自己拥有的角色</p>
 {{/if}}
 </section>
 <footer>数据来源：Nanoka · v{{version}} · 获取时间 {{generatedAt}} · from 小花火</footer>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{ppath}}role_combat/mini_role_combat.css" />
+</head>
+<body {{sys.scale}}>
+  <div class="container" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
+    <div class="xhh_box">
+      <div class="one_box">
+        <div class="tx">
+          <img class="qq_tx" src="https://q1.qlogo.cn/g?b=qq&s=640&nk={{qq}}.jpg" alt="" />
+        </div>
+        <div class="zi">
+          <p class="name">{{qqname}}</p>
+          <div class="zi_">
+            <div class="title-line">
+              <span class="badge">小剧诗</span>
+              <span class="sub">{{periodText}} · {{month}}月 · {{difficulty}}</span>
+            </div>
+            <div class="meta-line">
+              <span>UID {{uid}}</span>
+              <span class="dot">·</span>
+              <span>关键 {{stageCount}} 关</span>
+              <span class="dot">·</span>
+              <span>星章 {{medal}}/{{medalTotal}}</span>
+            </div>
+            <div class="meta-line">
+              <span>总耗时 {{totalTime}} 秒</span>
+              <span class="dot">·</span>
+              <span>幻剧之花 {{coin}}</span>
+            </div>
+            <div class="time-line">
+              <span class="time_label">获取时间</span>
+              <span class="time_value">{{generatedAt}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">关键关卡 · 通关角色</div>
+      <div class="boss-list">
+        {{each stages s}}
+        <div class="boss-card {{s.kind}}">
+          <div class="boss-head">
+            <div class="head-left">
+              <span class="medal {{if s.is_get_medal}}on{{else}}off{{/if}}"></span>
+              <span class="stage">{{s.title}}</span>
+            </div>
+            <div class="head-right">{{s.finish_time}}</div>
+          </div>
+
+          <div class="boss-body">
+            <div class="team mcard-team">
+              {{each s.avatars a}}
+              <div class="mcard star-{{a.star}}">
+                <div class="mcard-face">
+                  {{if a.face}}
+                  <img src="{{a.face}}" alt="" />
+                  {{else}}
+                  <div class="char-ph">?</div>
+                  {{/if}}
+                  {{if a.typeLabel}}
+                  <span class="mcard-cons trial">{{a.typeLabel}}</span>
+                  {{else}}
+                  <span class="mcard-cons">{{a.cons}}</span>
+                  {{/if}}
+                </div>
+                <div class="mcard-lv">Lv.{{a.level}}</div>
+                <div class="mcard-name">{{a.name}}</div>
+                <div class="mcard-talent">
+                  <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                  <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                  <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                </div>
+                <div class="mcard-gear">
+                  <div class="gbox">
+                    {{if a.weapon && a.weapon.img && !a.typeLabel}}
+                    <img src="{{a.weapon.img}}" alt="" />
+                    {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                    {{else}}
+                    <span class="gempty"></span>
+                    {{/if}}
+                  </div>
+                  <div class="gbox artis">
+                    {{if a.artis && a.artis.imgs && a.artis.imgs[0] && !a.typeLabel}}
+                    <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                    {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                    {{else}}
+                    <span class="gempty"></span>
+                    {{/if}}
+                  </div>
+                </div>
+              </div>
+              {{/each}}
+              {{if !s.avatars || !s.avatars.length}}
+              <div class="empty">无角色数据</div>
+              {{/if}}
+            </div>
+
+            <div class="enemy-box">
+              <div class="enemy-label">讨伐</div>
+              <div class="enemy-list">
+                {{each s.enemies en}}
+                <div class="enemy-item">
+                  {{if en.icon}}
+                  <img class="enemy-icon" src="{{en.icon}}" alt="" />
+                  {{/if}}
+                  <div class="enemy-text">
+                    <span class="enemy-name">{{en.name}}</span>
+                    {{if en.level}}<span class="enemy-lv">Lv.{{en.level}}</span>{{/if}}
+                  </div>
+                </div>
+                {{/each}}
+                {{if !s.enemies || !s.enemies.length}}
+                <span class="enemy-name">—</span>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+
+      <footer>
+        仅展示第 3/6/8/10 幕 + 圣牌 · 天赋/武器/圣遗物 · from 小花火
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

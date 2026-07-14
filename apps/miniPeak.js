@@ -233,7 +233,7 @@ export async function miniPeak(e) {
     const renderMode = config().mini_peak_render_mode || 'desktop';
     const isMobile = renderMode === 'mobile';
     const templateName = 'game_peak';
-    const renderScale = isMobile ? 1.2 : 2.0;
+    const renderScale = isMobile ? 1.6 : 2.2;
     const tplFile = pluginDir + '/resources/jysy/game_peak.html';
 
     try {

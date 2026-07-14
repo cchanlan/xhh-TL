@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{ppath}}gs_all_abyss/gs_all_abyss.css" />
+</head>
+<body {{sys.scale}}>
+  <div class="container" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
+    <div class="xhh_box">
+      <div class="one_box">
+        <div class="tx">
+          <img class="qq_tx" src="https://q1.qlogo.cn/g?b=qq&s=640&nk={{qq}}.jpg" alt="" />
+        </div>
+        <div class="zi">
+          <p class="name">{{qqname}}</p>
+          <div class="zi_">
+            <div class="title-line">
+              <span class="badge">全部深渊</span>
+              <span class="sub">{{periodText}} · 原神三合一</span>
+            </div>
+            <div class="meta-line">
+              <span>UID {{uid}}</span>
+              <span class="dot">·</span>
+              <span>{{generatedAt}}</span>
+              {{if abyss.ok && abyss.onlyTop}}
+              <span class="dot">·</span>
+              <span class="tip">深渊仅最高层 · 默认已全层</span>
+              {{/if}}
+            </div>
+            <div class="mod-tags">
+              <span class="mod-tag {{if abyss.ok}}on{{else}}off{{/if}}">深渊</span>
+              <span class="mod-tag {{if hard.ok}}on{{else}}off{{/if}}">危战</span>
+              <span class="mod-tag {{if role.ok}}on{{else}}off{{/if}}">剧诗</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cols">
+        <!-- 深境螺旋 -->
+        <div class="col col-abyss">
+          <div class="section-title">
+            <span class="sec-badge abyss">深境螺旋</span>
+            {{if abyss.ok}}
+            <span class="sec-meta">最高 {{abyss.maxFloor}} · {{abyss.totalStar}}星 · {{abyss.totalBattle}}次</span>
+            {{else}}
+            <span class="sec-meta dim">{{abyss.reason || '无数据'}}</span>
+            {{/if}}
+          </div>
+          {{if abyss.ok}}
+          <div class="col-body">
+            {{each abyss.floors fl}}
+            <div class="block-card">
+              <div class="block-head">
+                <span class="bh-title">第 {{fl.index}} 层</span>
+                <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
+              </div>
+              {{each fl.levels lv}}
+              <div class="level-compact">
+                <div class="lv-bar">
+                  <span>间 {{lv.index}}</span>
+                  <span>★{{lv.star}}</span>
+                </div>
+                <div class="half-row">
+                  {{if lv.up}}
+                  <div class="half-col">
+                    <div class="half-label">上</div>
+                    <div class="team mcard-team">
+                      {{each lv.up.avatars a}}
+                      <div class="mcard star-{{a.star}}">
+                        <div class="mcard-face">
+                          {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                          <span class="mcard-cons">{{a.cons}}</span>
+                        </div>
+                        <div class="mcard-lv">Lv.{{a.level}}</div>
+                        <div class="mcard-name">{{a.name}}</div>
+                        <div class="mcard-talent">
+                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                        </div>
+                        <div class="mcard-gear">
+                          <div class="gbox">
+                            {{if a.weapon && a.weapon.img}}
+                            <img src="{{a.weapon.img}}" alt="" />
+                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                            {{else}}<span class="gempty"></span>{{/if}}
+                          </div>
+                          <div class="gbox artis">
+                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                            {{else}}<span class="gempty"></span>{{/if}}
+                          </div>
+                        </div>
+                      </div>
+                      {{/each}}
+                    </div>
+                  </div>
+                  {{/if}}
+                  {{if lv.down}}
+                  <div class="half-col">
+                    <div class="half-label">下</div>
+                    <div class="team mcard-team">
+                      {{each lv.down.avatars a}}
+                      <div class="mcard star-{{a.star}}">
+                        <div class="mcard-face">
+                          {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                          <span class="mcard-cons">{{a.cons}}</span>
+                        </div>
+                        <div class="mcard-lv">Lv.{{a.level}}</div>
+                        <div class="mcard-name">{{a.name}}</div>
+                        <div class="mcard-talent">
+                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                        </div>
+                        <div class="mcard-gear">
+                          <div class="gbox">
+                            {{if a.weapon && a.weapon.img}}
+                            <img src="{{a.weapon.img}}" alt="" />
+                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                            {{else}}<span class="gempty"></span>{{/if}}
+                          </div>
+                          <div class="gbox artis">
+                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                            {{else}}<span class="gempty"></span>{{/if}}
+                          </div>
+                        </div>
+                      </div>
+                      {{/each}}
+                    </div>
+                  </div>
+                  {{/if}}
+                </div>
+              </div>
+              {{/each}}
+            </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="empty-col">暂无深渊数据</div>
+          {{/if}}
+        </div>
+
+        <!-- 幽境危战：队伍 + Boss图 + 最强一击/总伤 + 机制（对齐 #幽境危战） -->
+        <div class="col col-hard">
+          <div class="section-title">
+            <span class="sec-badge hard">幽境危战</span>
+            {{if hard.ok}}
+            <span class="sec-meta">{{hard.difficultyName}} · {{hard.second}}秒</span>
+            {{else}}
+            <span class="sec-meta dim">{{hard.reason || '无数据'}}</span>
+            {{/if}}
+          </div>
+          {{if hard.ok}}
+          <div class="col-body">
+            {{each hard.challs ch}}
+            <div class="block-card hard-card v2">
+              <div class="block-head">
+                <span class="bh-title">{{ch.name}}</span>
+                <span class="bh-star">用时 {{ch.second}}s</span>
+              </div>
+
+              <!-- 上：Boss + DPS -->
+              <div class="hard-top">
+                {{if ch.monster}}
+                <div class="hard-boss">
+                  {{if ch.monster.icon}}<img class="hard-boss-ico" src="{{ch.monster.icon}}" alt="" />{{/if}}
+                  <div class="hard-boss-lv">Lv.{{ch.monster.level}}</div>
+                </div>
+                {{/if}}
+                {{if ch.best && ch.best.length}}
+                <div class="hard-dps">
+                  {{each ch.best b}}
+                  <div class="dps-row">
+                    <span class="dps-t">{{b.title}}</span>
+                    <div class="dps-body">
+                      {{if b.avatar && b.avatar.face}}
+                      <img class="dps-face" src="{{b.avatar.face}}" alt="" />
+                      {{/if}}
+                      <span class="dps-n">{{b.dps}}</span>
+                    </div>
+                  </div>
+                  {{/each}}
+                </div>
+                {{/if}}
+              </div>
+
+              <!-- 中：队伍 -->
+              <div class="team mcard-team team-hard hard-team-mid">
+                {{each ch.avatars a}}
+                <div class="mcard star-{{a.star}}">
+                  <div class="mcard-face">
+                    {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                    {{if a.isUp}}<span class="mcard-up">UP</span>{{/if}}
+                    <span class="mcard-cons">{{a.cons}}</span>
+                  </div>
+                  <div class="mcard-lv">Lv.{{a.level}}</div>
+                  <div class="mcard-name">{{a.name}}</div>
+                  <div class="mcard-talent">
+                    <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                    <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                    <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                  </div>
+                  <div class="mcard-gear">
+                    <div class="gbox">
+                      {{if a.weapon && a.weapon.img}}
+                      <img src="{{a.weapon.img}}" alt="" />
+                      {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                      {{else}}<span class="gempty"></span>{{/if}}
+                    </div>
+                    <div class="gbox artis">
+                      {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                      <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                      {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                      {{else}}<span class="gempty"></span>{{/if}}
+                    </div>
+                  </div>
+                </div>
+                {{/each}}
+              </div>
+
+              <!-- 下：机制全文 -->
+              {{if ch.monster && ch.monster.descs && ch.monster.descs.length}}
+              <ul class="hard-desc full">
+                {{each ch.monster.descs d}}
+                <li>{{d}}</li>
+                {{/each}}
+              </ul>
+              {{/if}}
+            </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="empty-col">暂无危战数据</div>
+          {{/if}}
+        </div>
+
+        <!-- 幻想剧诗 -->
+        <div class="col col-role">
+          <div class="section-title">
+            <span class="sec-badge role">幻想剧诗</span>
+            {{if role.ok}}
+            <span class="sec-meta">{{role.month}}月 · {{role.difficultyName}} · {{role.totalTime}}秒 · 花{{role.coin}}</span>
+            {{else}}
+            <span class="sec-meta dim">{{role.reason || '无数据'}}</span>
+            {{/if}}
+          </div>
+          {{if role.ok}}
+          <div class="col-body">
+            {{each role.stages s}}
+            <div class="block-card {{s.kind}}">
+              <div class="block-head">
+                <div class="bh-left">
+                  <span class="medal {{if s.is_get_medal}}on{{else}}off{{/if}}"></span>
+                  <span class="bh-title">{{s.title}}</span>
+                </div>
+                <span class="bh-star">{{s.finish_time}}</span>
+              </div>
+              <div class="team mcard-team">
+                {{each s.avatars a}}
+                <div class="mcard star-{{a.star}}">
+                  <div class="mcard-face">
+                    {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                    {{if a.typeLabel}}
+                    <span class="mcard-cons trial">{{a.typeLabel}}</span>
+                    {{else}}
+                    <span class="mcard-cons">{{a.cons}}</span>
+                    {{/if}}
+                  </div>
+                  <div class="mcard-lv">Lv.{{a.level}}</div>
+                  <div class="mcard-name">{{a.name}}</div>
+                  <div class="mcard-talent">
+                    <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                    <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                    <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                  </div>
+                  <div class="mcard-gear">
+                    <div class="gbox">
+                      {{if a.weapon && a.weapon.img && !a.typeLabel}}
+                      <img src="{{a.weapon.img}}" alt="" />
+                      {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                      {{else}}<span class="gempty"></span>{{/if}}
+                    </div>
+                    <div class="gbox artis">
+                      {{if a.artis && a.artis.imgs && a.artis.imgs[0] && !a.typeLabel}}
+                      <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                      {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                      {{else}}<span class="gempty"></span>{{/if}}
+                    </div>
+                  </div>
+                </div>
+                {{/each}}
+              </div>
+              {{if s.enemies && s.enemies.length}}
+              <div class="enemy-box multi">
+                <span class="enemy-label">讨伐</span>
+                <div class="enemy-names">
+                  {{each s.enemies en}}
+                  <div class="enemy-line">
+                    {{if en.icon}}<img class="enemy-icon" src="{{en.icon}}" alt="" />{{/if}}
+                    <span class="enemy-name">{{en.name}}</span>
+                    {{if en.level}}<span class="enemy-lv">Lv.{{en.level}}</span>{{/if}}
+                  </div>
+                  {{/each}}
+                </div>
+              </div>
+              {{/if}}
+            </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="empty-col">暂无剧诗数据</div>
+          {{/if}}
+        </div>
+      </div>
+
+      <footer>角色卡：头像·天赋·武器·圣遗物 · from 小花火</footer>
+    </div>
+  </div>
+</body>
+</html>

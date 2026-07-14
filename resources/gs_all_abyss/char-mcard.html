@@ -1,0 +1,38 @@
+{{set a = $data.a || $data || {} }}
+{{set t = a.talent || {} }}
+{{set w = a.weapon || {} }}
+{{set ar = a.artis || {} }}
+<div class="mcard star-{{a.star}}">
+  <div class="mcard-face">
+    {{if a.face}}
+    <img src="{{a.face}}" alt="" />
+    {{else}}
+    <div class="char-ph">?</div>
+    {{/if}}
+    <span class="mcard-cons">{{a.cons != null ? a.cons : 0}}</span>
+  </div>
+  <div class="mcard-lv">Lv.{{a.level}} {{a.name}}</div>
+  <div class="mcard-talent">
+    <span>{{t.a !== '' && t.a != null ? t.a : '-'}}</span>
+    <span>{{t.e !== '' && t.e != null ? t.e : '-'}}</span>
+    <span>{{t.q !== '' && t.q != null ? t.q : '-'}}</span>
+  </div>
+  <div class="mcard-gear">
+    <div class="gbox">
+      {{if w.img}}
+      <img src="{{w.img}}" alt="" />
+      {{if w.affix != null && w.affix !== ''}}<i>{{w.affix}}</i>{{/if}}
+      {{else}}
+      <span class="gempty"></span>
+      {{/if}}
+    </div>
+    <div class="gbox artis">
+      {{if ar.imgs && ar.imgs[0]}}
+      <img class="a1" src="{{ar.imgs[0]}}" alt="" />
+      {{if ar.imgs[1]}}<img class="a2" src="{{ar.imgs[1]}}" alt="" />{{/if}}
+      {{else}}
+      <span class="gempty"></span>
+      {{/if}}
+    </div>
+  </div>
+</div>

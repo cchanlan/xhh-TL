@@ -407,7 +407,7 @@ export class role_combat extends plugin {
       bgImage,
     };
     const imgQuality = config().img_quality || 100;
-    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.5 || 2.0})`;
+    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.5 || 2.5})`;
     const renderResult = await e.runtime.render('xhh-TL', 'role_combat', renderData, {
       retType: 'base64',
       imgType: 'png',

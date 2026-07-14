@@ -9,3 +9,6 @@ tl_cards_per_msg: 3
 abyss_priority: -98
 all_abyss: true
 all_abyss_render_mode: desktop
+role_combat: true
+role_combat_bg_folder: /root/Yunzai/plugins/miao-plugin/resources/profile/normal-character
+gs_all_abyss: true

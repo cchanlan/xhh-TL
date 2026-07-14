@@ -197,7 +197,7 @@ async function renderMiniToBuffer(e, templateName, renderData, ppath) {
   const tplFile = pluginDir + `/resources/jysy/${templateName}.html`;
   const renderMode = config().mini_abyss_render_mode || 'desktop';
   const isMobile = renderMode === 'mobile';
-  const renderScale = isMobile ? 1.0 : 1.6;
+  const renderScale = isMobile ? 1.4 : 2.0;
 
   const result = await e.runtime.render('xhh-TL', templateName, renderData, {
     retType: 'base64',
@@ -487,7 +487,7 @@ export async function miniAllAbyss(e) {
       retType: 'base64',
       beforeRender({ data }) {
         return {
-          sys: { scale: 1.0 },
+          sys: { scale: 1.6 },
           ...data,
           ppath: gridPpath,
           tplFile: gridTpl,

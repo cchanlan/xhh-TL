@@ -46,7 +46,8 @@ export class Abyss extends plugin {
       priority: config().abyss_priority ?? -98,
       rule: [
         {
-          reg: '^.*?(全部深渊|深渊总览|深渊汇总|星铁深渊|混沌.*虚构.*末日).*$',
+          // 星铁全部深渊；原神 #全部深渊 由 gsAllAbyss 处理
+          reg: '^(\\*|星铁).*(全部深渊|深渊总览|深渊汇总)|.*(星铁深渊|混沌.*虚构.*末日).*$',
           fnc: 'allAbyss',
         },
         {
