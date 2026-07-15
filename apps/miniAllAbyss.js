@@ -9,18 +9,15 @@ import yaml from 'yaml';
 import lodash from 'lodash';
 import sharp from 'sharp';
 
+import { prepareMysContext } from '../utils/runtimePatch.js';
+import { readPluginConfig } from '../utils/pluginConfig.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = path.join(pluginDir, 'config', 'config.yaml');
+const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
 let _configCache = null;
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return yaml.parse(fs.readFileSync(configPath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
+  return readPluginConfig();
 }
 
 function config() {
@@ -259,6 +256,7 @@ export async function miniAllAbyss(e) {
     }
 
     e.isSr = true;
+    await prepareMysContext(e, 'sr');
     let mys = await MysApi.init(e, 'all');
     if (!mys || !await mys.checkCk()) {
       e.reply(mys ? `UID: ${mys.uid} Cookie失效，请重新登录或尝试【#刷新ck】` : '请绑定ck后再使用*小深渊');

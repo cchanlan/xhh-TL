@@ -5,6 +5,7 @@ import { miniChaos } from './miniChaos.js';
 import { miniStory } from './miniStory.js';
 import { miniBoss } from './miniBoss.js';
 import { miniPeak } from './miniPeak.js';
+import { readPluginConfig } from '../utils/pluginConfig.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = pluginDir + '/config/config.yaml';
@@ -15,12 +16,7 @@ import YAML from 'yaml';
 let _configCache = null;
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
+  return readPluginConfig();
 }
 
 function config() {

@@ -3,3 +3,7 @@ node_modules/
 *.tmp
 .DS_Store
 data/
+
+# 用户本地配置：勿入库，避免更新冲突
+config/config.yaml
+config/config.yaml.bak

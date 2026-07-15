@@ -12,19 +12,16 @@ import path from 'path'
 import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
+import { prepareMysContext } from '../utils/runtimePatch.js'
+import { readPluginConfig } from '../utils/pluginConfig.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
-const configPath = path.join(pluginDir, 'config', 'config.yaml')
+const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
 const miaoRes = process.cwd() + '/plugins/miao-plugin/resources'
 let _configCache = null
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {}
-    }
-  } catch (_) {}
-  return {}
+  return readPluginConfig()
 }
 
 function config() {
@@ -498,6 +495,7 @@ export class gsAllAbyss extends plugin {
 
     await e.reply(`正在获取${periodText}原神全部深渊…`, true)
 
+    await prepareMysContext(e, 'gs')
     const mys = await MysApi.init(e, 'cookie')
     if (!mys || !await mys.checkCk()) {
       return e.reply(

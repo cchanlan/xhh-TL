@@ -1,0 +1,33 @@
+# xhh-TL 默认配置（随仓库更新）
+# 用户请改 config/config.yaml（不会被 git 覆盖）
+# 首次启动会自动从本文件复制生成 config.yaml
+
+Tl: true
+img_quality: 100
+tl_priority: -999
+show_all_bindings: true
+tl_render_mode: merge
+tl_merge_uids_per_image: 0
+tl_uids_per_image: 2
+tl_cards_per_msg: 3
+abyss_priority: -98
+all_abyss: true
+all_abyss_render_mode: desktop
+role_combat: true
+role_combat_bg_folder: plugins/miao-plugin/resources/profile/normal-character
+gs_all_abyss: true
+
+# SToken/CK 搜索路径（多行，按优先级）。留空则用默认 xhh / 逍遥 / 本插件
+# stoken_paths: |
+#   plugins/xhh/data/Stoken
+#   plugins/xiaoyao-cvs-plugin/data/yaml
+#   plugins/xhh-TL/data/Stoken
+stoken_paths: ""
+
+# 崩三扫码绑定保存目录
+bh3_stoken_dir: plugins/xhh-TL/data/Stoken
+
+# data/tmp 定时清理
+tmp_clean_enable: true
+tmp_clean_cron: "17 4 * * *"
+tmp_clean_max_age_hours: 24

@@ -9,8 +9,10 @@ import md5 from 'md5';
 import lodash from 'lodash';
 import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
-import NoteUser from '../../genshin/model/mys/NoteUser.js';
+import { createUser } from '../utils/userBind.js';
 import common from '../../../lib/common/common.js';
+import { getStokenCandidateFiles, getBh3StokenDir, readPluginConfig } from '../utils/pluginConfig.js';
+import path from 'path';
 
 // ============ 本地配置 ============
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
@@ -19,12 +21,7 @@ const configPath = pluginDir + '/config/config.yaml';
 let _configCache = null;
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
+  return readPluginConfig();
 }
 
 function config() {
@@ -132,9 +129,6 @@ function readYaml(filePath) {
 }
 
 async function getstoken(qq, uid) {
-  const path1 = `./plugins/xhh/data/Stoken/${qq}.yaml`;
-  const path2 = `./plugins/xiaoyao-cvs-plugin/data/yaml/${qq}.yaml`;
-
   // 辅助函数：从 stoken 数据中查找
   const findInData = (data) => {
     if (!data) return false;
@@ -149,17 +143,12 @@ async function getstoken(qq, uid) {
     return false;
   };
 
-  let data;
-  if (fs.existsSync(path1)) {
-    data = readYaml(path1);
+  for (const file of getStokenCandidateFiles(qq)) {
+    if (!fs.existsSync(file)) continue;
+    const data = readYaml(file);
     const entry = findInData(data);
-    if (!entry) return false;
+    if (!entry) continue;
     return entry.ck_stoken || `stuid=${entry.stuid};stoken=${entry.stoken};mid=${entry.mid};`;
-  } else if (fs.existsSync(path2)) {
-    data = readYaml(path2);
-    const entry = findInData(data);
-    if (!entry) return false;
-    return `stuid=${entry.stuid};stoken=${entry.stoken};mid=${entry.mid};`;
   }
   return false;
 }
@@ -684,9 +673,9 @@ export class TL extends plugin {
     const results = [];
 
     if (game === 'bh3') {
-      // BH3 特殊处理：只从 xhh-TL 自己的 stoken 目录获取
+      // BH3：从配置的崩三 stoken 目录读取
       const stokenPaths = [
-        `${pluginDir}/data/Stoken/${qq}.yaml`,
+        path.join(getBh3StokenDir(), `${qq}.yaml`),
       ];
       const bh3Regions = ['android01', 'ios01', 'pc01', 'bb01', 'yyb01', 'hun01', 'hun02'];
       const bh3Entries = [];
@@ -705,7 +694,7 @@ export class TL extends plugin {
       }
 
       for (const entry of bh3Entries) {
-        // CK 由 bh3Note 内部的 getBh3Auth 从 NoteUser 匹配 stuid 获取，不用 entry.ck_stoken
+        // CK 由 bh3Note 内部的 getBh3Auth 按 stuid 匹配绑定 Cookie，不用 entry.ck_stoken
         const data = await this.bh3Note(e, san, qq, entry.uid, entry.region);
         if (data && data !== '没有' && data !== '过期') {
           results.push(data);
@@ -714,8 +703,8 @@ export class TL extends plugin {
       return results;
     }
 
-    // 其他游戏：通过 NoteUser 枚举 UID
-    const noteUser = await NoteUser.create(qq);
+    // 其他游戏：通过兼容层枚举 UID（不依赖 genshin import）
+    const noteUser = await createUser(qq, e);
     const uidList = noteUser.getUidList(game) || [];
     for (const item of uidList) {
       const uid = String(item.uid || item);
@@ -734,8 +723,13 @@ export class TL extends plugin {
   // 从 GitHub 拉取更新
   async updatePlugin(e) {
     const isForce = e.msg.includes('强制');
+    // 强制更新也保留用户 config.yaml（用户配置不入库、不被 checkout 覆盖）
+    const cfgUser = `${pluginDir}/config/config.yaml`;
+    const cfgBak = `${pluginDir}/config/config.yaml.bak`;
+    const preserveCfg = `if [ -f "${cfgUser}" ]; then cp -f "${cfgUser}" "${cfgBak}"; fi`;
+    const restoreCfg = `if [ -f "${cfgBak}" ]; then mv -f "${cfgBak}" "${cfgUser}"; fi`;
     const cmd = isForce
-      ? `git -C ${pluginDir} checkout . && git -C ${pluginDir} pull --no-rebase`
+      ? `${preserveCfg}; git -C ${pluginDir} checkout . && git -C ${pluginDir} pull --no-rebase; ${restoreCfg}`
       : `git -C ${pluginDir} pull --no-rebase`;
 
     e.reply(`开始${isForce ? '强制' : ''}更新 xhh-TL...`, true);
@@ -751,7 +745,7 @@ export class TL extends plugin {
       } else {
         exec(`git -C ${pluginDir} log -1 --format="%cd" --date=format:"%m-%d %H:%M"`, (err, timeOut) => {
           const time = timeOut?.trim() || '未知';
-          e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n请重启以应用更新`, true);
+          e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n用户配置 config.yaml 已保留\n请重启以应用更新`, true);
         });
       }
     });
@@ -791,9 +785,9 @@ export class TL extends plugin {
     let ck = null;
     let signEntry = null;
 
-    // BH3 只从 xhh-TL 自己的 stoken 目录获取
+    // BH3 从配置目录读取
     const stokenPaths = [
-      `${pluginDir}/data/Stoken/${qq}.yaml`,
+      path.join(getBh3StokenDir(), `${qq}.yaml`),
     ];
     let stokenData = null;
     for (const stokenPath of stokenPaths) {
@@ -822,7 +816,7 @@ export class TL extends plugin {
       }
       if (entry?.stuid) {
         try {
-          const nu = await NoteUser.create(qq);
+          const nu = await createUser(qq, e);
           for (const ltuid in nu.mysUsers || {}) {
             if (String(ltuid) === String(entry.stuid)) {
               ck = nu.mysUsers[ltuid].ck;
@@ -837,7 +831,7 @@ export class TL extends plugin {
     if (!region || region === 'cn_gf01') region = 'android01';
     if (!ck) {
       try {
-        const nu = await NoteUser.create(qq);
+        const nu = await createUser(qq, e);
         for (const ltuid in nu.mysUsers || {}) {
           if (nu.mysUsers[ltuid]?.ck) { ck = nu.mysUsers[ltuid].ck; break; }
         }
@@ -912,7 +906,11 @@ export class TL extends plugin {
         const bh3List = res.data.list.filter(v => v.game_biz === 'bh3_cn');
         if (bh3List.length === 0) return e.reply('该米游社账号下没有崩坏3角色，请确认是否绑定了正确的账号', true);
 
-        const savePath = `${pluginDir}/data/Stoken/${e.user_id}.yaml`;
+        const bh3Dir = getBh3StokenDir();
+        try {
+          if (!fs.existsSync(bh3Dir)) fs.mkdirSync(bh3Dir, { recursive: true });
+        } catch (_) {}
+        const savePath = path.join(bh3Dir, `${e.user_id}.yaml`);
         let existingData = {};
         if (fs.existsSync(savePath)) existingData = readYaml(savePath);
 
@@ -1020,9 +1018,14 @@ export class TL extends plugin {
     if (forceUid) {
       uid = forceUid;
     } else if (targetQq) {
-      try { uid = (await NoteUser.create(targetQq)).getUid(game); } catch (_) {}
+      try { uid = (await createUser(targetQq, e)).getUid(game); } catch (_) {}
     } else {
-      uid = e.user.getUid(game);
+      try {
+        uid = e.user?.getUid?.(game);
+      } catch (_) {}
+      if (!uid) {
+        try { uid = (await createUser(qq, e)).getUid(game); } catch (_) {}
+      }
     }
 
     if (!uid) {

@@ -10,5 +10,6 @@ import { miniPeak } from './apps/miniPeak.js';
 import { role_combat } from './apps/role_combat.js';
 import { miniRoleCombat } from './apps/miniRoleCombat.js';
 import { gsAllAbyss } from './apps/gsAllAbyss.js';
+import { TmpCleaner } from './apps/tmpCleaner.js';
 
-export { TL, Abyss, allAbyss, miniAllAbyss, miniChaos, miniStory, miniBoss, miniPeak, role_combat, miniRoleCombat, gsAllAbyss };
+export { TL, Abyss, allAbyss, miniAllAbyss, miniChaos, miniStory, miniBoss, miniPeak, role_combat, miniRoleCombat, gsAllAbyss, TmpCleaner };

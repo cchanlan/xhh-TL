@@ -10,19 +10,16 @@ import path from 'path';
 import YAML from 'yaml';
 import lodash from 'lodash';
 
+import { prepareMysContext } from '../utils/runtimePatch.js';
+import { readPluginConfig } from '../utils/pluginConfig.js'
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = path.join(pluginDir, 'config', 'config.yaml');
+const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
 let _configCache = null;
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
+  return readPluginConfig();
 }
 
 function config() {
@@ -275,6 +272,7 @@ export async function allAbyss(e) {
 
       // 初始化 MysApi
       e.isSr = true;
+      await prepareMysContext(e, 'sr');
       let mys = await MysApi.init(e, 'all');
       if (!mys || !await mys.checkCk()) {
         e.reply(mys ? `UID: ${mys.uid} Cookie失效，请重新登录或尝试【#刷新ck】` : '请绑定ck后再使用*全部深渊');

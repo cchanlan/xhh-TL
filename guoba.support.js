@@ -1,23 +1,16 @@
-import fs from 'fs'
-import YAML from 'yaml'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import {
+  readUserConfig,
+  writeUserConfig,
+  mergeMissingDefaults,
+  readPluginConfig,
+} from './utils/pluginConfig.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const configPath = path.join(__dirname, 'config', 'config.yaml')
 
-function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {}
-    }
-  } catch (_) {}
-  return {}
-}
-
-function writeConfig(data) {
-  fs.writeFileSync(configPath, YAML.stringify(data), 'utf-8')
-}
+// 加载时补全新默认键到用户 config.yaml（不覆盖已有）
+try { mergeMissingDefaults() } catch (_) {}
 
 export function supportGuoba() {
   return {
@@ -162,17 +155,76 @@ export function supportGuoba() {
           label: '启用原神全部深渊',
           bottomHelpMessage: '是否启用 #全部深渊（深境螺旋 + 幽境危战 + 小剧诗关键关）',
           component: 'Switch'
+        },
+        {
+          component: 'Divider',
+          label: 'CK / SToken 路径'
+        },
+        {
+          field: 'stoken_paths',
+          label: 'SToken/CK 搜索路径',
+          bottomHelpMessage:
+            '按优先级从上到下查找 {QQ}.yaml。支持多行，可写绝对路径或相对 Yunzai 根目录。留空则用默认：xhh / 逍遥 / 本插件 data/Stoken',
+          component: 'Input',
+          componentProps: {
+            type: 'textarea',
+            rows: 4,
+            placeholder:
+              'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
+          }
+        },
+        {
+          field: 'bh3_stoken_dir',
+          label: '崩三绑定保存目录',
+          bottomHelpMessage:
+            '#崩三扫码绑定 写入的目录，以及 #崩三体力 读取目录。支持绝对/相对路径；留空默认 plugins/xhh-TL/data/Stoken',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/data/Stoken'
+          }
+        },
+        {
+          component: 'Divider',
+          label: '临时文件清理'
+        },
+        {
+          field: 'tmp_clean_enable',
+          label: '启用 tmp 定时清理',
+          bottomHelpMessage: '自动清理 plugins/xhh-TL/data/tmp 下的渲染临时图（如小深渊田字格缓存）',
+          component: 'Switch'
+        },
+        {
+          field: 'tmp_clean_cron',
+          label: '清理 cron',
+          bottomHelpMessage: '标准 5 段 cron（分 时 日 月 周）。默认每天 4:17：17 4 * * *',
+          component: 'Input',
+          componentProps: {
+            placeholder: '17 4 * * *'
+          }
+        },
+        {
+          field: 'tmp_clean_max_age_hours',
+          label: '保留时长（小时）',
+          bottomHelpMessage: '只删除超过该小时数的文件；填 0 表示每次清空全部 tmp',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 720,
+            placeholder: '24'
+          }
         }
       ],
       getConfigData() {
-        return readConfig()
+        // 返回「默认 + 用户」合并结果，方便锅巴展示完整项
+        return readPluginConfig()
       },
       setConfigData(data, { Result }) {
-        const config = readConfig()
+        // 只写入用户文件 config.yaml，不改 default_config.yaml
+        const config = readUserConfig()
         for (const [key, value] of Object.entries(data)) {
           config[key] = value
         }
-        writeConfig(config)
+        writeUserConfig(config)
         return Result.ok({}, '保存成功~')
       }
     }

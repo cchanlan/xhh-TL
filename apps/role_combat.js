@@ -4,7 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js';
-import NoteUser from '../../genshin/model/mys/NoteUser.js';
+import { createUser } from '../utils/userBind.js';
+import { prepareMysContext } from '../utils/runtimePatch.js';
+import { readPluginConfig } from '../utils/pluginConfig.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json';
 const ELEMENT_MAP = {
@@ -17,16 +19,11 @@ const START_MONTH = { year: 2024, month: 7 };
 
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = path.join(pluginDir, 'config', 'config.yaml');
+const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 let _configCache = null;
 
 function readConfig() {
-  try {
-    if (fs.existsSync(configPath)) {
-      return YAML.parse(fs.readFileSync(configPath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
+  return readPluginConfig();
 }
 
 function config() {
@@ -261,9 +258,9 @@ export class role_combat extends plugin {
       } catch (_) {}
       if (!targetName) targetName = String(targetQq);
 
-      // 获取被@用户的UID
+      // 获取被@用户的UID（兼容层，不依赖 genshin import）
       try {
-        const noteUser = await NoteUser.create(targetQq);
+        const noteUser = await createUser(targetQq, e);
         targetUid = noteUser?.getUid('gs');
       } catch (_) {}
     }
@@ -287,6 +284,7 @@ export class role_combat extends plugin {
     let queryUserName = targetName;
     let queryUserUid = targetUid;
     try {
+      await prepareMysContext(e, 'gs');
       const mys = await MysApi.init(e, 'cookie');
       if (mys && mys.uid && await mys.checkCk()) {
         // 以 mys.uid 为准，确保过滤与展示的是同一个人（@目标已通过 e.at 传入）

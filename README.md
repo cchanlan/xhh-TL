@@ -58,7 +58,16 @@ cd xhh-TL && npm install --no-save
 
 > `--no-save` 不会修改 Yunzai 的 package.json。云崽已内置大部分依赖，通常无需手动安装，仅在插件缺少依赖时执行。
 
-依赖：`miao-plugin`（角色数据 / MysApi / 面板）、原神 Cookie 绑定。
+依赖：
+- **必需**：`miao-plugin`（[原版](https://github.com/yoimiya-kokomi/miao-plugin) 或兼容 fork 均可）
+- **绑定数据**（满足其一即可）：
+  - 云崽 Cookie / UID 绑定（`data/db`，常见于安装了 genshin 库的环境）
+  - `xiaoyao-cvs-plugin` / `xhh` 扫码 stoken（`data/yaml` / `Stoken`）
+- **genshin 插件：可选**
+  - **有 genshin**：走系统 Runtime / MysInfo（与以前一致）
+  - **无 genshin**：本插件自动启用兼容层（`utils/userBind.js` + `runtimePatch.js` + `mysClient.js`），体力 / 深渊 / 剧诗均可独立工作
+
+> 无 genshin 时请确保用户已扫码绑定 stoken，或 `data/db` 中仍有历史 CK 数据。
 
 ## 更新
 
@@ -74,7 +83,16 @@ cd plugins/xhh-TL && git pull
 
 ## 配置
 
-编辑 `config/config.yaml`：
+配置分两层，**更新插件不会覆盖你的个性化设置**：
+
+| 文件 | 说明 |
+|------|------|
+| `config/default_config.yaml` | 仓库默认（随版本更新） |
+| `config/config.yaml` | **用户配置**（gitignore，本地保留） |
+
+首次启动会自动从 default 复制生成 `config.yaml`。新版本若增加配置项，会**只补缺失键**，不改你已有的值。
+
+编辑 `config/config.yaml`（或锅巴）：
 
 ```yaml
 # 体力小组件配置
@@ -99,9 +117,19 @@ role_combat_bg_folder: plugins/miao-plugin/resources/profile/normal-character  #
 
 # 原神全部深渊三合一
 gs_all_abyss: true
+
+# SToken/CK 搜索路径（多行，按优先级）。留空=默认 xhh / 逍遥 / 本插件
+# stoken_paths: |
+#   plugins/xhh/data/Stoken
+#   plugins/xiaoyao-cvs-plugin/data/yaml
+#   /data/my-ck
+stoken_paths: ""
+
+# 崩三扫码绑定保存目录
+bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 ```
 
-也可在 **锅巴** 中配置：体力、全部深渊、剧诗开关与背景路径。
+也可在 **锅巴** 中配置：体力、全部深渊、剧诗开关与背景路径、**CK/SToken 路径**。
 
 ## 崩坏3 绑定
 
@@ -115,14 +143,20 @@ gs_all_abyss: true
 ## 文件说明
 
 - `apps/TL.js` - 体力查询
+- `utils/userBind.js` - UID/CK 绑定兼容层（不 import genshin）
+- `utils/runtimePatch.js` - 无 genshin 时补齐 `e.runtime.getMysInfo`，供 miao MysApi 使用
+- `utils/mysClient.js` - 轻量米游社请求客户端（深渊 / 剧诗 API）
+- `utils/pluginConfig.js` - 配置读取 + 可自定义 stoken/ck 路径
 - `apps/Abyss.js` - 星铁深渊指令入口
 - `apps/allAbyssModule.js` - 星铁全部深渊核心
 - `apps/miniChaos.js` / `miniStory.js` / `miniBoss.js` / `miniPeak.js` - 星铁独立深渊
 - `apps/miniAllAbyss.js` - 星铁小深渊网格
 - `apps/role_combat.js` - 幻想真境剧诗可用角色
 - `apps/miniRoleCombat.js` - 小剧诗 / 小幻想（个人通关关键关）
+- `apps/tmpCleaner.js` - data/tmp 定时清理
 - `apps/gsAllAbyss.js` - 原神全部深渊三合一
-- `config/config.yaml` - 配置文件
+- `config/default_config.yaml` - 默认配置（随仓库更新）
+- `config/config.yaml` - 用户配置（本地，更新不覆盖）
 - `guoba.support.js` - 锅巴配置项
 - `resources/Tl/` - 体力模板
 - `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板
@@ -130,11 +164,33 @@ gs_all_abyss: true
 - `resources/role_combat/` - 剧诗 / 小剧诗模板
 - `resources/gs_all_abyss/` - 原神全部深渊模板
 
+## 临时文件清理
+
+`data/tmp` 用于小深渊田字格等渲染缓存，默认每天 **4:17** 清理超过 **24 小时** 的文件。
+
+```yaml
+tmp_clean_enable: true
+tmp_clean_cron: "17 4 * * *"
+tmp_clean_max_age_hours: 24   # 0 = 每次清空全部
+```
+
+主人指令：`#清理临时文件` / `#小花火清理tmp`（加「全部」可清空目录）
+
+## 无 genshin 兼容说明
+
+| 场景 | 行为 |
+|------|------|
+| 机器安装了 genshin | 优先使用系统 MysInfo / NoteUser；失败时回退到本插件兼容层 |
+| 机器未安装 genshin | 自动注入 `getMysInfo` / `getMysApi`，用 SQLite + stoken 解析 UID/CK，并用内置 `mysClient` 请求米游社 |
+| 仅有 stoken、没有 cookie_token | 兼容层会尝试用 stoken 换取 cookie_token 后再查深渊/剧诗 |
+| 仅查体力 | 仍优先用 stoken 打 widget 接口（与是否有 genshin 无关） |
+
 ## 混沌回忆显示所有楼层
 
-默认情况下，混沌回忆 API 只返回当前期的一层数据。要显示所有楼层（9-12层），需要修改 genshin-plugin（原库） 的 `apiTool.js`：
+本插件内置的 `mysClient` 请求混沌/虚构/末日/异相时已带 `need_all=true`。  
+若你**有 genshin** 且走系统 API，需要自行改云崽侧 `apiTool.js` 才能在系统路径下拿到全楼层：
 
-**文件位置：** `plugins/genshin/model/mys/apiTool.js`
+**常见文件位置：** `plugins/genshin/model/mys/apiTool.js`
 
 **找到这段代码（约第216行）：**
 ```javascript
