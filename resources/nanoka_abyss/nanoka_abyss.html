@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{ppath}}nanoka_abyss/nanoka_abyss.css" />
+  <style id="nk-inline">
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@font-face {
+  font-family: 'NotoSansSC';
+  src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html, body {
+  width: 860px;
+  margin: 0;
+  padding: 0;
+  background: #07090f;
+}
+
+body {
+  color: #e8eaf0;
+  font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 禁止 transform:scale —— 会导致右侧截图被裁 */
+}
+
+.nk-page {
+  position: relative;
+  width: 860px;
+  box-sizing: border-box;
+  min-height: 520px;
+  padding: 28px 32px 22px;
+  overflow: hidden; /* 装饰光晕裁在卡片内；正文宽度已固定 860，不会再裁字 */
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(88, 166, 255, 0.16), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(123, 97, 255, 0.14), transparent 50%),
+    linear-gradient(165deg, #0b0f18 0%, #0a0d14 45%, #080a10 100%);
+}
+
+.nk-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  opacity: 0.45;
+}
+.nk-glow.a { width: 280px; height: 280px; background: #3d7eff; top: -80px; right: -40px; }
+.nk-glow.b { width: 240px; height: 240px; background: #7b61ff; bottom: 40px; left: -60px; }
+
+.nk-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nk-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.nk-kicker {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: #7eb6ff;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.nk-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.nk-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #8b93a7;
+}
+
+.nk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  max-width: 42%;
+}
+
+.nk-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dce8ff;
+  background: rgba(88, 166, 255, 0.16);
+  border: 1px solid rgba(88, 166, 255, 0.28);
+}
+.nk-chip.soft {
+  color: #c9c4ff;
+  background: rgba(123, 97, 255, 0.14);
+  border-color: rgba(123, 97, 255, 0.28);
+}
+.nk-chip.warn {
+  color: #ffd089;
+  background: rgba(210, 153, 34, 0.14);
+  border-color: rgba(210, 153, 34, 0.3);
+}
+
+.nk-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(14, 18, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.nk-buff { margin-bottom: 16px; }
+.nk-buff h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 6px 0 8px;
+}
+
+.nk-sec-label, .nk-sec-head span {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: #6ea8ff;
+  text-transform: uppercase;
+}
+
+.nk-desc {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #b7bfcf;
+  white-space: pre-wrap;
+}
+
+.nk-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.nk-tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #e7ecff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nk-note {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #e0c48a;
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid rgba(210, 153, 34, 0.22);
+}
+
+.nk-section { position: relative; z-index: 1; margin-top: 8px; margin-bottom: 8px; }
+.nk-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 14px 0 12px;
+}
+.nk-sec-head h2 { font-size: 18px; color: #fff; font-weight: 700; }
+
+.nk-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.stage h3 { font-size: 15px; color: #fff; margin: 6px 0 8px; }
+.stage-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.stage-top b { color: #8eb7ff; font-size: 12px; letter-spacing: 0.06em; }
+.stage-top em { font-style: normal; color: #8b93a7; font-size: 12px; }
+
+/* 剧诗：头像在标题下方（名称下面），再接描述 */
+.stage-boss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+.stage-boss .boss {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+  max-width: 110px;
+}
+.stage-boss .boss img,
+.stage-boss .boss .mon-ph {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(145deg, #1c2436, #121722);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.stage-boss .boss span {
+  font-size: 11px;
+  color: #dce3f2;
+  text-align: center;
+  line-height: 1.25;
+  word-break: break-all;
+}
+
+/* 危战：无畏一列 | 绝境一列 */
+.ley-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.ley-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ley-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.22);
+}
+.ley-col-head h3 {
+  font-size: 16px;
+  color: #fff;
+  font-weight: 700;
+  margin: 0;
+}
+.ley-col-head em {
+  font-style: normal;
+  font-size: 12px;
+  color: #8eb7ff;
+  font-weight: 600;
+}
+.ley-col.fearless .ley-col-head {
+  background: rgba(88, 166, 255, 0.1);
+  border-color: rgba(88, 166, 255, 0.22);
+}
+.ley-col.dire .ley-col-head {
+  background: rgba(255, 120, 90, 0.1);
+  border-color: rgba(255, 120, 90, 0.28);
+}
+.ley-col.dire .ley-col-head em { color: #ff9a7a; }
+.ley-boss {
+  border-radius: 14px;
+  padding: 12px 12px 10px;
+  background: rgba(14, 18, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ley-boss-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ley-boss-top img,
+.ley-boss-top .mon-ph {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #1c2436, #121722);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ley-boss-meta { min-width: 0; flex: 1; }
+.ley-boss-meta b {
+  display: block;
+  font-size: 11px;
+  color: #8eb7ff;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+.ley-boss-meta h4 {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  word-break: break-all;
+}
+.ley-boss .nk-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b7bfcf;
+  white-space: pre-wrap;
+}
+
+.nk-floor-list { display: flex; flex-direction: column; gap: 12px; }
+.floor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.floor-head h3 { font-size: 16px; color: #fff; font-weight: 700; }
+
+.buff-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.buff-list li {
+  font-size: 12px;
+  color: #c5cce0;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.buff-list li:last-child { border-bottom: 0; }
+
+.room-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px; }
+.room {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.room-title { font-size: 12px; color: #8eb7ff; margin-bottom: 8px; font-weight: 600; }
+
+.hsr-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.hsr-sides.with-star { grid-template-columns: 1fr 1fr 1fr; }
+.star-side .side-lab { color: #ffd089; }
+.side-lab {
+  font-size: 11px;
+  color: #8b93a7;
+  margin-bottom: 6px;
+  letter-spacing: 0.08em;
+}
+
+.mon-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.mon img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(145deg, #1c2436, #121722);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+.mon-ph {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aa6c0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mon span {
+  font-size: 12px;
+  color: #e8eaf0;
+  font-weight: 500;
+  line-height: 1.25;
+  word-break: break-all;
+}
+.mon em { font-style: normal; font-size: 10px; color: #8b93a7; }
+.mon .hp {
+  display: block;
+  font-size: 10px;
+  color: #ff9a7a;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.weak-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+.weak-lab { font-size: 11px; color: #8b93a7; margin-left: 4px; }
+.elem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+}
+.elem.pyro { background: rgba(255, 87, 51, 0.18); color: #ff7a5c; }
+.elem.hydro { background: rgba(56, 156, 255, 0.18); color: #5aadff; }
+.elem.dendro { background: rgba(75, 175, 80, 0.18); color: #6bcf70; }
+.elem.electro { background: rgba(175, 100, 255, 0.18); color: #c08cff; }
+.elem.cryo { background: rgba(100, 200, 255, 0.18); color: #7ad4ff; }
+.elem.anemo { background: rgba(75, 200, 180, 0.18); color: #5fd4c0; }
+.elem.geo { background: rgba(255, 180, 50, 0.18); color: #ffc35c; }
+.elem.quantum { background: rgba(90, 70, 200, 0.22); color: #b5a6ff; }
+.elem.imaginary { background: rgba(220, 190, 60, 0.18); color: #f0d45a; }
+.elem.physical { background: rgba(180, 180, 190, 0.16); color: #c8c8d0; }
+
+.chal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.chal span {
+  font-size: 11px;
+  color: #aeb6c8;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nk-foot {
+  position: relative;
+  z-index: 1;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-size: 11px;
+  color: #5c6478;
+  letter-spacing: 0.04em;
+}
+
+  </style>
+</head>
+<body {{@sys.scale}}>
+  <div class="nk-page">
+    <div class="nk-glow a"></div>
+    <div class="nk-glow b"></div>
+
+    <header class="nk-head">
+      <div class="nk-brand">
+        <div class="nk-kicker">NANOKA.CC · {{gameName}}</div>
+        <h1 class="nk-title">{{modeName}}</h1>
+        <p class="nk-sub">{{title}}{{if timeRange}} · {{timeRange}}{{/if}}</p>
+      </div>
+      <div class="nk-meta">
+        <div class="nk-chip">v{{version}}</div>
+        <div class="nk-chip soft">#{{periodId}}</div>
+        {{if channelLabel}}<div class="nk-chip {{channel === 'latest' ? 'warn' : ''}}">{{channelLabel}}</div>{{/if}}
+        {{if offset > 0}}<div class="nk-chip warn">上{{offset}}期</div>{{/if}}
+      </div>
+    </header>
+
+    {{if buffTitle || buffDesc}}
+    <section class="nk-card nk-buff">
+      <div class="nk-sec-label">BUFF / 机制</div>
+      <h2>{{buffTitle}}</h2>
+      {{if buffDesc}}<p class="nk-desc">{{buffDesc}}</p>{{/if}}
+      {{if elements}}
+      <div class="nk-tags">
+        {{each elements el}}
+        <span class="nk-tag">限制 · {{el}}</span>
+        {{/each}}
+      </div>
+      {{/if}}
+    </section>
+    {{/if}}
+
+    {{if note}}
+    <div class="nk-note">{{note}}</div>
+    {{/if}}
+
+    {{if diffColumns && diffColumns.length}}
+    <section class="nk-section">
+      <div class="nk-sec-head">
+        <span>STAGES</span>
+        <h2>强敌</h2>
+      </div>
+      <div class="ley-cols">
+        {{each diffColumns col}}
+        <div class="ley-col {{col.colClass}}">
+          <div class="ley-col-head">
+            <h3>{{col.diffName}}</h3>
+            {{if col.monsterLevel}}<em>Lv.{{col.monsterLevel}}</em>{{/if}}
+          </div>
+          {{each col.bosses b}}
+          <article class="ley-boss">
+            <div class="ley-boss-top">
+              {{if b.icon}}<img src="{{@b.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+              <div class="ley-boss-meta">
+                <b>阶段 {{b.phase}}</b>
+                <h4>{{b.name}}</h4>
+              </div>
+            </div>
+            {{if b.desc}}<p class="nk-desc">{{b.desc}}</p>{{/if}}
+          </article>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+    </section>
+    {{else if stages}}
+    <section class="nk-section">
+      <div class="nk-sec-head">
+        <span>STAGES</span>
+        <h2>{{mode === 'leyline' ? '强敌' : '关键关卡'}}</h2>
+      </div>
+      <div class="nk-stage-grid">
+        {{each stages s}}
+        <article class="nk-card stage">
+          <div class="stage-top">
+            <b>{{s.tag}}</b>
+            {{if s.level}}<em>Lv.{{s.level}}</em>{{/if}}
+          </div>
+          {{if s.title}}<h3>{{s.title}}</h3>{{/if}}
+          {{if s.monsters && s.monsters.length}}
+          <div class="stage-boss">
+            {{each s.monsters m}}
+            <div class="boss">
+              {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+              <span>{{m.name}}</span>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{if s.desc}}<p class="nk-desc">{{s.desc}}</p>{{/if}}
+        </article>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+    {{if floors}}
+    <section class="nk-section">
+      <div class="nk-sec-head"><span>FLOORS</span><h2>{{game === 'gi' ? '楼层' : '节点'}}</h2></div>
+      <div class="nk-floor-list">
+        {{each floors f}}
+        <article class="nk-card floor">
+          <div class="floor-head">
+            <h3>{{if f.floorLabel}}{{f.floorLabel}}{{else}}{{f.name}}{{/if}}</h3>
+            {{if f.countdown}}
+            <span class="nk-chip soft">
+              {{f.countdown}} 回合{{if f.starCountdown}} · 星启 {{f.starCountdown}} 回合{{/if}}
+            </span>
+            {{/if}}
+          </div>
+
+          {{if f.buff && f.buff.length}}
+          <ul class="buff-list">
+            {{each f.buff b}}<li>{{b}}</li>{{/each}}
+          </ul>
+          {{/if}}
+
+          {{if f.desc}}<p class="nk-desc">{{f.desc}}</p>{{/if}}
+
+          {{if f.hasTypes}}
+          <div class="weak-line">
+            {{if f.type1}}
+            <span class="weak-lab">上半</span>
+            {{each f.type1 t}}<i class="elem {{t.cls}}">{{t.name}}</i>{{/each}}
+            {{/if}}
+            {{if f.type2}}
+            <span class="weak-lab">下半</span>
+            {{each f.type2 t}}<i class="elem {{t.cls}}">{{t.name}}</i>{{/each}}
+            {{/if}}
+          </div>
+          {{/if}}
+
+          {{if f.rooms}}
+          <div class="room-grid">
+            {{each f.rooms r}}
+            <div class="room">
+              <div class="room-title">间 {{r.id}} · 推荐 Lv.{{r.level}}</div>
+              <div class="side">
+                <div class="side-lab">上半</div>
+                <div class="mon-row">
+                  {{each r.first m}}
+                  <div class="mon">
+                    {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+                    <span>{{m.name}}{{if m.hpText}}<i class="hp">{{m.hpText}}</i>{{/if}}</span>
+                  </div>
+                  {{/each}}
+                </div>
+              </div>
+              <div class="side">
+                <div class="side-lab">下半</div>
+                <div class="mon-row">
+                  {{each r.second m}}
+                  <div class="mon">
+                    {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+                    <span>{{m.name}}{{if m.hpText}}<i class="hp">{{m.hpText}}</i>{{/if}}</span>
+                  </div>
+                  {{/each}}
+                </div>
+              </div>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+
+          {{if f.hasSides}}
+          <div class="hsr-sides {{f.hasStar ? 'with-star' : ''}}">
+            <div class="side">
+              <div class="side-lab">一队 / 节点一</div>
+              {{if f.type1 && f.type1.length}}
+              <div class="weak-line">
+                {{each f.type1 t}}<i class="elem {{t.cls}}">{{t.name}}</i>{{/each}}
+              </div>
+              {{/if}}
+              <div class="mon-row">
+                {{each f.left m}}
+                <div class="mon">
+                  {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+                  <span>{{m.name}}{{if m.hpText}}<i class="hp">{{m.hpText}}</i>{{/if}}</span>
+                  {{if m.wave}}<em>W{{m.wave}}</em>{{/if}}
+                  {{if m.weak}}<em>{{m.weak.join('/')}}</em>{{/if}}
+                </div>
+                {{/each}}
+              </div>
+            </div>
+            {{if f.right && f.right.length}}
+            <div class="side">
+              <div class="side-lab">二队 / 节点二</div>
+              {{if f.type2 && f.type2.length}}
+              <div class="weak-line">
+                {{each f.type2 t}}<i class="elem {{t.cls}}">{{t.name}}</i>{{/each}}
+              </div>
+              {{/if}}
+              <div class="mon-row">
+                {{each f.right m}}
+                <div class="mon">
+                  {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+                  <span>{{m.name}}{{if m.hpText}}<i class="hp">{{m.hpText}}</i>{{/if}}</span>
+                  {{if m.wave}}<em>W{{m.wave}}</em>{{/if}}
+                  {{if m.weak}}<em>{{m.weak.join('/')}}</em>{{/if}}
+                </div>
+                {{/each}}
+              </div>
+            </div>
+            {{/if}}
+            {{if f.hasStar && f.star && f.star.length}}
+            <div class="side star-side">
+              <div class="side-lab">星启模式</div>
+              {{if f.typeStar && f.typeStar.length}}
+              <div class="weak-line">
+                {{each f.typeStar t}}<i class="elem {{t.cls}}">{{t.name}}</i>{{/each}}
+              </div>
+              {{/if}}
+              <div class="mon-row">
+                {{each f.star m}}
+                <div class="mon">
+                  {{if m.icon}}<img src="{{@m.icon}}" alt="" />{{else}}<div class="mon-ph">怪</div>{{/if}}
+                  <span>{{m.name}}{{if m.hpText}}<i class="hp">{{m.hpText}}</i>{{/if}}</span>
+                  {{if m.wave}}<em>W{{m.wave}}</em>{{/if}}
+                  {{if m.weak}}<em>{{m.weak.join('/')}}</em>{{/if}}
+                </div>
+                {{/each}}
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+
+          {{if f.challenges}}
+          <div class="chal">
+            {{each f.challenges c}}<span>{{c}}</span>{{/each}}
+          </div>
+          {{/if}}
+        </article>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+    <footer class="nk-foot">
+      数据来源 {{source}} · {{generatedAt}} · 共收录 {{total}} 期 · offset {{offset}} · xhh-TL
+    </footer>
+  </div>
+</body>
+</html>
