@@ -187,30 +187,10 @@ tmp_clean_max_age_hours: 24   # 0 = 每次清空全部
 
 ## 混沌回忆显示所有楼层
 
-本插件内置的 `mysClient` 请求混沌/虚构/末日/异相时已带 `need_all=true`。  
-若你**有 genshin** 且走系统 API，需要自行改云崽侧 `apiTool.js` 才能在系统路径下拿到全楼层：
+本插件在请求星铁混沌/虚构/末日/异相时**已自动带上** `need_all=true`，**无需修改** genshin 的 `apiTool.js`。
 
-**常见文件位置：** `plugins/genshin/model/mys/apiTool.js`
+实现方式：`prepareMysContext` 后通过内置 `mysClient`（LiteMysApi）发米游社请求，与是否安装 genshin 无关。
 
-**找到这段代码（约第216行）：**
-```javascript
-/** 深渊 （混沌回忆） */
-spiralAbyss: {
-  url: `${hostRecord}game_record/app/hkrpg/api/challenge`,
-  query: `role_id=${this.uid}&schedule_type=${data.schedule_type || 1}&server=${this.server}`,
-},
-```
-
-**修改为：**
-```javascript
-/** 深渊 （混沌回忆） */
-spiralAbyss: {
-  url: `${hostRecord}game_record/app/hkrpg/api/challenge`,
-  query: `isPrev=&need_all=true&role_id=${this.uid}&schedule_type=${data.schedule_type || 1}&server=${this.server}`,
-},
-```
-
-添加 `isPrev=&need_all=true` 参数后，API 会返回所有楼层数据。
 
 ## 致谢
 

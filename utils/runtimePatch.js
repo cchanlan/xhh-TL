@@ -337,11 +337,11 @@ export async function ensureRuntime(e, opts = {}) {
   const runtime = e.runtime
   await ensureUser(e)
 
-  // 已有完整 genshin MysInfo：不覆盖 getMysInfo，但补全 getUid 失败时的回退
+  // 已有完整 genshin MysInfo：可复用其 getMysInfo 解析 UID/CK
   const systemOk = hasSystemMysInfo(runtime)
 
   if (!systemOk) {
-    // 覆盖 getMysInfo / getUid / getMysApi
+    // 无 genshin：补齐 getMysInfo / getUid
     runtime.getMysInfo = async function getMysInfoPolyfill(targetType = 'all') {
       const key = String(targetType)
       if (this._mysInfo?.[key]) return this._mysInfo[key]
@@ -380,18 +380,6 @@ export async function ensureRuntime(e, opts = {}) {
       return auth.uid || false
     }
 
-    runtime.getMysApi = async function getMysApiPolyfill(targetType = 'all', option = {}, isSr = false) {
-      const mys = await this.getMysInfo(targetType)
-      if (!mys?.uid || !mys?.ckInfo?.ck) return false
-      const game = isSr || e.isSr ? 'sr' : detectGame(e, option.game)
-      return new LiteMysApi(mys.uid, mys.ckInfo.ck, { ...option, game })
-    }
-
-    runtime.createMysApi = function createMysApiPolyfill(uid, ck, option = {}, isSr = false) {
-      const game = isSr || option.game === 'sr' ? 'sr' : option.game || 'gs'
-      return new LiteMysApi(uid, ck, { ...option, game })
-    }
-
     // 暴露 NoteUser 兼容
     if (!runtime.NoteUser) {
       runtime.NoteUser = { create: createUser }
@@ -405,7 +393,9 @@ export async function ensureRuntime(e, opts = {}) {
           const ret = await runtime._xhhOrigGetMysInfo(targetType)
           if (ret && ret.uid && ret.ckInfo?.ck) return ret
         } catch (err) {
-          logger?.debug?.(`[xhh-TL][runtime] system getMysInfo fail: ${err.message}`)
+          if (typeof logger !== 'undefined') {
+            logger.debug?.(`[xhh-TL][runtime] system getMysInfo fail: ${err.message}`)
+          }
         }
         // fallback
         const game = detectGame(e)
@@ -415,6 +405,25 @@ export async function ensureRuntime(e, opts = {}) {
         if (!auth.uid || !auth.ck) return false
         return buildMysInfo(e, auth)
       }
+    }
+  }
+
+  /**
+   * 无论有无 genshin，本插件路径都用 LiteMysApi 发请求。
+   * 这样星铁混沌/虚构/末日/异相默认带 need_all=true，用户无需改 genshin apiTool.js。
+   * 仅挂在当前 e.runtime（单次消息），不影响其它插件长期行为。
+   */
+  if (!runtime._xhhLiteMysApi) {
+    runtime._xhhLiteMysApi = true
+    runtime.getMysApi = async function getMysApiLite(targetType = 'all', option = {}, isSr = false) {
+      const mys = await this.getMysInfo(targetType)
+      if (!mys?.uid || !mys?.ckInfo?.ck) return false
+      const game = isSr || e.isSr || option.game === 'sr' ? 'sr' : detectGame(e, option.game)
+      return new LiteMysApi(mys.uid, mys.ckInfo.ck, { ...option, game })
+    }
+    runtime.createMysApi = function createMysApiLite(uid, ck, option = {}, isSr = false) {
+      const game = isSr || option.game === 'sr' ? 'sr' : option.game || detectGame(e)
+      return new LiteMysApi(uid, ck, { ...option, game })
     }
   }
 
