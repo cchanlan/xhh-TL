@@ -14,7 +14,7 @@ abyss_priority: -98
 all_abyss: true
 all_abyss_render_mode: desktop
 role_combat: true
-role_combat_bg_folder: plugins/miao-plugin/resources/profile/normal-character
+role_combat_bg_folder: 
 gs_all_abyss: true
 
 # SToken/CK 搜索路径（多行，按优先级）。留空则用默认 xhh / 逍遥 / 本插件
