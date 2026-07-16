@@ -8,6 +8,10 @@
 
 ## 功能
 
+### 帮助
+- `#小火花帮助` / `#小花火帮助` / `#xhh帮助` — 渲染全部指令总览图（深色门户风格）
+- 别名：`#小火花菜单` / `#小花火命令` / `#xhh-TL帮助` 等
+
 ### 体力查询
 - 支持 `#体力` / `#tl` / `#体力总览` 同时查询四游戏体力
 - 各游戏别名：`#原神体力` / `#ystl` · `#星铁体力` / `#xttl` · `#绝区零体力` / `#zzztl` · `#崩三体力` / `#bbbtl`
@@ -163,6 +167,7 @@ bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 ## 文件说明
 
 - `apps/TL.js` - 体力查询
+- `apps/help.js` - `#小火花帮助` 指令总览图
 - `utils/userBind.js` - UID/CK 绑定兼容层（不 import genshin）
 - `utils/runtimePatch.js` - 无 genshin 时补齐 `e.runtime.getMysInfo`，供 miao MysApi 使用
 - `utils/mysClient.js` - 轻量米游社请求客户端（深渊 / 剧诗 API）
@@ -179,6 +184,7 @@ bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 - `config/config.yaml` - 用户配置（本地，更新不覆盖）
 - `guoba.support.js` - 锅巴配置项
 - `resources/Tl/` - 体力模板
+- `resources/help/` - 帮助图模板
 - `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板
 - `resources/jysy/` - 星铁深渊相关模板资源
 - `resources/role_combat/` - 剧诗 / 小剧诗模板

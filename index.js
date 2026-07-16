@@ -7,6 +7,7 @@ import { miniRoleCombat } from './apps/miniRoleCombat.js'
 import { gsAllAbyss } from './apps/gsAllAbyss.js'
 import { TmpCleaner } from './apps/tmpCleaner.js'
 import { nanokaAbyss } from './apps/nanokaAbyss.js'
+import { help } from './apps/help.js'
 
 export {
   TL,
@@ -17,4 +18,5 @@ export {
   gsAllAbyss,
   TmpCleaner,
   nanokaAbyss,
+  help,
 }

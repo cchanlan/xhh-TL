@@ -160,6 +160,20 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
+          label: '帮助图'
+        },
+        {
+          field: 'help_bg',
+          label: '帮助图背景',
+          bottomHelpMessage:
+            '#小火花帮助 背景。默认 plugins/xhh-TL/resources/stat/imgs/bg2.png（插件自带，Win/Linux 通用正斜杠）。可填单张图片，或目录（随机抽一张）。Windows 也可用绝对路径如 D:/Yunzai/plugins/.../xxx.png',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg2.png'
+          }
+        },
+        {
+          component: 'Divider',
           label: 'CK / SToken 路径'
         },
         {

@@ -1,0 +1,255 @@
+/* help.css — 与 help.html 内联样式保持一致，便于外部引用与热改 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@font-face {
+  font-family: 'NotoSansSC';
+  src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html, body {
+  width: 900px;
+  margin: 0;
+  padding: 0;
+  background: #07090f;
+}
+
+body {
+  color: #e8eaf0;
+  font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  transform-origin: 0 0;
+}
+
+.hp-page {
+  position: relative;
+  width: 900px;
+  box-sizing: border-box;
+  min-height: 520px;
+  padding: 28px 30px 20px;
+  overflow: hidden;
+  background-color: #0b0f18;
+  background-image:
+    linear-gradient(165deg, rgba(11, 15, 24, 0.72) 0%, rgba(10, 13, 20, 0.78) 45%, rgba(8, 10, 16, 0.84) 100%),
+    var(--hp-bg, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+.hp-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  opacity: 0.45;
+}
+.hp-glow.a { width: 280px; height: 280px; background: #3d7eff; top: -80px; right: -40px; }
+.hp-glow.b { width: 240px; height: 240px; background: #7b61ff; bottom: 80px; left: -60px; }
+.hp-glow.c { width: 200px; height: 200px; background: #58a6ff; top: 45%; right: 10%; opacity: 0.2; }
+
+.hp-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hp-brand { min-width: 0; flex: 1 1 auto; }
+
+.hp-kicker {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: #7eb6ff;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.hp-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.hp-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #8b93a7;
+  line-height: 1.45;
+}
+
+.hp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  max-width: 42%;
+}
+
+.hp-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dce8ff;
+  background: rgba(88, 166, 255, 0.16);
+  border: 1px solid rgba(88, 166, 255, 0.28);
+}
+.hp-chip.soft {
+  color: #c9c4ff;
+  background: rgba(123, 97, 255, 0.14);
+  border-color: rgba(123, 97, 255, 0.28);
+}
+.hp-chip.warn {
+  color: #ffd089;
+  background: rgba(210, 153, 34, 0.14);
+  border-color: rgba(210, 153, 34, 0.3);
+}
+
+.hp-groups {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hp-group {
+  background: rgba(14, 18, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.hp-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hp-group-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px currentColor;
+}
+.hp-dot.blue { color: #58a6ff; background: #58a6ff; }
+.hp-dot.purple { color: #9b7bff; background: #9b7bff; }
+.hp-dot.cyan { color: #5fd4c0; background: #5fd4c0; }
+.hp-dot.orange { color: #ffb86b; background: #ffb86b; }
+.hp-dot.pink { color: #ff7aa2; background: #ff7aa2; }
+.hp-dot.gold { color: #f0d45a; background: #f0d45a; }
+.hp-dot.gray { color: #8b93a7; background: #8b93a7; }
+
+.hp-group-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+
+.hp-group-desc {
+  font-size: 11px;
+  color: #7a8499;
+  letter-spacing: 0.04em;
+}
+
+.hp-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.hp-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 8px 10px 8px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* 独立角色/游戏图标（resources/help/icons） */
+.hp-icon {
+  width: 40px;
+  height: 40px;
+  display: block;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.hp-body { min-width: 0; flex: 1 1 auto; padding-top: 2px; }
+
+.hp-cmd {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f2f5ff;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.hp-desc {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #8b93a7;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.hp-note {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #c9d2e6;
+  line-height: 1.55;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.16);
+}
+
+.hp-note b { color: #9ec5ff; font-weight: 700; }
+
+.hp-foot {
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-size: 11px;
+  color: #5c6478;
+  letter-spacing: 0.04em;
+}

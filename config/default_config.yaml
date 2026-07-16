@@ -24,6 +24,13 @@ role_combat: true
 role_combat_bg_folder: plugins/xhh-TL/resources/stat/imgs/bg1.png
 gs_all_abyss: true
 
+# 帮助图背景（#小火花帮助）
+# 默认插件自带 bg2.png，Linux/Win 通用相对路径：
+#   plugins/xhh-TL/resources/stat/imgs/bg2.png
+# 可改成任意单张图，也支持目录（随机抽一张）
+# Windows 也可用绝对路径：D:/Yunzai/plugins/xhh-TL/resources/stat/imgs/bg2.png
+help_bg: plugins/xhh-TL/resources/stat/imgs/bg2.png
+
 # SToken/CK 搜索路径（多行，按优先级）。留空则用默认 xhh / 逍遥 / 本插件
 # stoken_paths: |
 #   plugins/xhh/data/Stoken

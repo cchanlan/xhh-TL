@@ -199,6 +199,81 @@ export function toFileUrl(filePath) {
 /** 插件内置默认背景（相对 Yunzai 根，跨平台 / 统一） */
 export const DEFAULT_ROLE_COMBAT_BG = 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
 
+/** 帮助图默认背景（相对 Yunzai 根，跨平台 / 统一） */
+export const DEFAULT_HELP_BG = 'plugins/xhh-TL/resources/stat/imgs/bg2.png'
+
+/**
+ * 解析帮助图背景路径 help_bg
+ * - 支持单张图片文件
+ * - 支持目录（随机抽一张图）
+ * - 相对路径优先相对 Yunzai 根，再尝试插件目录
+ * Linux / Windows 均可用正斜杠
+ * @returns {{ abs: string, kind: 'file'|'dir'|'' }}
+ */
+export function resolveHelpBgPath(raw) {
+  return resolveRoleCombatBgPath(raw)
+}
+
+/**
+ * 从帮助背景配置取一张图，返回 file URL；失败回退 DEFAULT_HELP_BG
+ * 支持：单张图片 / 目录随机
+ */
+export function pickHelpBgImage(opts = {}) {
+  const cfg = readPluginConfig()
+  const tag = opts.logTag || 'xhh-TL'
+  const raw = (cfg.help_bg && String(cfg.help_bg).trim()) || DEFAULT_HELP_BG
+
+  const { abs, kind } = resolveHelpBgPath(raw)
+  if (!abs || !kind) {
+    if (raw !== DEFAULT_HELP_BG) {
+      const fallback = resolveHelpBgPath(DEFAULT_HELP_BG)
+      if (fallback.kind === 'file') return toFileUrl(fallback.abs)
+    }
+    if (typeof logger !== 'undefined') {
+      logger.warn?.(`[${tag}] 帮助背景路径不存在: ${raw} → ${abs}`)
+    }
+    return ''
+  }
+
+  if (kind === 'file') return toFileUrl(abs)
+
+  // 目录：随机抽图
+  try {
+    const imgs = []
+    for (const item of fs.readdirSync(abs)) {
+      const full = path.join(abs, item)
+      try {
+        const st = fs.statSync(full)
+        if (st.isFile() && /\.(jpe?g|png|webp|gif|bmp)$/i.test(item)) {
+          imgs.push(full)
+          continue
+        }
+        if (st.isDirectory()) {
+          for (const f of fs.readdirSync(full)) {
+            if (/\.(jpe?g|png|webp|gif|bmp)$/i.test(f)) imgs.push(path.join(full, f))
+          }
+        }
+      } catch (_) {}
+    }
+    if (!imgs.length) {
+      const fallback = resolveHelpBgPath(DEFAULT_HELP_BG)
+      if (fallback.kind === 'file') return toFileUrl(fallback.abs)
+      if (typeof logger !== 'undefined') {
+        logger.warn?.(`[${tag}] 帮助背景目录无图片: ${abs}`)
+      }
+      return ''
+    }
+    const pick = imgs[Math.floor(Math.random() * imgs.length)]
+    return toFileUrl(pick)
+  } catch (err) {
+    if (typeof logger !== 'undefined') {
+      logger.error?.(`[${tag}] 加载帮助背景失败:`, err)
+    }
+    const fallback = resolveHelpBgPath(DEFAULT_HELP_BG)
+    return fallback.kind === 'file' ? toFileUrl(fallback.abs) : ''
+  }
+}
+
 /**
  * 解析剧诗/全部深渊背景路径 role_combat_bg_folder
  * - 支持目录（子文件夹=角色名，随机抽图）
