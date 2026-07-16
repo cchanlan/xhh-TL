@@ -37,20 +37,9 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          field: 'img_quality',
-          label: '图片编码质量',
-          bottomHelpMessage: 'PNG 主输出始终无损；此项控制需要 JPEG 兼容回退时的质量',
-          component: 'InputNumber',
-          componentProps: {
-            min: 1,
-            max: 100,
-            placeholder: '请输入 1-100'
-          }
-        },
-        {
           field: 'render_scale',
           label: '渲染倍率',
-          bottomHelpMessage: '各模板会按宽度选择合适倍率；此项用于全局微调，推荐保持 1.0',
+          bottomHelpMessage: '全局清晰度微调。1.0=模板推荐；想更清晰可调到 1.2~1.5（图更大）',
           component: 'InputNumber',
           componentProps: {
             min: 0.8,
@@ -155,11 +144,12 @@ export function supportGuoba() {
         },
         {
           field: 'role_combat_bg_folder',
-          label: '剧诗背景图文件夹',
-          bottomHelpMessage: '#幻想角色、#小剧诗、#全部深渊 共用。填角色面板图目录（子文件夹名为角色名）。支持绝对/相对路径；留空则无自定义背景',
+          label: '剧诗/深渊背景',
+          bottomHelpMessage:
+            '#幻想角色、#小剧诗、#全部深渊 共用。可填单张图片或角色面板目录。默认 plugins/xhh-TL/resources/stat/imgs/bg1.png（插件自带，Win/Linux 通用）。目录结构：子文件夹=角色名，内含图片随机抽取。也可用绝对路径',
           component: 'Input',
           componentProps: {
-            placeholder: '如 /root/Yunzai/plugins/miao-plugin/resources/profile/normal-character'
+            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
           }
         },
         {
@@ -202,7 +192,7 @@ export function supportGuoba() {
         {
           field: 'tmp_clean_enable',
           label: '启用 tmp 定时清理',
-          bottomHelpMessage: '自动清理 plugins/xhh-TL/data/tmp 下的渲染临时图（如小深渊田字格缓存）',
+          bottomHelpMessage: '自动清理 plugins/xhh-TL/data/tmp 下的渲染临时图',
           component: 'Switch'
         },
         {

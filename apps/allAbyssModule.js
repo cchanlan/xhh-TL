@@ -24,8 +24,8 @@ function readConfig() {
 }
 
 function config() {
-  if (!_configCache) _configCache = readConfig();
-  return _configCache;
+  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
+  return readConfig();
 }
 
 // 监听配置文件变化，自动热重载
@@ -398,7 +398,7 @@ export async function allAbyss(e) {
 
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
-      const renderScale = getRenderScaleStyle(config(), isMobile ? 2.0 : 1.0);
+      const renderScale = getRenderScaleStyle(config(), isMobile ? 2.0 : 1.2);
       const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
@@ -422,15 +422,13 @@ export async function allAbyss(e) {
           retType: 'base64',
           imgType: 'png',
           beforeRender({ data }) {
-            const localPath = ppath;
             return {
+              ...data,
               imgType: 'png',
               sys: { scale: renderScale },
-              ...data,
               ppath,
               tplFile,
               saveId: templateName,
-              _miao_path: localPath
             };
           }
         });

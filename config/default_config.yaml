@@ -3,9 +3,7 @@
 # 首次启动会自动从本文件复制生成 config.yaml
 
 Tl: true
-# PNG 主输出为无损；该值用于需要 JPEG 兼容回退时的编码质量
-img_quality: 100
-# 全局倍率微调：1.0 使用各模板推荐倍率
+# 全局倍率微调：1.0=模板推荐倍率；可调 0.8~1.5，最终 scale 上限 2.5
 render_scale: 1.0
 tl_priority: -999
 show_all_bindings: true
@@ -17,7 +15,13 @@ abyss_priority: -98
 all_abyss: true
 all_abyss_render_mode: desktop
 role_combat: true
-role_combat_bg_folder: 
+# 剧诗/小剧诗/原神全部深渊 背景（目录或单张图）
+# 默认用插件自带图，Linux/Win 通用相对路径：
+#   plugins/xhh-TL/resources/stat/imgs/bg1.png
+# 也可改成角色面板目录（子文件夹=角色名，随机抽图），例如：
+#   plugins/miao-plugin/resources/profile/normal-character
+# Windows 也可用绝对路径：D:/Yunzai/plugins/...
+role_combat_bg_folder: plugins/xhh-TL/resources/stat/imgs/bg1.png
 gs_all_abyss: true
 
 # SToken/CK 搜索路径（多行，按优先级）。留空则用默认 xhh / 逍遥 / 本插件

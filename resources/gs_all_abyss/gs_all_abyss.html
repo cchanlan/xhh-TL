@@ -49,12 +49,138 @@
           </div>
           {{if abyss.ok}}
           <div class="col-body">
+            {{if abyss.stats && abyss.stats.length}}
+            <div class="abyss-rank-row">
+              {{each abyss.stats st}}
+              <div class="abyss-rank-card">
+                {{if st.avatar && st.avatar.face}}
+                <img class="abyss-rank-bg" src="{{st.avatar.face}}" alt="" />
+                {{/if}}
+                <div class="abyss-rank-mask"></div>
+                <div class="abyss-rank-text">
+                  <div class="abyss-rank-title">{{st.title}}</div>
+                  <div class="abyss-rank-val">{{st.value}}</div>
+                </div>
+              </div>
+              {{/each}}
+            </div>
+            {{/if}}
             {{each abyss.floors fl}}
-            <div class="block-card">
+            <div class="block-card abyss-floor {{if fl.useSplitLineup}}floor-12{{else}}floor-normal{{/if}}">
               <div class="block-head">
                 <span class="bh-title">第 {{fl.index}} 层</span>
                 <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
               </div>
+
+              {{if fl.useSplitLineup}}
+              <!-- 12 层：左右两个大框（上半 4 / 下半 4） -->
+              <div class="floor-split-lineup">
+                <div class="split-box">
+                  <div class="split-label">上</div>
+                  <div class="team mcard-team team-n{{fl.lineupUp.length}}">
+                    {{each fl.lineupUp a}}
+                    <div class="mcard star-{{a.star}}">
+                      <div class="mcard-face">
+                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                        <span class="mcard-cons">{{a.cons}}</span>
+                      </div>
+                      <div class="mcard-lv">Lv.{{a.level}}</div>
+                      <div class="mcard-name">{{a.name}}</div>
+                      <div class="mcard-talent">
+                        <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                        <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                        <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                      </div>
+                      <div class="mcard-gear">
+                        <div class="gbox">
+                          {{if a.weapon && a.weapon.img}}
+                          <img src="{{a.weapon.img}}" alt="" />
+                          {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                          {{else}}<span class="gempty"></span>{{/if}}
+                        </div>
+                        <div class="gbox artis">
+                          {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                          <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                          {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                          {{else}}<span class="gempty"></span>{{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/each}}
+                  </div>
+                </div>
+                <div class="split-box">
+                  <div class="split-label">下</div>
+                  <div class="team mcard-team team-n{{fl.lineupDown.length}}">
+                    {{each fl.lineupDown a}}
+                    <div class="mcard star-{{a.star}}">
+                      <div class="mcard-face">
+                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+                        <span class="mcard-cons">{{a.cons}}</span>
+                      </div>
+                      <div class="mcard-lv">Lv.{{a.level}}</div>
+                      <div class="mcard-name">{{a.name}}</div>
+                      <div class="mcard-talent">
+                        <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+                        <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+                        <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+                      </div>
+                      <div class="mcard-gear">
+                        <div class="gbox">
+                          {{if a.weapon && a.weapon.img}}
+                          <img src="{{a.weapon.img}}" alt="" />
+                          {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                          {{else}}<span class="gempty"></span>{{/if}}
+                        </div>
+                        <div class="gbox artis">
+                          {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                          <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                          {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                          {{else}}<span class="gempty"></span>{{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/each}}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 12 层底部：1/2/3 间小头像（不挤压） -->
+              <div class="floor-rooms">
+                {{each fl.levels lv}}
+                <div class="floor-room">
+                  <div class="room-meta">
+                    <span class="room-title">第{{lv.index}}间</span>
+                    <span class="room-stars">{{lv.starText}}</span>
+                    <span class="room-time">{{lv.time || ''}}</span>
+                  </div>
+                  <div class="room-avatars">
+                    <div class="room-side">
+                      {{if lv.up && lv.up.avatars}}
+                      {{each lv.up.avatars a}}
+                      <span class="room-av star-{{a.star}}">
+                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}
+                      </span>
+                      {{/each}}
+                      {{/if}}
+                    </div>
+                    <span class="room-split"></span>
+                    <div class="room-side">
+                      {{if lv.down && lv.down.avatars}}
+                      {{each lv.down.avatars a}}
+                      <span class="room-av star-{{a.star}}">
+                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}
+                      </span>
+                      {{/each}}
+                      {{/if}}
+                    </div>
+                  </div>
+                </div>
+                {{/each}}
+              </div>
+
+              {{else}}
+              <!-- 11 层等：原来的按间上下半大卡 -->
               {{each fl.levels lv}}
               <div class="level-compact">
                 <div class="lv-bar">
@@ -65,7 +191,7 @@
                   {{if lv.up}}
                   <div class="half-col">
                     <div class="half-label">上</div>
-                    <div class="team mcard-team">
+                    <div class="team mcard-team team-n{{lv.up.avatars.length}}">
                       {{each lv.up.avatars a}}
                       <div class="mcard star-{{a.star}}">
                         <div class="mcard-face">
@@ -101,7 +227,7 @@
                   {{if lv.down}}
                   <div class="half-col">
                     <div class="half-label">下</div>
-                    <div class="team mcard-team">
+                    <div class="team mcard-team team-n{{lv.down.avatars.length}}">
                       {{each lv.down.avatars a}}
                       <div class="mcard star-{{a.star}}">
                         <div class="mcard-face">
@@ -137,6 +263,7 @@
                 </div>
               </div>
               {{/each}}
+              {{/if}}
             </div>
             {{/each}}
           </div>
@@ -189,8 +316,8 @@
                 {{/if}}
               </div>
 
-              <!-- 中：队伍 -->
-              <div class="team mcard-team team-hard hard-team-mid">
+              <!-- 中：队伍（人数 1~4 自适应） -->
+              <div class="team mcard-team team-hard hard-team-mid team-n{{ch.avatars.length}}">
                 {{each ch.avatars a}}
                 <div class="mcard star-{{a.star}}">
                   <div class="mcard-face">
@@ -260,7 +387,7 @@
                 </div>
                 <span class="bh-star">{{s.finish_time}}</span>
               </div>
-              <div class="team mcard-team">
+              <div class="team mcard-team team-n{{s.avatars.length}}">
                 {{each s.avatars a}}
                 <div class="mcard star-{{a.star}}">
                   <div class="mcard-face">

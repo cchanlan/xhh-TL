@@ -9,6 +9,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import YAML from 'yaml'
 
 const pluginDir = path.join(process.cwd(), 'plugins/xhh-TL')
@@ -102,13 +103,6 @@ export function readPluginConfig() {
   return _cache
 }
 
-/** Clamp the configured output quality to the range accepted by image encoders. */
-export function getImageQuality(config = {}, fallback = 100) {
-  const value = Number(config?.img_quality)
-  if (!Number.isFinite(value)) return fallback
-  return Math.min(100, Math.max(1, Math.round(value)))
-}
-
 /** Resolve the global render multiplier. */
 export function getRenderScale(config = {}, fallback = 1) {
   const value = Number(config?.render_scale)
@@ -118,7 +112,8 @@ export function getRenderScale(config = {}, fallback = 1) {
 
 /** Match earth-k-plugin: template base scale multiplied by a global adjustment. */
 export function getRenderScaleStyle(config = {}, baseScale = 1) {
-  const scale = Math.min(2, Math.max(1, baseScale * getRenderScale(config, 1)))
+  // 上限 2.5：兼顾清晰度与体积；可通过 render_scale 全局微调
+  const scale = Math.min(2.5, Math.max(1, baseScale * getRenderScale(config, 1)))
   return `style=transform:scale(${Number(scale.toFixed(2))})`
 }
 
@@ -153,14 +148,185 @@ export function patchUserConfig(partial) {
 }
 
 /**
- * 解析路径：绝对路径原样；相对路径相对 process.cwd()
+ * 规范化用户输入路径（锅巴/yaml 常带引号、混用斜杠、Windows 盘符）
+ */
+export function normalizeUserPath(p) {
+  if (p == null) return ''
+  let s = String(p).trim()
+  if (!s) return ''
+  // 去掉成对引号 / 反引号
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'")) ||
+    (s.startsWith('`') && s.endsWith('`'))
+  ) {
+    s = s.slice(1, -1).trim()
+  }
+  // 配置里统一用 /，避免 Win 反斜杠写进 yaml 后在 Linux 失效；path 模块会再按本机规范化
+  s = s.replace(/\\/g, '/')
+  return s
+}
+
+/**
+ * 解析路径：绝对路径原样；相对路径相对 process.cwd()（Yunzai 根）
+ * Windows 兼容盘符路径与混用斜杠
  */
 export function resolvePluginPath(p) {
-  if (!p || typeof p !== 'string') return ''
-  const s = p.trim()
+  const s = normalizeUserPath(p)
   if (!s) return ''
-  if (path.isAbsolute(s)) return s
-  return path.join(process.cwd(), s)
+  if (path.isAbsolute(s)) return path.normalize(s)
+  return path.normalize(path.join(process.cwd(), s))
+}
+
+/**
+ * 本地文件 → Chromium 可用的 file URL
+ * Windows 必须是 file:///C:/path，不能是 file://C:\path
+ */
+export function toFileUrl(filePath) {
+  const abs = resolvePluginPath(filePath)
+  if (!abs) return ''
+  try {
+    // Node 内置，正确处理 Windows 盘符与空格
+    return pathToFileURL(abs).href
+  } catch (_) {
+    const normalized = abs.replace(/\\/g, '/')
+    if (/^[A-Za-z]:\//.test(normalized)) return `file:///${normalized}`
+    if (normalized.startsWith('/')) return `file://${normalized}`
+    return `file:///${normalized}`
+  }
+}
+
+/** 插件内置默认背景（相对 Yunzai 根，跨平台 / 统一） */
+export const DEFAULT_ROLE_COMBAT_BG = 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+
+/**
+ * 解析剧诗/全部深渊背景路径 role_combat_bg_folder
+ * - 支持目录（子文件夹=角色名，随机抽图）
+ * - 支持单张图片文件（如插件自带 bg1.png）
+ * - 相对路径优先相对 Yunzai 根，再尝试插件目录
+ * Linux / Windows 均可用正斜杠
+ * @returns {{ abs: string, kind: 'file'|'dir'|'' }}
+ */
+export function resolveRoleCombatBgPath(raw) {
+  const s = normalizeUserPath(raw)
+  if (!s) return { abs: '', kind: '' }
+
+  const candidates = []
+  if (path.isAbsolute(s)) {
+    candidates.push(path.normalize(s))
+  } else {
+    candidates.push(path.normalize(path.join(process.cwd(), s)))
+    candidates.push(path.normalize(path.join(pluginDir, s)))
+    // 兼容写成 resources/...（相对插件）
+    if (!s.startsWith('plugins/') && !s.startsWith('plugins\\')) {
+      candidates.push(path.normalize(path.join(pluginDir, s)))
+    }
+  }
+
+  for (const c of candidates) {
+    try {
+      if (!c || !fs.existsSync(c)) continue
+      const st = fs.statSync(c)
+      if (st.isFile()) return { abs: c, kind: 'file' }
+      if (st.isDirectory()) return { abs: c, kind: 'dir' }
+    } catch (_) {}
+  }
+  return { abs: candidates[0] || '', kind: '' }
+}
+
+/** @deprecated 兼容旧名：只返回目录绝对路径（文件则返回空） */
+export function resolveRoleCombatBgFolder(raw) {
+  const { abs, kind } = resolveRoleCombatBgPath(raw)
+  return kind === 'dir' ? abs : ''
+}
+
+/**
+ * 从背景配置随机挑一张图，返回 file URL；失败返回 ''
+ * 支持：
+ * 1) 单张图片路径（默认 bg1.png）
+ * 2) 目录：子文件夹名为角色名，内含 jpg/png/webp；也可直接在目录下放图
+ * @param {object} [opts]
+ * @param {(name: string) => boolean} [opts.filterDir] 过滤子目录名
+ * @param {string} [opts.logTag]
+ */
+export function pickRoleCombatBgImage(opts = {}) {
+  const cfg = readPluginConfig()
+  const tag = opts.logTag || 'xhh-TL'
+  // 用户配置优先；空则用插件内置默认图
+  const raw = (cfg.role_combat_bg_folder && String(cfg.role_combat_bg_folder).trim())
+    || DEFAULT_ROLE_COMBAT_BG
+
+  const { abs, kind } = resolveRoleCombatBgPath(raw)
+  if (!abs || !kind) {
+    // 再兜底一次内置默认图
+    if (raw !== DEFAULT_ROLE_COMBAT_BG) {
+      const fallback = resolveRoleCombatBgPath(DEFAULT_ROLE_COMBAT_BG)
+      if (fallback.kind === 'file') return toFileUrl(fallback.abs)
+    }
+    if (typeof logger !== 'undefined') {
+      logger.warn?.(`[${tag}] 背景路径不存在: ${raw} → ${abs}`)
+    }
+    return ''
+  }
+
+  // 单文件：直接用
+  if (kind === 'file') return toFileUrl(abs)
+
+  // 目录：随机抽图
+  try {
+    const collect = (filter) => {
+      const imgs = []
+      for (const item of fs.readdirSync(abs)) {
+        const full = path.join(abs, item)
+        let st
+        try {
+          st = fs.statSync(full)
+        } catch (_) {
+          continue
+        }
+        if (!st.isDirectory()) continue
+        if (filter && !filter(item)) continue
+        let files = []
+        try {
+          files = fs.readdirSync(full).filter((f) => /\.(jpe?g|png|webp|gif|bmp)$/i.test(f))
+        } catch (_) {
+          continue
+        }
+        for (const f of files) imgs.push(path.join(full, f))
+      }
+      return imgs
+    }
+
+    let imgs = collect(opts.filterDir || null)
+    // 过滤过严时回退扫全部子目录
+    if (!imgs.length && opts.filterDir) imgs = collect(null)
+    // 也允许目录下直接放图片（无角色子文件夹）
+    if (!imgs.length) {
+      try {
+        imgs = fs
+          .readdirSync(abs)
+          .filter((f) => /\.(jpe?g|png|webp|gif|bmp)$/i.test(f))
+          .map((f) => path.join(abs, f))
+      } catch (_) {}
+    }
+    if (!imgs.length) {
+      // 目录空 → 回退内置默认图
+      const fallback = resolveRoleCombatBgPath(DEFAULT_ROLE_COMBAT_BG)
+      if (fallback.kind === 'file') return toFileUrl(fallback.abs)
+      if (typeof logger !== 'undefined') {
+        logger.warn?.(`[${tag}] 背景目录无图片: ${abs}`)
+      }
+      return ''
+    }
+    const pick = imgs[Math.floor(Math.random() * imgs.length)]
+    return toFileUrl(pick)
+  } catch (err) {
+    if (typeof logger !== 'undefined') {
+      logger.error?.(`[${tag}] 加载背景图失败:`, err)
+    }
+    const fallback = resolveRoleCombatBgPath(DEFAULT_ROLE_COMBAT_BG)
+    return fallback.kind === 'file' ? toFileUrl(fallback.abs) : ''
+  }
 }
 
 /**

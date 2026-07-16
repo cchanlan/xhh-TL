@@ -11,7 +11,7 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
@@ -24,8 +24,8 @@ function readConfig() {
 }
 
 function config() {
-  if (!_configCache) _configCache = readConfig()
-  return _configCache
+  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
+  return readConfig()
 }
 
 try {
@@ -63,8 +63,8 @@ function faceUrl(face) {
     return face
   }
   // miao 相对路径：/meta-gs/... 或 meta-gs/...
-  const rel = face.startsWith('/') ? face : `/${face}`
-  return `file://${miaoRes}${rel}`
+  const rel = String(face).replace(/^[/\\]+/, '')
+  return toFileUrl(path.join(miaoRes, rel))
 }
 
 function resolveAvatarCard(avatar, avatarDataMap = {}) {
@@ -197,60 +197,22 @@ function buildKeyStages(lvs, avatarDataMap) {
 /**
  * 与 #幻想角色（role_combat.js）同一套：config.role_combat_bg_folder
  * 只取原神角色子文件夹里的图片；过滤后为空则回退扫全部子目录
+ * Windows 下自动处理盘符路径与 file:/// URL
  */
 function pickBgImage() {
-  const bgFolder = config().role_combat_bg_folder
-  if (!bgFolder) {
-    logger.warn('[xhh][miniRoleCombat] 未配置 role_combat_bg_folder，无背景图')
-    return ''
-  }
+  const gsNames = new Set()
   try {
-    const absBgFolder = path.isAbsolute(bgFolder)
-      ? bgFolder
-      : path.join(pluginDir, bgFolder)
-    if (!fs.existsSync(absBgFolder)) {
-      logger.warn(`[xhh][miniRoleCombat] 背景目录不存在: ${absBgFolder}`)
-      return ''
-    }
-
-    // 与 role_combat.js 一致：收集原神角色名
-    const gsNames = new Set()
-    try {
-      Character.forEach(char => {
-        if (char?.game === 'gs' && char.name) gsNames.add(char.name)
-        return true
-      }, 'release', 'gs')
-    } catch (err) {
-      logger.debug('[xhh][miniRoleCombat] Character 列表失败，将扫描全部子目录:', err?.message)
-    }
-
-    const collect = (onlyGs) => {
-      const allImages = []
-      for (const item of fs.readdirSync(absBgFolder)) {
-        const fullPath = path.join(absBgFolder, item)
-        if (!fs.statSync(fullPath).isDirectory()) continue
-        if (onlyGs && gsNames.size > 0 && !gsNames.has(item)) continue
-        const files = fs
-          .readdirSync(fullPath)
-          .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
-        for (const f of files) allImages.push(path.join(fullPath, f))
-      }
-      return allImages
-    }
-
-    let allImages = collect(true)
-    // 过滤过严或 gsNames 为空时回退，避免背景空白
-    if (!allImages.length) allImages = collect(false)
-    if (!allImages.length) {
-      logger.warn(`[xhh][miniRoleCombat] 背景目录无图片: ${absBgFolder}`)
-      return ''
-    }
-    const randomFile = allImages[Math.floor(Math.random() * allImages.length)]
-    return `file://${randomFile}`
+    Character.forEach(char => {
+      if (char?.game === 'gs' && char.name) gsNames.add(char.name)
+      return true
+    }, 'release', 'gs')
   } catch (err) {
-    logger.error('[xhh][miniRoleCombat] 加载背景图失败:', err)
-    return ''
+    logger.debug?.('[xhh][miniRoleCombat] Character 列表失败，将扫描全部子目录:', err?.message)
   }
+  return pickRoleCombatBgImage({
+    logTag: 'xhh-TL/miniRoleCombat',
+    filterDir: gsNames.size ? (name) => gsNames.has(name) : null,
+  })
 }
 
 function getVal(obj, pathStr) {
@@ -266,8 +228,8 @@ export class miniRoleCombat extends plugin {
       priority: -9998,
       rule: [
         {
-          // #小剧诗 / #小幻想 / #小剧诗上期 / #上期小幻想
-          reg: '^#*(上期)?小(剧诗|幻想)(上期)?$',
+          // #小剧诗 / 小幻想 / #小剧诗上期 / #上期小幻想；尾部多余字不触发
+          reg: '^\\s*#?(?:上期)?小(?:剧诗|幻想)(?:上期)?\\s*$',
           fnc: 'mini',
         },
       ],
@@ -447,13 +409,12 @@ export class miniRoleCombat extends plugin {
         imgType: 'png',
         beforeRender({ data }) {
           return {
+            ...data,
             imgType: 'png',
             sys: { scale: renderScale },
-            ...data,
             ppath,
             tplFile,
             saveId: 'mini_role_combat',
-            _miao_path: ppath,
           }
         },
       })

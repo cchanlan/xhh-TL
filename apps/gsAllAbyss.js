@@ -3,7 +3,8 @@
  * 合并：深境螺旋 + 幽境危战 + 小剧诗关键关（3/6/8/10 + 圣牌）
  * 渲染风格对齐体力插件（Tl 毛玻璃）
  *
- * 命令：#全部深渊 / #全部深渊上期 / #上期全部深渊 / #原神全部深渊
+ * 命令：#全部深渊 / 全部深渊
+ * 支持 @某人 查询对方数据（头像/昵称显示被@的人）
  */
 
 import moment from 'moment'
@@ -13,7 +14,7 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
@@ -26,8 +27,8 @@ function readConfig() {
 }
 
 function config() {
-  if (!_configCache) _configCache = readConfig()
-  return _configCache
+  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
+  return readConfig()
 }
 
 try {
@@ -36,6 +37,52 @@ try {
   }
 } catch (_) {}
 
+/** 解析被 @ 的 QQ（排除 bot 自身） */
+function resolveTargetQq(e) {
+  const selfId = String(e.self_id || e.bot?.uin || (typeof Bot !== 'undefined' ? Bot.uin : '') || '')
+  if (e?.at && String(e.at) !== selfId) return String(e.at)
+  for (const msg of e?.message || []) {
+    if (msg?.type === 'at' && String(msg.qq) !== selfId) return String(msg.qq)
+  }
+  return ''
+}
+
+/** 取群昵称 / 名片 */
+async function resolveDisplayName(e, qq) {
+  const id = String(qq || '')
+  if (!id) return ''
+  let name = ''
+  try {
+    if (e.isGroup || e.group) {
+      const member = e.group?.pickMember?.(id) || e.group?.pickMember?.(Number(id))
+      if (member?.card || member?.nickname) name = member.card || member.nickname
+      if (!name) {
+        const bot = e.bot || (typeof Bot !== 'undefined' ? Bot : null)
+        let info = null
+        if (bot?.getGroupMemberInfo) {
+          info = await bot.getGroupMemberInfo(String(e.group_id), id)
+        } else if (bot?.sendApi) {
+          const res = await bot.sendApi('get_group_member_info', {
+            group_id: String(e.group_id),
+            user_id: id,
+          })
+          info = res?.data || res
+        }
+        if (info?.card || info?.nickname) name = info.card || info.nickname
+      }
+    }
+  } catch (_) {}
+  if (!name) {
+    const s = e.sender || {}
+    if (String(e.user_id) === id) {
+      name = (s.card && String(s.card).length < 20 ? s.card : '') || s.nickname || id
+    } else {
+      name = id
+    }
+  }
+  return String(name)
+}
+
 function getVal(obj, pathStr) {
   return pathStr.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj)
 }
@@ -43,8 +90,8 @@ function getVal(obj, pathStr) {
 function faceUrl(face) {
   if (!face) return ''
   if (/^https?:\/\//i.test(face) || face.startsWith('file://') || face.startsWith('base64://')) return face
-  const rel = face.startsWith('/') ? face : `/${face}`
-  return `file://${miaoRes}${rel}`
+  const rel = String(face).replace(/^[/\\]+/, '')
+  return toFileUrl(path.join(miaoRes, rel))
 }
 
 function resolveById(id, avatarDataMap = {}, extra = {}) {
@@ -165,38 +212,17 @@ function isKeyRound(round) {
 }
 
 function pickBgImage() {
-  const bgFolder = config().role_combat_bg_folder
-  if (!bgFolder) return ''
+  const gsNames = new Set()
   try {
-    const abs = path.isAbsolute(bgFolder) ? bgFolder : path.join(pluginDir, bgFolder)
-    if (!fs.existsSync(abs)) return ''
-    const gsNames = new Set()
-    try {
-      Character.forEach(char => {
-        if (char?.game === 'gs' && char.name) gsNames.add(char.name)
-        return true
-      }, 'release', 'gs')
-    } catch (_) {}
-    const collect = (onlyGs) => {
-      const imgs = []
-      for (const item of fs.readdirSync(abs)) {
-        const full = path.join(abs, item)
-        if (!fs.statSync(full).isDirectory()) continue
-        if (onlyGs && gsNames.size && !gsNames.has(item)) continue
-        for (const f of fs.readdirSync(full).filter(x => /\.(jpg|jpeg|png|webp)$/i.test(x))) {
-          imgs.push(path.join(full, f))
-        }
-      }
-      return imgs
-    }
-    let imgs = collect(true)
-    if (!imgs.length) imgs = collect(false)
-    if (!imgs.length) return ''
-    return `file://${imgs[Math.floor(Math.random() * imgs.length)]}`
-  } catch (err) {
-    logger.error('[xhh][gsAllAbyss] 背景图失败:', err)
-    return ''
-  }
+    Character.forEach(char => {
+      if (char?.game === 'gs' && char.name) gsNames.add(char.name)
+      return true
+    }, 'release', 'gs')
+  } catch (_) {}
+  return pickRoleCombatBgImage({
+    logTag: 'xhh-TL/gsAllAbyss',
+    filterDir: gsNames.size ? (name) => gsNames.has(name) : null,
+  })
 }
 
 /** 深境螺旋：图二布局（大卡 8 人 + 三间小头像），风格仍用体力卡片 */
@@ -232,9 +258,12 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
       })
       const up = battles.find(b => b.side === '上半') || battles[0] || null
       const down = battles.find(b => b.side === '下半') || battles[1] || null
+      const starNum = Number(level.star ?? 0) || 0
+      const starText = '★'.repeat(Math.min(3, Math.max(0, starNum))) + '☆'.repeat(Math.max(0, 3 - starNum))
       return {
         index: level.index,
-        star: level.star ?? 0,
+        star: starNum,
+        starText,
         up,
         down,
         time: up?.time || down?.time || '',
@@ -242,19 +271,40 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
       }
     })
 
-    // 展示用大卡队伍：优先用最后一间上下半（通常满配），凑满 8 人一排
+    // 12 层大卡：左右两框 = 展示间上半 / 下半
+    // 优先最后一间（通常满配）；若空则取人数最多的一间
+    let lineupUp = []
+    let lineupDown = []
+    let bestCount = -1
+    for (const lv of levels) {
+      const upA = lv?.up?.avatars || []
+      const downA = lv?.down?.avatars || []
+      const total = upA.length + downA.length
+      if (total > bestCount) {
+        bestCount = total
+        lineupUp = upA
+        lineupDown = downA
+      }
+    }
     const lastLv = levels[levels.length - 1] || levels[0]
-    const lineup = [
-      ...((lastLv?.up?.avatars) || []),
-      ...((lastLv?.down?.avatars) || []),
-    ]
+    const lastUp = lastLv?.up?.avatars || []
+    const lastDown = lastLv?.down?.avatars || []
+    if (lastUp.length + lastDown.length >= bestCount) {
+      lineupUp = lastUp
+      lineupDown = lastDown
+    }
+    const floorIndex = Number(floor.index) || 0
 
     return {
-      index: floor.index,
+      index: floorIndex,
       star: floor.star ?? 0,
       max_star: floor.max_star ?? 9,
       levels,
-      lineup,
+      // 仅 12 层用左右大框；11 层等走原来的按间展示
+      useSplitLineup: floorIndex === 12,
+      lineupUp,
+      lineupDown,
+      lineup: [ ...lineupUp, ...lineupDown ],
     }
   })
 
@@ -272,12 +322,31 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
     const row = Array.isArray(arr) && arr[0] ? arr[0] : null
     if (!row) return null
     const id = row.avatar_id || row.id
-    const av = resolveById(id, avatarDataMap, { name: row.avatar_name || row.name })
+    const av = resolveById(id, avatarDataMap, {
+      name: row.avatar_name || row.name,
+      rarity: row.rarity,
+    })
+    // 战绩条需要立绘/头像：面板 face 优先，否则 Character 图，再退米游社 icon
+    let face = av.face || ''
+    if (!face) {
+      try {
+        const char = Character.get(Number(id))
+        const imgs = char?.getImgs?.() || {}
+        face = faceUrl(imgs.face || imgs.qFace || char?.face || char?.qFace || '')
+      } catch (_) {}
+    }
+    if (!face && (row.avatar_icon || row.icon)) {
+      face = String(row.avatar_icon || row.icon)
+    }
+    if (face && !face.startsWith('http') && !face.startsWith('file://') && !face.startsWith('base64://')) {
+      face = faceUrl(face)
+    }
     return {
       id,
       title: key,
       value: fmtVal(key, row.value),
-      avatar: av,
+      avatar: { ...av, face },
+      rawValue: row.value,
     }
   }
   const stats = [
@@ -289,7 +358,7 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
   ].map(s => {
     const r = pickRank(s.raw, s.key)
     return r ? { ...r, title: s.title } : null
-  }).filter(s => s && s.avatar?.face) // 无头像的空格不展示，减少留白
+  }).filter(Boolean) // 有数据就展示；无 face 时 CSS 仍可显示数值卡
 
 
   return {
@@ -476,8 +545,8 @@ export class gsAllAbyss extends plugin {
       priority: config().gs_all_abyss_priority ?? -99,
       rule: [
         {
-          // #全部深渊 / #全部深渊上期 / #全部深渊 全层 / #全部深渊 9-12
-          reg: '^#*(原神)?(上期)?全部深渊(上期)?(.*)？?$',
+          // 严格：仅「#全部深渊」或「全部深渊」（@ 由消息段处理）
+          reg: '^\\s*#?全部深渊\\s*$',
           fnc: 'query',
         },
       ],
@@ -486,13 +555,15 @@ export class gsAllAbyss extends plugin {
 
   async query(e) {
     if (config().gs_all_abyss === false) return false
-    // 星铁指令留给 *全部深渊，这里只处理带 # 或「原神」或纯「全部深渊」文本
-    const raw = e.original_msg || e.msg || ''
-    // 若明显是星铁语境且无 #，交给其他插件（兼容 *全部深渊）
-    if (/^\*/.test(raw.trim()) || /星铁|混沌|虚构|末日|异相/.test(raw)) return false
+    const raw = String(e.original_msg || e.msg || '').trim()
+    // 二次校验：去掉空白后必须是 全部深渊 / #全部深渊
+    if (!/^#?全部深渊$/.test(raw)) return false
 
-    const isCurrent = !(/上期/.test(raw))
-    const periodText = isCurrent ? '本期' : '上期'
+    // @ 他人：数据与头像/昵称都用被@的人
+    const targetQq = resolveTargetQq(e)
+    if (targetQq) e.at = targetQq
+
+    const periodText = '本期'
 
     await e.reply(`正在获取${periodText}原神全部深渊…`, true)
 
@@ -512,7 +583,7 @@ export class gsAllAbyss extends plugin {
     let resAbyss, resHard, resHardPop, resRole, resDetail
     try {
       ;[resAbyss, resHard, resHardPop, resRole, resDetail] = await Promise.all([
-        mys.getSpiralAbyss(isCurrent ? 1 : 2).catch(err => {
+        mys.getSpiralAbyss(1).catch(err => {
           logger.error('[xhh][gsAllAbyss] 深渊失败:', err)
           return null
         }),
@@ -539,11 +610,10 @@ export class gsAllAbyss extends plugin {
       } catch (_) {}
     }
 
-    const hardLvs = getVal(resHard, isCurrent ? 'data.0' : 'data.1')
-    const roleLvs = getVal(resRole, isCurrent ? 'data.0' : 'data.1')
-    // 默认全层；#全部深渊 最高层 → 仅最高层
-    const onlyTop = /最高层|仅最高|只最高/.test(raw)
-    const showAllHigh = !onlyTop
+    const hardLvs = getVal(resHard, 'data.0')
+    const roleLvs = getVal(resRole, 'data.0')
+    // 默认展示 9-12 全层
+    const showAllHigh = true
 
     // 收集角色 id，统一取面板（含圣遗物套装需要 detail）
     const abyssIds = []
@@ -649,8 +719,8 @@ export class gsAllAbyss extends plugin {
       return e.reply(`暂未获得${periodText}深渊 / 危战 / 剧诗数据…`)
     }
 
-    const qq = e.user_id || e.sender?.user_id || ''
-    const qqname = e.sender?.card || e.sender?.nickname || String(qq)
+    const qq = targetQq || e.user_id || e.sender?.user_id || ''
+    const qqname = await resolveDisplayName(e, qq)
     const bgImage = pickBgImage()
     const renderScale = getRenderScaleStyle(config(), 2.0)
     const tplFile = pluginDir + '/resources/gs_all_abyss/gs_all_abyss.html'
@@ -674,13 +744,12 @@ export class gsAllAbyss extends plugin {
         imgType: 'png',
         beforeRender({ data }) {
           return {
+            ...data,
             imgType: 'png',
             sys: { scale: renderScale },
-            ...data,
             ppath,
             tplFile,
             saveId: 'gs_all_abyss',
-            _miao_path: ppath,
           }
         },
       })

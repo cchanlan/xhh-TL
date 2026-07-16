@@ -17,27 +17,29 @@
 - 支持 `#开启体力uid` / `#关闭体力uid` 控制查询体力时是否显示游戏UID（每个用户独立设置）
 - 图形化卡片输出，包含体力恢复倒计时、委托派遣、每日实训等信息
 
+### 指令匹配规则
+- 所有指令均 **严格整句匹配**：可带或不带 `#` / `*`，前后空白可忽略
+- 尾部多字不触发，例如 `全部深渊啊啊啊`、`体力查询`、`#小剧诗xxx` 都不会响应
+
 ### 星铁全部深渊（四合一）
-- 支持 `*深渊` `*小深渊` / `深渊总览` / `深渊汇总` / `星铁深渊` 等指令
+- 支持 `*全部深渊` / `*深渊总览` / `*深渊汇总` / `#星铁全部深渊`（不支持 `*深渊`）
 - 一次性查询星铁深渊模式：混沌回忆、虚构叙事、末日幻影、异相仲裁
-- 支持上期数据查询：`*全部深渊 上期`
-- 指令建议带 `*` 或「星铁」，避免与原神 `#全部深渊` 冲突
+- 支持上期：`*全部深渊上期` / `*上期全部深渊`
+- 指令需带 `*` 或「星铁」前缀，避免与原神 `#全部深渊` 冲突
 
 ### 原神全部深渊（三合一）
-- 指令：`#全部深渊` / `#全部深渊上期` / `#原神全部深渊` / `#全部深渊 最高层`
-- 一张图合并：
-  - **深境螺旋**：默认 9–12 层全层（加「最高层」可只显示最高层）；角色天赋 / 武器 / 圣遗物
-  - **幽境危战**：队伍、Boss 图、最强一击 / 最高总伤、机制说明全文、赋光 UP
+- 指令：**仅** `#全部深渊` 或 `全部深渊`（带其它文字不触发）
+- 支持 `@某人 #全部深渊`：查询对方数据，卡片头像/昵称为被@的人
+- 一张图合并三列（等宽）：
+  - **深境螺旋**
+    - 顶部战绩条：最强一击 / 最高承伤 / 最多击破 / 元素战技 / 元素爆发
+    - **第 12 层**：左右两个大框（上半 4 人 / 下半 4 人）+ 底部 1/2/3 间小头像
+    - **第 11 层等**：按间展示上下半角色大卡（天赋 / 武器 / 圣遗物）
+    - 队伍 1/2/3/4 人自动适配卡片大小
+  - **幽境危战**：Boss、最强一击 / 最高总伤、机制说明、赋光 UP；四人居中排布
   - **幻想剧诗关键关**：第 3/6/8/10 幕 + 双圣牌通关队伍
 - 三列体力毛玻璃风格；背景与剧诗共用 `role_combat_bg_folder`
 - 开关：`gs_all_abyss: true`（锅巴可配）
-
-### 星铁独立深渊查询
-- **小混沌**：`*小混沌` / `*小混沌上期` — 查询混沌回忆，渲染角色、光锥、遗器
-- **小虚构**：`*小虚构` / `*小虚构上期` — 查询虚构叙事，显示积分和星数
-- **小末日**：`*小末日` / `*小末日上期` — 查询末日幻影，显示节点分数和星数
-- **小异相**：`*小异相` / `*小异相上期` — 查询异相仲裁，显示 Boss 和关卡详情
-- 支持自定义背景图：`*小混沌 背景:图片URL`
 
 ### 原神幻想真境剧诗
 - **可用角色**：`#幻想剧诗` / `#幻想角色` / `#幻想202607` 等 — 当期限制元素、开幕/特邀/可用角色（Nanoka 数据）
@@ -45,8 +47,11 @@
   - 个人通关关键关（3/6/8/10 + 圣牌）
   - 角色卡：头像、命座、等级、天赋、武器、圣遗物（与全部深渊同款）
   - 支持 @他人（需对方绑定 Cookie）
-- 自定义背景：锅巴配置 `role_combat_bg_folder`（子文件夹名为角色名，随机抽图）
-- 图片编码质量由 `img_quality` 控制；渲染方式参考 [earth-k-plugin](https://github.com/SmallK111407/earth-k-plugin)，按模板宽度设置基础倍率，并固定左上原点输出高清 PNG
+- 自定义背景：锅巴 `role_combat_bg_folder`
+  - 默认：`plugins/xhh-TL/resources/stat/imgs/bg1.png`（插件自带，Win/Linux 通用）
+  - 也可填角色面板目录（子文件夹=角色名，随机抽图）
+  - 配置为空/路径无效时自动回退默认图
+- 清晰度由 `render_scale` 控制（全局倍率微调，推荐 1.0~1.5）
 
 ### Nanoka 版本深渊（静态配置，不查个人成绩）
 - 数据源：[Nanoka](https://nanoka.cc/) / `static.nanoka.cc`（与 `#幻想剧诗` 同源）
@@ -55,6 +60,7 @@
   - **正式 / 下期**：指令带「下期」走测试包最新数据；默认走正式服
   - 期数回看：`上期` / `第N期` / `列表`
   - 原神深渊层序、星铁节点均为 **高 → 低**
+  - 指令严格整句匹配（可无 `#`，尾部多字不触发）
 - **原神**
   - `#版本深渊` / `#版本螺旋` / `#下期深渊` / `#下期螺旋` — 深境螺旋祝福 + **仅 12→11 层**怪物（含 HP）
   - `#版本剧诗` / `#下期剧诗` — 幻想真境剧诗限制元素与关键关 Boss
@@ -125,7 +131,6 @@ cd plugins/xhh-TL && git pull
 ```yaml
 # 体力小组件配置
 Tl: true                 # 是否启用体力查询
-img_quality: 100         # 图片编码质量 (1-100)，100 为最高质量
 render_scale: 1.0        # 全局倍率微调；1.0 使用各模板推荐倍率
 tl_priority: -999        # 插件优先级 (数字越小越优先)
 show_all_bindings: true  # 多账号模式：同一游戏的多个UID渲染进同一张图
@@ -142,7 +147,8 @@ all_abyss_render_mode: desktop  # 桌面端或手机端
 
 # 幻想真境剧诗 / 小剧诗 / 原神全部深渊 共用背景
 role_combat: true
-role_combat_bg_folder: plugins/miao-plugin/resources/profile/normal-character  # 可写绝对路径
+# 默认插件自带图（Win/Linux 通用相对路径）；也可改角色面板目录
+role_combat_bg_folder: plugins/xhh-TL/resources/stat/imgs/bg1.png
 
 # 原神全部深渊三合一
 gs_all_abyss: true
@@ -158,7 +164,7 @@ stoken_paths: ""
 bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 ```
 
-也可在 **锅巴** 中配置：体力、全部深渊、剧诗开关与背景路径、**CK/SToken 路径**。
+也可在 **锅巴** 中配置：体力、全部深渊、剧诗开关与背景路径、**CK/SToken 路径**、`render_scale`。
 
 ## 崩坏3 绑定
 
@@ -175,11 +181,10 @@ bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 - `utils/userBind.js` - UID/CK 绑定兼容层（不 import genshin）
 - `utils/runtimePatch.js` - 无 genshin 时补齐 `e.runtime.getMysInfo`，供 miao MysApi 使用
 - `utils/mysClient.js` - 轻量米游社请求客户端（深渊 / 剧诗 API）
-- `utils/pluginConfig.js` - 配置读取 + 可自定义 stoken/ck 路径
-- `apps/Abyss.js` - 星铁深渊指令入口
+- `utils/pluginConfig.js` - 配置读取 + 路径解析（Win/Linux）+ 背景图选取
+- `utils/renderImage.js` - 渲染结果 Buffer 提取
+- `apps/Abyss.js` - 星铁全部深渊指令入口
 - `apps/allAbyssModule.js` - 星铁全部深渊核心
-- `apps/miniChaos.js` / `miniStory.js` / `miniBoss.js` / `miniPeak.js` - 星铁独立深渊
-- `apps/miniAllAbyss.js` - 星铁小深渊网格
 - `apps/role_combat.js` - 幻想真境剧诗可用角色
 - `apps/miniRoleCombat.js` - 小剧诗 / 小幻想（个人通关关键关）
 - `apps/tmpCleaner.js` - data/tmp 定时清理
@@ -190,13 +195,14 @@ bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 - `guoba.support.js` - 锅巴配置项
 - `resources/Tl/` - 体力模板
 - `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板
-- `resources/jysy/` - 星铁独立深渊模板
+- `resources/jysy/` - 星铁深渊相关模板资源
 - `resources/role_combat/` - 剧诗 / 小剧诗模板
 - `resources/gs_all_abyss/` - 原神全部深渊模板
+- `resources/stat/imgs/bg1.png` - 默认背景图
 
 ## 临时文件清理
 
-`data/tmp` 用于小深渊田字格等渲染缓存，默认每天 **4:17** 清理超过 **24 小时** 的文件。
+`data/tmp` 用于渲染缓存，默认每天 **4:17** 清理超过 **24 小时** 的文件。
 
 ```yaml
 tmp_clean_enable: true

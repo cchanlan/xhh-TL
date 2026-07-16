@@ -6,7 +6,7 @@ import YAML from 'yaml';
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js';
 import { createUser } from '../utils/userBind.js';
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json';
@@ -28,8 +28,8 @@ function readConfig() {
 }
 
 function config() {
-  if (!_configCache) _configCache = readConfig();
-  return _configCache;
+  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
+  return readConfig();
 }
 
 try {
@@ -83,7 +83,7 @@ function charById(id) {
     elemName: ELEMENT_CN[char.elem] || '',
     elemClass: ELEMENT_CLASS[char.elem] || '',
     star: char.star || 4,
-    face: char.face ? `file://${process.cwd()}/plugins/miao-plugin/resources${char.face}` : '',
+    face: char.face ? toFileUrl(path.join(process.cwd(), 'plugins/miao-plugin/resources', String(char.face||'').replace(/^\//,''))) : '',
   };
 }
 
@@ -160,7 +160,7 @@ function extractCharacters(raw = {}) {
           elemName: ELEMENT_CN[elem] || '',
           elemClass: ELEMENT_CLASS[elem] || '',
           star: char.star || 4,
-          face: char.face ? `file://${process.cwd()}/plugins/miao-plugin/resources${char.face}` : '',
+          face: char.face ? toFileUrl(path.join(process.cwd(), 'plugins/miao-plugin/resources', String(char.face||'').replace(/^\//,''))) : '',
         });
       }
       return true;
@@ -222,7 +222,12 @@ export class role_combat extends plugin {
       event: 'message',
       priority: -9999,
       rule: [
-        { reg: '^#*(原神)?((幻想(?=剧诗|角色|查询|\\d{4}))|幻想剧诗)(角色|可用角色|当期角色|本期角色|查询)?(20\\d{4}|20\\d{2}[-/.年]?\\d{1,2}月?)?$', fnc: 'roleCombat' },
+        {
+          // #幻想剧诗 / 幻想角色 / #幻想202607；仅允许可选月份后缀，其它尾巴不触发
+          // 可选 #；仅允许已知后缀/月份，尾部乱码不触发
+          reg: '^\\s*#?(?:原神)?(?:幻想剧诗(?:角色|可用角色|当期角色|本期角色|查询)?|幻想角色|幻想可用角色|幻想当期角色|幻想本期角色|幻想查询|幻想(?:角色|可用角色|当期角色|本期角色|查询|剧诗)?(?:20\\d{4}|20\\d{2}[-/.年]?\\d{1,2}月?))\\s*$',
+          fnc: 'roleCombat',
+        },
       ],
     });
   }
@@ -351,40 +356,22 @@ export class role_combat extends plugin {
       filterApplied = true;
     }
 
-    // 获取自定义背景图（支持子文件夹，仅原神角色）
+    // 获取自定义背景图（支持子文件夹；Windows 路径/file URL 兼容）
     let bgImage = '';
-    const bgFolder = config().role_combat_bg_folder;
-    if (bgFolder) {
+    try {
+      const gsNames = new Set();
       try {
-        const absBgFolder = path.isAbsolute(bgFolder) ? bgFolder : path.join(pluginDir, bgFolder);
-        if (fs.existsSync(absBgFolder)) {
-          // 收集所有原神角色名
-          const gsNames = new Set();
-          Character.forEach(char => {
-            if (char?.game === 'gs' && char.name) gsNames.add(char.name);
-            return true;
-          }, 'release', 'gs');
-
-          // 收集原神角色文件夹中的图片
-          const allImages = [];
-          const items = fs.readdirSync(absBgFolder);
-          for (const item of items) {
-            const fullPath = path.join(absBgFolder, item);
-            if (!fs.statSync(fullPath).isDirectory()) continue;
-            if (!gsNames.has(item)) continue;
-            const files = fs.readdirSync(fullPath).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
-            for (const f of files) {
-              allImages.push(path.join(fullPath, f));
-            }
-          }
-          if (allImages.length > 0) {
-            const randomFile = allImages[Math.floor(Math.random() * allImages.length)];
-            bgImage = `file://${randomFile}`;
-          }
-        }
-      } catch (err) {
-        logger.error('[xhh][role_combat] 加载背景图失败:', err);
-      }
+        Character.forEach(char => {
+          if (char?.game === 'gs' && char.name) gsNames.add(char.name);
+          return true;
+        }, 'release', 'gs');
+      } catch (_) {}
+      bgImage = pickRoleCombatBgImage({
+        logTag: 'xhh-TL/role_combat',
+        filterDir: gsNames.size ? (name) => gsNames.has(name) : null,
+      });
+    } catch (err) {
+      logger.error('[xhh][role_combat] 加载背景图失败:', err);
     }
 
     const tplFile = pluginDir + '/resources/role_combat/role_combat.html';
@@ -411,13 +398,12 @@ export class role_combat extends plugin {
       imgType: 'png',
       beforeRender({ data }) {
         return {
+          ...data,
           imgType: 'png',
           sys: { scale: renderScale },
-          ...data,
           ppath,
           tplFile,
           saveId: 'role_combat',
-          _miao_path: ppath
         };
       }
     });

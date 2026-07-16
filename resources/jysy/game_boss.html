@@ -6,7 +6,14 @@
 <style>
 @font-face {
   font-family: "SR";
-  src: url("../../miao-plugin/resources/common/font/HYWJ-85W.woff") format("woff");
+  /* temp/html/xhh-TL/<tpl>/ → plugins/miao-plugin */
+  src: url("../../../../plugins/miao-plugin/resources/common/font/HYWJ-85W.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "xhhCJK";
+  src: url("../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
@@ -14,7 +21,9 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 
 body {
-    font-family: "SR", "Microsoft YaHei", sans-serif;
+    font-family: "SR", "xhhCJK", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     background: #000;
     width: 1200px;
     transform-origin: 0 0;

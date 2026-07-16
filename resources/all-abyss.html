@@ -66,7 +66,7 @@ body, .container {
   color: #fff;
 }
 
-/* 三列布局 */
+/* 多列等宽：以混沌列（通常内容最满）为基准，各列同宽 */
 .all-abyss-columns {
   display: flex;
   gap: 10px;
@@ -76,7 +76,9 @@ body, .container {
 }
 
 .all-abyss-col {
-  flex: 1;
+  /* grow + basis 0 强制等宽，避免某一列内容把宽度拉开 */
+  flex: 1 1 0;
+  width: 0;
   min-width: 0;
 }
 

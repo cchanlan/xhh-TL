@@ -18,13 +18,14 @@
 body {
   font-size: 12px;
   font-family: 'NotoCJK', 'yuan', 'xhhFallback', 'Microsoft YaHei', sans-serif;
-  width: 1220px;
+  /* 三列等宽：以原深渊列（最宽）为基准，约 484px × 3 + 间距 */
+  width: 1520px;
   transform-origin: 0 0;
   color: #2a2a2a;
 }
 
 .container {
-  width: 1220px;
+  width: 1520px;
   min-height: 200px;
   padding: 12px 10px 8px;
   background-color: #c8d0dc;
@@ -34,7 +35,7 @@ body {
 }
 
 .xhh_box {
-  width: 1190px;
+  width: 1490px;
   margin: 0 auto;
   padding: 10px 12px 8px;
   background: rgba(255, 255, 255, 0.28);
@@ -87,16 +88,29 @@ body {
 }
 .mod-tag.on { background: rgba(110, 168, 255, 0.28); color: #2f5fad; }
 
-/* 三列 */
+/* 三列等宽：全部按深渊列（内容最宽）的宽度对齐 */
 .cols {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: stretch; /* 三列底边对齐到最高列（通常是剧诗/深渊） */
+  gap: 10px;
 }
-.col { display: flex; flex-direction: column; min-width: 0; }
-.col-abyss { flex: 1.4; }
-.col-hard { flex: 1; }
-.col-role { flex: 1; }
+.col {
+  display: flex;
+  flex-direction: column;
+  /* flex-basis:0 + grow 强制三列同宽，避免内容把某一列撑开 */
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+}
+.col > .col-body {
+  flex: 1 1 auto;
+}
+.col-abyss,
+.col-hard,
+.col-role {
+  flex: 1 1 0;
+  width: 0;
+}
 
 .section-title {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-bottom: 5px;
@@ -114,6 +128,75 @@ body {
 .empty-col {
   padding: 14px 10px; text-align: center; font-size: 12px; color: #888;
   background: rgba(255, 255, 255, 0.25); border-radius: 12px;
+}
+
+/* 深渊顶部战绩条：最强一击 / 承伤 / 击破 / 战技 / 爆发 */
+.abyss-rank-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.abyss-rank-card {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 138px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(30, 40, 60, 0.55);
+  box-shadow: 0 2px 6px rgba(20, 30, 50, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.abyss-rank-bg {
+  position: absolute;
+  right: 0;
+  bottom: -4%;
+  width: 100%;
+  height: 132%;
+  object-fit: cover;
+  object-position: top center;
+  opacity: 0.97;
+  filter: saturate(1.05);
+  pointer-events: none;
+}
+.abyss-rank-mask {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(18, 24, 40, 0.88) 0%,
+    rgba(18, 24, 40, 0.55) 42%,
+    rgba(18, 24, 40, 0.14) 78%,
+    rgba(18, 24, 40, 0.03) 100%
+  );
+  pointer-events: none;
+}
+.abyss-rank-text {
+  position: relative;
+  z-index: 1;
+  padding: 12px 11px 10px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.abyss-rank-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: rgba(255, 245, 220, 0.95);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.abyss-rank-val {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: #fff7e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .block-card {
@@ -299,22 +382,117 @@ footer {
 .team.mcard-team {
   display: flex;
   flex-wrap: nowrap;
-  gap: 3px;
+  gap: 6px;
   padding: 4px 4px 6px;
-  justify-content: space-between;
+  /* 少人时不要 space-between 拉散，统一左/中对齐靠拢 */
+  justify-content: flex-start;
   align-items: stretch;
 }
-.half-col .team.mcard-team { padding: 0; }
+.half-col .team.mcard-team {
+  padding: 0;
+  justify-content: flex-start;
+  gap: 5px;
+}
 .team-hard.mcard-team { padding: 4px 6px 6px; }
 
-.mcard {
+/* 默认卡片：固定宽度，人数变化时不拉伸 */
+.team.mcard-team > .mcard {
+  flex: 0 0 auto;
+  width: 70px;
+  max-width: 70px;
+}
+
+/* 深渊半队：1/2/3 人时卡片更大（参考 miao 少人展示） */
+.half-col .team-n1 {
+  justify-content: flex-start;
+  gap: 0;
+}
+.half-col .team-n1 > .mcard {
+  width: 96px;
+  max-width: 96px;
+  padding: 5px 3px 6px;
+}
+.half-col .team-n1 .mcard-face,
+.half-col .team-n1 .mcard-face img {
+  width: 54px;
+  height: 54px;
+}
+.half-col .team-n1 .mcard-face img { border-width: 2.5px; }
+.half-col .team-n1 .mcard-lv { font-size: 11px; height: 14px; line-height: 14px; }
+.half-col .team-n1 .mcard-name { font-size: 10px; }
+.half-col .team-n1 .mcard-talent span { max-width: 20px; height: 15px; line-height: 15px; font-size: 10px; }
+.half-col .team-n1 .gbox { width: 26px; height: 26px; }
+
+.half-col .team-n2 {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.half-col .team-n2 > .mcard {
+  width: 84px;
+  max-width: 84px;
+}
+.half-col .team-n2 .mcard-face,
+.half-col .team-n2 .mcard-face img {
+  width: 50px;
+  height: 50px;
+}
+
+.half-col .team-n3 {
+  justify-content: flex-start;
+  gap: 6px;
+}
+.half-col .team-n3 > .mcard {
+  width: 74px;
+  max-width: 74px;
+}
+.half-col .team-n3 .mcard-face,
+.half-col .team-n3 .mcard-face img {
+  width: 46px;
+  height: 46px;
+}
+
+.half-col .team-n4 {
+  justify-content: space-between;
+  gap: 3px;
+}
+.half-col .team-n4 > .mcard {
+  width: 0;
   flex: 1 1 0;
+  max-width: 72px;
+}
+
+/* 幻想剧诗：居中隔开，少人时也不拉伸 */
+.col-role .team.mcard-team {
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 8px 8px;
+}
+.col-role .mcard {
+  flex: 0 0 auto;
+  width: 70px;
+  max-width: 70px;
+}
+.col-role .team-n1 > .mcard { width: 92px; max-width: 92px; }
+.col-role .team-n2 > .mcard { width: 82px; max-width: 82px; }
+.col-role .team-n3 > .mcard { width: 74px; max-width: 74px; }
+
+.mcard {
+  flex: 0 0 auto;
   min-width: 0;
   max-width: 76px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  /* 角色卡片边界加深，浅色背景上更清晰 */
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(40, 50, 70, 0.28);
+  border-radius: 10px;
+  box-shadow:
+    0 2px 6px rgba(20, 30, 50, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  padding: 4px 2px 5px;
+  box-sizing: border-box;
 }
 .mcard-face {
   position: relative;
@@ -327,13 +505,19 @@ footer {
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.95);
+  border: 2.5px solid rgba(35, 45, 65, 0.55);
   display: block;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   background: rgba(255, 255, 255, 0.5);
 }
-.mcard.star-5 .mcard-face img { border-color: rgba(255, 200, 80, 0.95); }
-.mcard.star-4 .mcard-face img { border-color: rgba(180, 120, 255, 0.9); }
+.mcard.star-5 .mcard-face img {
+  border-color: rgba(210, 150, 30, 0.98);
+  box-shadow: 0 0 0 1px rgba(180, 120, 20, 0.35), 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+.mcard.star-4 .mcard-face img {
+  border-color: rgba(130, 70, 210, 0.98);
+  box-shadow: 0 0 0 1px rgba(90, 40, 160, 0.28), 0 2px 6px rgba(0, 0, 0, 0.28);
+}
 .mcard-cons {
   position: absolute;
   right: -4px;
@@ -381,9 +565,9 @@ footer {
   font-size: 9px;
   font-weight: 800;
   color: #2a3a55;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.78);
   border-radius: 3px;
-  box-shadow: inset 0 0 0 1px rgba(80, 120, 180, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(40, 55, 85, 0.35);
 }
 .mcard-gear {
   display: flex;
@@ -401,6 +585,7 @@ footer {
   background: rgba(255, 255, 255, 0.6);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
   flex-shrink: 0;
+  border: 1px solid rgba(40, 50, 70, 0.28);
 }
 .gbox img {
   width: 100%;
@@ -570,13 +755,210 @@ footer {
 }
 .hard-desc li { margin-bottom: 3px; }
 .hard-desc li:last-child { margin-bottom: 0; }
-/* 队伍放在机制说明下方 */
+/* 危战队伍：居中隔开；1~3 人卡片略放大 */
 .hard-card.v2 .hard-team-mid,
 .hard-card.v2 .team-hard {
-  justify-content: space-between;
-  gap: 3px;
-  padding: 6px 6px 8px;
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 12px 10px;
 }
 .hard-card.v2 .mcard {
-  max-width: 72px;
+  flex: 0 0 auto;
+  width: 70px;
+  max-width: 70px;
 }
+.hard-card.v2 .team-n1 { gap: 0; }
+.hard-card.v2 .team-n1 > .mcard {
+  width: 96px;
+  max-width: 96px;
+}
+.hard-card.v2 .team-n1 .mcard-face,
+.hard-card.v2 .team-n1 .mcard-face img {
+  width: 54px;
+  height: 54px;
+}
+.hard-card.v2 .team-n2 > .mcard {
+  width: 84px;
+  max-width: 84px;
+}
+.hard-card.v2 .team-n2 .mcard-face,
+.hard-card.v2 .team-n2 .mcard-face img {
+  width: 50px;
+  height: 50px;
+}
+.hard-card.v2 .team-n3 > .mcard {
+  width: 76px;
+  max-width: 76px;
+}
+
+
+/* 12 层：左右两个大框（上半 / 下半）—— 只拉高 12 层，不动 11 层 */
+.floor-split-lineup {
+  display: flex;
+  gap: 6px;
+  padding: 8px 6px 7px;
+}
+.floor-split-lineup .split-box {
+  flex: 1 1 0;
+  min-width: 0;
+  /* 与 11 层 .half-col 同色 */
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  padding: 6px 5px 7px;
+  box-shadow: none;
+}
+.floor-split-lineup .split-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #777;
+  margin: 0 0 4px 3px;
+}
+.floor-split-lineup .team.mcard-team {
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0;
+}
+.floor-split-lineup .team.mcard-team > .mcard {
+  flex: 1 1 0;
+  width: 0;
+  max-width: 86px;
+  padding: 5px 2px 6px;
+}
+.floor-split-lineup .mcard-face,
+.floor-split-lineup .mcard-face img {
+  width: 50px;
+  height: 50px;
+}
+.floor-split-lineup .mcard-lv {
+  height: 14px;
+  line-height: 14px;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.floor-split-lineup .mcard-name {
+  font-size: 10px;
+  height: 13px;
+  line-height: 13px;
+}
+.floor-split-lineup .mcard-talent span {
+  max-width: 18px;
+  height: 15px;
+  line-height: 15px;
+  font-size: 9px;
+}
+.floor-split-lineup .gbox {
+  width: 26px;
+  height: 26px;
+}
+.floor-split-lineup .mcard-gear {
+  gap: 4px;
+  margin-top: 4px;
+}
+/* 半队少人时放大 */
+.floor-split-lineup .team-n1 { justify-content: flex-start; }
+.floor-split-lineup .team-n1 > .mcard { flex: 0 0 auto; width: 104px; max-width: 104px; }
+.floor-split-lineup .team-n2 { justify-content: flex-start; gap: 10px; }
+.floor-split-lineup .team-n2 > .mcard { flex: 0 0 auto; width: 92px; max-width: 92px; }
+.floor-split-lineup .team-n3 { justify-content: flex-start; gap: 6px; }
+.floor-split-lineup .team-n3 > .mcard { flex: 0 0 auto; width: 80px; max-width: 80px; }
+
+/* 12 层底栏：1/2/3 间，浅色风格与 11 层统一，略增高 */
+.abyss-floor.floor-12 .floor-rooms {
+  display: flex;
+  gap: 5px;
+  padding: 0 6px 8px;
+}
+.abyss-floor.floor-12 .floor-room {
+  flex: 1 1 0;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 6px 7px 8px;
+  color: #333;
+  box-shadow: none;
+  overflow: visible;
+}
+.abyss-floor.floor-12 .room-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  color: #555;
+}
+.abyss-floor.floor-12 .room-title { color: #333; }
+.abyss-floor.floor-12 .room-stars {
+  color: #d4a017;
+  letter-spacing: 0;
+  font-size: 10px;
+}
+.abyss-floor.floor-12 .room-time {
+  margin-left: auto;
+  color: #777;
+  font-size: 9px;
+  font-weight: 600;
+}
+.abyss-floor.floor-12 .room-avatars {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  overflow: visible;
+}
+.abyss-floor.floor-12 .room-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+.abyss-floor.floor-12 .room-split {
+  width: 1px;
+  height: 26px;
+  background: rgba(80, 90, 110, 0.28);
+  flex-shrink: 0;
+}
+.abyss-floor.floor-12 .room-av {
+  flex: 1 1 0;
+  width: auto;
+  max-width: 30px;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(40, 50, 70, 0.28);
+  font-size: 9px;
+  color: #555;
+  box-sizing: border-box;
+}
+.abyss-floor.floor-12 .room-av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.abyss-floor.floor-12 .room-av.star-5 { border-color: rgba(210, 150, 30, 0.98); }
+.abyss-floor.floor-12 .room-av.star-4 { border-color: rgba(130, 70, 210, 0.98); }
+
+/* 11 层：保持原按间样式，不额外拉高 */
+.abyss-floor.floor-normal .level-compact {
+  padding: 4px 5px 5px;
+}
+.abyss-floor.floor-normal .half-col {
+  padding: 3px;
+}
+
+/* 深渊列整体 */
+.col-abyss .block-head { padding: 5px 8px; }
+.col-abyss .col-body { gap: 6px; }
+.col-abyss .block-card + .block-card { margin-top: 0; }

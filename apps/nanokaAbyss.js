@@ -20,7 +20,7 @@ import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
-import { getImageQuality, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
 const STATIC = 'https://static.nanoka.cc'
@@ -1709,24 +1709,24 @@ export class nanokaAbyss extends plugin {
       priority: (cfg().abyss_priority ?? -98) + 1,
       rule: [
         {
-          // #版本深渊=正式服；#下期深渊=下期包
-          reg: '^#*(下期深渊|下期螺旋|版本深渊|版本螺旋|螺旋版本|深渊版本)(列表|一览)?(.*)$',
+          // #版本深渊=正式服；#下期深渊=下期包；可选 列表/上期/第N期
+          reg: '^\\s*#?(?:下期深渊|下期螺旋|版本深渊|版本螺旋|螺旋版本|深渊版本)(?:列表|一览)?(?:上期|上一期|第\\d{1,3}期)?\\s*$',
           fnc: 'giTower',
         },
         {
           // #版本剧诗=正式；#下期剧诗=下期
-          reg: '^#*(下期剧诗|版本剧诗|剧诗版本)(.*)$',
+          reg: '^\\s*#?(?:下期剧诗|版本剧诗|剧诗版本)(?:列表|一览)?(?:上期|上一期|第\\d{1,3}期)?\\s*$',
           fnc: 'giTheater',
         },
         {
           // #版本危战 / #下期危战 → Nanoka leyline 幽境危战
-          reg: '^#*(下期危战|版本危战|危战版本|幽境危战|幽境危战版本)(列表|一览)?(.*)$',
+          reg: '^\\s*#?(?:下期危战|版本危战|危战版本|幽境危战|幽境危战版本)(?:列表|一览)?(?:上期|上一期|第\\d{1,3}期)?\\s*$',
           fnc: 'giHard',
         },
         {
           // 框架会把 * / 星铁 前缀标准化为「#星铁…」
           // *版本混沌→maze；*版本虚构→story；*版本末日→boss；*版本异相→peak
-          reg: '^#*(?:\\*|星铁|#\\*|星轨|穹轨|星穹|崩铁|星穹铁道|崩坏星穹铁道|铁道)+(下期深渊|下期挑战|下期混沌|下期虚构|下期末日|下期异相|版本深渊|版本挑战|版本混沌|版本虚构|版本末日|版本异相|版本记忆|下期记忆)(列表|一览)?(.*)$',
+          reg: '^\\s*(?:#|\\*)?(?:\\*|星铁|#\\*|星轨|穹轨|星穹|崩铁|星穹铁道|崩坏星穹铁道|铁道)+(?:下期深渊|下期挑战|下期混沌|下期虚构|下期末日|下期异相|版本深渊|版本挑战|版本混沌|版本虚构|版本末日|版本异相|版本记忆|下期记忆)(?:列表|一览)?(?:上期|上一期|第\\d{1,3}期)?\\s*$',
           fnc: 'hsrMaze',
         },
       ],
@@ -1939,7 +1939,7 @@ export class nanokaAbyss extends plugin {
 
   async renderToBuffer(e, data, saveId) {
     const renderConfig = cfg()
-    const renderScale = getRenderScaleStyle(renderConfig, 1.4)
+    const renderScale = getRenderScaleStyle(renderConfig, 1.6)
     const renderResult = await e.runtime.render('xhh-TL', 'nanoka_abyss', data, {
       retType: 'base64',
       imgType: 'png',
@@ -1995,9 +1995,8 @@ export class nanokaAbyss extends plugin {
     } catch (err) {
       logger?.warn?.(`[xhh-TL][nanokaAbyss] send fail, retry: ${err.message}`)
       try {
-        const fallbackQuality = getImageQuality(cfg(), 100)
         const fallback = await sharp(buf)
-          .jpeg({ quality: fallbackQuality, chromaSubsampling: '4:4:4', mozjpeg: true })
+          .jpeg({ quality: 85, chromaSubsampling: '4:4:4', mozjpeg: true })
           .toBuffer()
         return await e.reply(segment.image(fallback))
       } catch (err2) {

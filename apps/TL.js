@@ -26,8 +26,8 @@ function readConfig() {
 }
 
 function config() {
-  if (!_configCache) _configCache = readConfig();
-  return _configCache;
+  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
+  return readConfig();
 }
 
 // 监听配置文件变化，自动热重载
@@ -306,23 +306,24 @@ export class TL extends plugin {
       priority: config().tl_priority ?? -99,
       rule: [
         {
-          reg: '^(#|\\*|%)*(全体力|四游戏体力|米游社体力|体力总览|体力|tl|(原神|ys)(体力|tl)|(星铁|xt|\\*)(体力|tl)|(绝区零|zzz)(体力|tl)|(崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(体力|tl))$',
+          // 可选 #/*/%；关键词必须完整结束，尾部多余字不触发
+          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl)|(?:崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(?:体力|tl))\\s*$',
           fnc: 'note_',
         },
         {
-          reg: '^#*(崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(扫码|绑定|扫码绑定|扫码登录|扫码登陆)$',
+          reg: '^\\s*#?(?:崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(?:扫码|绑定|扫码绑定|扫码登录|扫码登陆)\\s*$',
           fnc: 'bh3ScanBind',
         },
         {
-          reg: '^#*(体力插件|小花火体力)(强制)*更新$',
+          reg: '^\\s*#?(?:体力插件|小花火体力)(?:强制)?更新\\s*$',
           fnc: 'updatePlugin',
         },
         {
-          reg: '^#*(开启|打开)体力uid$',
+          reg: '^\\s*#?(?:开启|打开)体力uid\\s*$',
           fnc: 'toggleUidDisplay',
         },
         {
-          reg: '^#*(关闭|关掉)体力uid$',
+          reg: '^\\s*#?(?:关闭|关掉)体力uid\\s*$',
           fnc: 'toggleUidDisplay',
         },
       ],
