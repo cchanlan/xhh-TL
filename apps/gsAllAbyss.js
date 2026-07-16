@@ -94,6 +94,30 @@ function faceUrl(face) {
   return toFileUrl(path.join(miaoRes, rel))
 }
 
+/** 角色图：战绩条优先立绘/侧身，队伍卡用头像 */
+function resolveCharImgs(id, avatarDataMap = {}) {
+  const sid = String(id || '')
+  const own = avatarDataMap[sid] || avatarDataMap[Number(sid)] || {}
+  let face = own.face || own.qFace || ''
+  let gacha = own.gacha || own.splash || own.side || ''
+  let name = own.name || own.abbr || sid
+  try {
+    const char = Character.get(Number(sid)) || Character.get(name)
+    if (char) {
+      name = char.name || name
+      const imgs = char.getImgs?.(own.costume || '') || {}
+      face = face || imgs.face || imgs.qFace || char.face || char.qFace || ''
+      // 战绩条背景：gacha > splash > side > face
+      gacha = gacha || imgs.gacha || imgs.splash || imgs.side || imgs.face || ''
+    }
+  } catch (_) {}
+  return {
+    name,
+    face: faceUrl(face),
+    gacha: faceUrl(gacha || face),
+  }
+}
+
 function resolveById(id, avatarDataMap = {}, extra = {}) {
   const sid = String(id)
   const own = avatarDataMap[sid] || avatarDataMap[Number(sid)] || {}
@@ -104,6 +128,7 @@ function resolveById(id, avatarDataMap = {}, extra = {}) {
   let level = extra.level || own.level || 0
   let elem = own.elem || ''
   let cons = extra.cons ?? own.cons
+  let gacha = own.gacha || own.splash || ''
   if (sid) {
     try {
       const char = Character.get(Number(sid))
@@ -115,7 +140,9 @@ function resolveById(id, avatarDataMap = {}, extra = {}) {
           // 已是简称则升为全名，保证「丝柯克」「哥伦比娅」完整
           name = char.name
         }
-        face = face || char.face || char.qFace || ''
+        const imgs = char.getImgs?.(own.costume || '') || {}
+        face = face || imgs.face || imgs.qFace || char.face || char.qFace || ''
+        gacha = gacha || imgs.gacha || imgs.splash || imgs.side || ''
         star = char.star || star
         elem = char.elem || elem
       }
@@ -159,6 +186,7 @@ function resolveById(id, avatarDataMap = {}, extra = {}) {
     id: sid,
     name,
     face: faceUrl(face),
+    gacha: faceUrl(gacha || face),
     star,
     level,
     elem,
@@ -300,8 +328,9 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
       star: floor.star ?? 0,
       max_star: floor.max_star ?? 9,
       levels,
-      // 仅 12 层用左右大框；11 层等走原来的按间展示
-      useSplitLineup: floorIndex === 12,
+      // 仅 11 层：顶部上/下半队大卡 + 底部 1/2/3 间小头像
+      // 12 层：恢复 3 间上下半布局
+      useSplitLineup: floorIndex === 11,
       lineupUp,
       lineupDown,
       lineup: [ ...lineupUp, ...lineupDown ],
@@ -326,26 +355,24 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
       name: row.avatar_name || row.name,
       rarity: row.rarity,
     })
-    // 战绩条需要立绘/头像：面板 face 优先，否则 Character 图，再退米游社 icon
-    let face = av.face || ''
-    if (!face) {
-      try {
-        const char = Character.get(Number(id))
-        const imgs = char?.getImgs?.() || {}
-        face = faceUrl(imgs.face || imgs.qFace || char?.face || char?.qFace || '')
-      } catch (_) {}
-    }
-    if (!face && (row.avatar_icon || row.icon)) {
-      face = String(row.avatar_icon || row.icon)
-    }
-    if (face && !face.startsWith('http') && !face.startsWith('file://') && !face.startsWith('base64://')) {
-      face = faceUrl(face)
+    const imgs = resolveCharImgs(id, avatarDataMap)
+    // 战绩条优先立绘；没有就用侧身/头像
+    let portrait = av.gacha || imgs.gacha || imgs.face || av.face || ''
+    if (!portrait && (row.avatar_icon || row.icon)) {
+      portrait = String(row.avatar_icon || row.icon)
+      if (!/^https?:\/\//i.test(portrait) && !portrait.startsWith('file://') && !portrait.startsWith('base64://')) {
+        portrait = faceUrl(portrait)
+      }
     }
     return {
       id,
       title: key,
       value: fmtVal(key, row.value),
-      avatar: { ...av, face },
+      avatar: {
+        ...av,
+        face: av.face || imgs.face,
+        gacha: portrait,
+      },
       rawValue: row.value,
     }
   }

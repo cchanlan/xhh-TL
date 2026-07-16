@@ -52,11 +52,7 @@
             {{if abyss.stats && abyss.stats.length}}
             <div class="abyss-rank-row">
               {{each abyss.stats st}}
-              <div class="abyss-rank-card">
-                {{if st.avatar && st.avatar.face}}
-                <img class="abyss-rank-bg" src="{{st.avatar.face}}" alt="" />
-                {{/if}}
-                <div class="abyss-rank-mask"></div>
+              <div class="abyss-rank-card" {{if st.avatar && (st.avatar.gacha || st.avatar.face)}}style="--rank-img:url('{{st.avatar.gacha || st.avatar.face}}')"{{/if}}>
                 <div class="abyss-rank-text">
                   <div class="abyss-rank-title">{{st.title}}</div>
                   <div class="abyss-rank-val">{{st.value}}</div>
@@ -66,20 +62,20 @@
             </div>
             {{/if}}
             {{each abyss.floors fl}}
-            <div class="block-card abyss-floor {{if fl.useSplitLineup}}floor-12{{else}}floor-normal{{/if}}">
+            <div class="block-card abyss-floor {{if fl.useSplitLineup}}floor-split{{else}}floor-rooms-detail{{/if}}">
               <div class="block-head">
                 <span class="bh-title">第 {{fl.index}} 层</span>
                 <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
               </div>
 
               {{if fl.useSplitLineup}}
-              <!-- 12 层：左右两个大框（上半 4 / 下半 4） -->
-              <div class="floor-split-lineup">
-                <div class="split-box">
+              <!-- 仅 11 层：顶部上/下半队共用一个大框 + 底部 1/2/3 间小头像 -->
+              <div class="floor-one-box">
+                <div class="one-box-side">
                   <div class="split-label">上</div>
-                  <div class="team mcard-team team-n{{fl.lineupUp.length}}">
+                  <div class="team mcard-team flat-team team-n{{fl.lineupUp.length}}">
                     {{each fl.lineupUp a}}
-                    <div class="mcard star-{{a.star}}">
+                    <div class="mcard flat star-{{a.star}}">
                       <div class="mcard-face">
                         {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
                         <span class="mcard-cons">{{a.cons}}</span>
@@ -109,11 +105,12 @@
                     {{/each}}
                   </div>
                 </div>
-                <div class="split-box">
+                <div class="one-box-divider"></div>
+                <div class="one-box-side">
                   <div class="split-label">下</div>
-                  <div class="team mcard-team team-n{{fl.lineupDown.length}}">
+                  <div class="team mcard-team flat-team team-n{{fl.lineupDown.length}}">
                     {{each fl.lineupDown a}}
-                    <div class="mcard star-{{a.star}}">
+                    <div class="mcard flat star-{{a.star}}">
                       <div class="mcard-face">
                         {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
                         <span class="mcard-cons">{{a.cons}}</span>
@@ -145,7 +142,6 @@
                 </div>
               </div>
 
-              <!-- 12 层底部：1/2/3 间小头像（不挤压） -->
               <div class="floor-rooms">
                 {{each fl.levels lv}}
                 <div class="floor-room">
@@ -180,20 +176,21 @@
               </div>
 
               {{else}}
-              <!-- 11 层等：原来的按间上下半大卡 -->
+              <!-- 12 层：恢复 3 间，每间上/下半队各共用一个框，无角色独立小框 -->
               {{each fl.levels lv}}
               <div class="level-compact">
                 <div class="lv-bar">
                   <span>间 {{lv.index}}</span>
-                  <span>★{{lv.star}}</span>
+                  <span class="room-stars">{{lv.starText}}</span>
+                  <span class="room-time">{{lv.time || ''}}</span>
                 </div>
                 <div class="half-row">
                   {{if lv.up}}
-                  <div class="half-col">
+                  <div class="half-col shared-box">
                     <div class="half-label">上</div>
-                    <div class="team mcard-team team-n{{lv.up.avatars.length}}">
+                    <div class="team mcard-team flat-team team-n{{lv.up.avatars.length}}">
                       {{each lv.up.avatars a}}
-                      <div class="mcard star-{{a.star}}">
+                      <div class="mcard flat star-{{a.star}}">
                         <div class="mcard-face">
                           {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
                           <span class="mcard-cons">{{a.cons}}</span>
@@ -225,11 +222,11 @@
                   </div>
                   {{/if}}
                   {{if lv.down}}
-                  <div class="half-col">
+                  <div class="half-col shared-box">
                     <div class="half-label">下</div>
-                    <div class="team mcard-team team-n{{lv.down.avatars.length}}">
+                    <div class="team mcard-team flat-team team-n{{lv.down.avatars.length}}">
                       {{each lv.down.avatars a}}
-                      <div class="mcard star-{{a.star}}">
+                      <div class="mcard flat star-{{a.star}}">
                         <div class="mcard-face">
                           {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
                           <span class="mcard-cons">{{a.cons}}</span>

@@ -130,7 +130,7 @@ body {
   background: rgba(255, 255, 255, 0.25); border-radius: 12px;
 }
 
-/* 深渊顶部战绩条：最强一击 / 承伤 / 击破 / 战技 / 爆发 */
+/* 深渊顶部战绩条：背景图 + 底部渐变，角色脸清晰可见 */
 .abyss-rank-row {
   display: flex;
   gap: 8px;
@@ -140,63 +140,51 @@ body {
   position: relative;
   flex: 1 1 0;
   min-width: 0;
-  height: 138px;
+  height: 150px;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(30, 40, 60, 0.55);
+  background-color: rgba(30, 40, 60, 0.55);
+  background-image: var(--rank-img);
+  background-repeat: no-repeat;
+  background-position: 70% 12%;
+  background-size: cover;
   box-shadow: 0 2px 6px rgba(20, 30, 50, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.22);
 }
-.abyss-rank-bg {
-  position: absolute;
-  right: 0;
-  bottom: -4%;
-  width: 100%;
-  height: 132%;
-  object-fit: cover;
-  object-position: top center;
-  opacity: 0.97;
-  filter: saturate(1.05);
-  pointer-events: none;
-}
-.abyss-rank-mask {
+.abyss-rank-card::after {
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    105deg,
-    rgba(18, 24, 40, 0.88) 0%,
-    rgba(18, 24, 40, 0.55) 42%,
-    rgba(18, 24, 40, 0.14) 78%,
-    rgba(18, 24, 40, 0.03) 100%
-  );
+  /* 底部/左侧压暗，保证文字可读，右上角露脸 */
+  background:
+    linear-gradient(180deg, rgba(10, 14, 24, 0.08) 0%, rgba(10, 14, 24, 0.12) 42%, rgba(10, 14, 24, 0.78) 100%),
+    linear-gradient(90deg, rgba(10, 14, 24, 0.55) 0%, rgba(10, 14, 24, 0.18) 45%, rgba(10, 14, 24, 0) 72%);
   pointer-events: none;
 }
 .abyss-rank-text {
-  position: relative;
+  position: absolute;
+  left: 10px;
+  right: 8px;
+  bottom: 10px;
   z-index: 1;
-  padding: 12px 11px 10px;
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 .abyss-rank-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  color: rgba(255, 245, 220, 0.95);
+  color: rgba(255, 245, 220, 0.98);
   line-height: 1.2;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .abyss-rank-val {
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: 22px;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 1.1;
   color: #fff7e8;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .block-card {
@@ -494,6 +482,60 @@ footer {
   padding: 4px 2px 5px;
   box-sizing: border-box;
 }
+/* 深渊半队：去掉角色独立小框，武器/遗器不再越界 */
+.abyss-floor .mcard.flat,
+.half-col.shared-box .mcard.flat {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  /* 顶部留一点空间给命座角标，避免 0/1/6 被裁切 */
+  padding: 6px 2px 3px;
+  overflow: visible;
+}
+.abyss-floor .mcard.flat .mcard-face,
+.half-col.shared-box .mcard.flat .mcard-face {
+  overflow: visible;
+}
+.abyss-floor .mcard.flat .mcard-gear,
+.half-col.shared-box .mcard.flat .mcard-gear {
+  width: 100%;
+  max-width: 100%;
+  gap: 3px;
+  margin-top: 2px;
+}
+.abyss-floor .mcard.flat .gbox,
+.half-col.shared-box .mcard.flat .gbox {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.half-col.shared-box {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  /* 顶部/左右留空，命座角标完整显示 */
+  padding: 8px 6px 5px;
+  overflow: visible;
+}
+.half-col.shared-box .flat-team {
+  gap: 4px;
+  padding: 0;
+  justify-content: space-between;
+  overflow: visible;
+}
+.half-col.shared-box .flat-team > .mcard {
+  flex: 1 1 0;
+  width: 0;
+  max-width: 78px;
+  overflow: visible;
+}
+.half-col.shared-box .flat-team.team-n1 { justify-content: flex-start; }
+.half-col.shared-box .flat-team.team-n1 > .mcard { flex: 0 0 auto; width: 96px; max-width: 96px; }
+.half-col.shared-box .flat-team.team-n2 { justify-content: flex-start; gap: 8px; }
+.half-col.shared-box .flat-team.team-n2 > .mcard { flex: 0 0 auto; width: 84px; max-width: 84px; }
+.half-col.shared-box .flat-team.team-n3 { justify-content: flex-start; gap: 5px; }
+.half-col.shared-box .flat-team.team-n3 > .mcard { flex: 0 0 auto; width: 74px; max-width: 74px; }
 .mcard-face {
   position: relative;
   width: 44px;
@@ -520,18 +562,21 @@ footer {
 }
 .mcard-cons {
   position: absolute;
-  right: -4px;
-  top: -3px;
-  min-width: 14px;
-  height: 14px;
-  line-height: 14px;
-  border-radius: 7px;
+  right: -2px;
+  top: -2px;
+  z-index: 3;
+  min-width: 15px;
+  height: 15px;
+  line-height: 15px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #6ea8ff, #4a7fd4);
   color: #fff;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   padding: 0 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  box-sizing: border-box;
 }
 .mcard-cons.trial {
   background: linear-gradient(135deg, #b07bff, #7a4fd0);
@@ -792,63 +837,144 @@ footer {
 }
 
 
-/* 12 层：左右两个大框（上半 / 下半）—— 只拉高 12 层，不动 11 层 */
+/* 11/12 层：同一个大框里放上半+下半 */
+.floor-one-box {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 6px 6px 5px;
+  padding: 8px 6px 8px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+}
+.floor-one-box .one-box-side {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 4px;
+}
+.floor-one-box .one-box-divider {
+  width: 1px;
+  margin: 4px 2px;
+  background: rgba(70, 80, 100, 0.22);
+  flex-shrink: 0;
+}
+.floor-one-box .split-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  margin: 0 0 5px 3px;
+}
+.floor-one-box .team.mcard-team {
+  justify-content: space-between;
+  gap: 5px;
+  padding: 0;
+}
+.floor-one-box .team.mcard-team > .mcard {
+  flex: 1 1 0;
+  width: 0;
+  max-width: 96px;
+  padding: 6px 2px 7px;
+}
+.floor-one-box .mcard-face,
+.floor-one-box .mcard-face img {
+  width: 56px;
+  height: 56px;
+}
+.floor-one-box .mcard-lv {
+  height: 15px;
+  line-height: 15px;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.floor-one-box .mcard-name {
+  font-size: 11px;
+  height: 14px;
+  line-height: 14px;
+}
+.floor-one-box .mcard-talent span {
+  max-width: 20px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+}
+.floor-one-box .gbox {
+  width: 28px;
+  height: 28px;
+}
+.floor-one-box .mcard-gear {
+  gap: 4px;
+  margin-top: 4px;
+}
+/* 半队少人时放大 */
+.floor-one-box .team-n1 { justify-content: flex-start; }
+.floor-one-box .team-n1 > .mcard { flex: 0 0 auto; width: 112px; max-width: 112px; }
+.floor-one-box .team-n1 .mcard-face,
+.floor-one-box .team-n1 .mcard-face img { width: 64px; height: 64px; }
+.floor-one-box .team-n2 { justify-content: flex-start; gap: 12px; }
+.floor-one-box .team-n2 > .mcard { flex: 0 0 auto; width: 100px; max-width: 100px; }
+.floor-one-box .team-n2 .mcard-face,
+.floor-one-box .team-n2 .mcard-face img { width: 60px; height: 60px; }
+.floor-one-box .team-n3 { justify-content: flex-start; gap: 8px; }
+.floor-one-box .team-n3 > .mcard { flex: 0 0 auto; width: 88px; max-width: 88px; }
+.floor-one-box .team-n3 .mcard-face,
+.floor-one-box .team-n3 .mcard-face img { width: 56px; height: 56px; }
+
+/* 兼容旧类名：如果还有 floor-split-lineup 也走同样放大规则 */
 .floor-split-lineup {
   display: flex;
-  gap: 6px;
-  padding: 8px 6px 7px;
+  gap: 8px;
+  padding: 10px 7px 9px;
 }
 .floor-split-lineup .split-box {
   flex: 1 1 0;
   min-width: 0;
-  /* 与 11 层 .half-col 同色 */
   background: rgba(255, 255, 255, 0.22);
-  border-radius: 10px;
-  padding: 6px 5px 7px;
+  border-radius: 12px;
+  padding: 8px 6px 9px;
   box-shadow: none;
 }
 .floor-split-lineup .split-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  color: #777;
-  margin: 0 0 4px 3px;
+  color: #666;
+  margin: 0 0 5px 4px;
 }
 .floor-split-lineup .team.mcard-team {
   justify-content: space-between;
-  gap: 4px;
+  gap: 5px;
   padding: 0;
 }
 .floor-split-lineup .team.mcard-team > .mcard {
   flex: 1 1 0;
   width: 0;
-  max-width: 86px;
-  padding: 5px 2px 6px;
+  max-width: 96px;
+  padding: 6px 2px 7px;
 }
 .floor-split-lineup .mcard-face,
 .floor-split-lineup .mcard-face img {
-  width: 50px;
-  height: 50px;
+  width: 56px;
+  height: 56px;
 }
 .floor-split-lineup .mcard-lv {
-  height: 14px;
-  line-height: 14px;
-  font-size: 11px;
-  margin-top: 3px;
-}
-.floor-split-lineup .mcard-name {
-  font-size: 10px;
-  height: 13px;
-  line-height: 13px;
-}
-.floor-split-lineup .mcard-talent span {
-  max-width: 18px;
   height: 15px;
   line-height: 15px;
-  font-size: 9px;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.floor-split-lineup .mcard-name {
+  font-size: 11px;
+  height: 14px;
+  line-height: 14px;
+}
+.floor-split-lineup .mcard-talent span {
+  max-width: 20px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
 }
 .floor-split-lineup .gbox {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
 }
 .floor-split-lineup .mcard-gear {
   gap: 4px;
@@ -856,19 +982,25 @@ footer {
 }
 /* 半队少人时放大 */
 .floor-split-lineup .team-n1 { justify-content: flex-start; }
-.floor-split-lineup .team-n1 > .mcard { flex: 0 0 auto; width: 104px; max-width: 104px; }
-.floor-split-lineup .team-n2 { justify-content: flex-start; gap: 10px; }
-.floor-split-lineup .team-n2 > .mcard { flex: 0 0 auto; width: 92px; max-width: 92px; }
-.floor-split-lineup .team-n3 { justify-content: flex-start; gap: 6px; }
-.floor-split-lineup .team-n3 > .mcard { flex: 0 0 auto; width: 80px; max-width: 80px; }
+.floor-split-lineup .team-n1 > .mcard { flex: 0 0 auto; width: 112px; max-width: 112px; }
+.floor-split-lineup .team-n1 .mcard-face,
+.floor-split-lineup .team-n1 .mcard-face img { width: 64px; height: 64px; }
+.floor-split-lineup .team-n2 { justify-content: flex-start; gap: 12px; }
+.floor-split-lineup .team-n2 > .mcard { flex: 0 0 auto; width: 100px; max-width: 100px; }
+.floor-split-lineup .team-n2 .mcard-face,
+.floor-split-lineup .team-n2 .mcard-face img { width: 60px; height: 60px; }
+.floor-split-lineup .team-n3 { justify-content: flex-start; gap: 8px; }
+.floor-split-lineup .team-n3 > .mcard { flex: 0 0 auto; width: 88px; max-width: 88px; }
+.floor-split-lineup .team-n3 .mcard-face,
+.floor-split-lineup .team-n3 .mcard-face img { width: 56px; height: 56px; }
 
 /* 12 层底栏：1/2/3 间，浅色风格与 11 层统一，略增高 */
-.abyss-floor.floor-12 .floor-rooms {
+.abyss-floor.floor-split .floor-rooms {
   display: flex;
   gap: 5px;
   padding: 0 6px 8px;
 }
-.abyss-floor.floor-12 .floor-room {
+.abyss-floor.floor-split .floor-room {
   flex: 1 1 0;
   min-width: 0;
   background: rgba(255, 255, 255, 0.22);
@@ -878,7 +1010,7 @@ footer {
   box-shadow: none;
   overflow: visible;
 }
-.abyss-floor.floor-12 .room-meta {
+.abyss-floor.floor-split .room-meta {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -888,26 +1020,26 @@ footer {
   white-space: nowrap;
   color: #555;
 }
-.abyss-floor.floor-12 .room-title { color: #333; }
-.abyss-floor.floor-12 .room-stars {
+.abyss-floor.floor-split .room-title { color: #333; }
+.abyss-floor.floor-split .room-stars {
   color: #d4a017;
   letter-spacing: 0;
   font-size: 10px;
 }
-.abyss-floor.floor-12 .room-time {
+.abyss-floor.floor-split .room-time {
   margin-left: auto;
   color: #777;
   font-size: 9px;
   font-weight: 600;
 }
-.abyss-floor.floor-12 .room-avatars {
+.abyss-floor.floor-split .room-avatars {
   display: flex;
   align-items: center;
   gap: 6px;
   min-height: 32px;
   overflow: visible;
 }
-.abyss-floor.floor-12 .room-side {
+.abyss-floor.floor-split .room-side {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -917,13 +1049,13 @@ footer {
   flex-wrap: nowrap;
   overflow: visible;
 }
-.abyss-floor.floor-12 .room-split {
+.abyss-floor.floor-split .room-split {
   width: 1px;
   height: 26px;
   background: rgba(80, 90, 110, 0.28);
   flex-shrink: 0;
 }
-.abyss-floor.floor-12 .room-av {
+.abyss-floor.floor-split .room-av {
   flex: 1 1 0;
   width: auto;
   max-width: 30px;
@@ -941,20 +1073,20 @@ footer {
   color: #555;
   box-sizing: border-box;
 }
-.abyss-floor.floor-12 .room-av img {
+.abyss-floor.floor-split .room-av img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.abyss-floor.floor-12 .room-av.star-5 { border-color: rgba(210, 150, 30, 0.98); }
-.abyss-floor.floor-12 .room-av.star-4 { border-color: rgba(130, 70, 210, 0.98); }
+.abyss-floor.floor-split .room-av.star-5 { border-color: rgba(210, 150, 30, 0.98); }
+.abyss-floor.floor-split .room-av.star-4 { border-color: rgba(130, 70, 210, 0.98); }
 
 /* 11 层：保持原按间样式，不额外拉高 */
-.abyss-floor.floor-normal .level-compact {
+.abyss-floor.floor-rooms-detail .level-compact {
   padding: 4px 5px 5px;
 }
-.abyss-floor.floor-normal .half-col {
+.abyss-floor.floor-rooms-detail .half-col {
   padding: 3px;
 }
 
@@ -962,3 +1094,48 @@ footer {
 .col-abyss .block-head { padding: 5px 8px; }
 .col-abyss .col-body { gap: 6px; }
 .col-abyss .block-card + .block-card { margin-top: 0; }
+
+
+/* 顶部上/下半队：共用大框，角色无独立小框 */
+.floor-one-box .flat-team {
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0;
+  overflow: visible;
+}
+.floor-one-box .flat-team > .mcard.flat {
+  flex: 1 1 0;
+  width: 0;
+  max-width: 90px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 6px 2px 3px;
+  overflow: visible;
+}
+.floor-one-box .flat-team > .mcard.flat .mcard-face {
+  overflow: visible;
+}
+.floor-one-box .flat-team > .mcard.flat .mcard-face,
+.floor-one-box .flat-team > .mcard.flat .mcard-face img {
+  width: 52px;
+  height: 52px;
+}
+.floor-one-box .flat-team > .mcard.flat .gbox {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+}
+.floor-one-box {
+  overflow: visible;
+}
+.floor-one-box .one-box-side {
+  overflow: visible;
+}
+.floor-one-box .flat-team.team-n1 { justify-content: flex-start; }
+.floor-one-box .flat-team.team-n1 > .mcard.flat { flex: 0 0 auto; width: 104px; max-width: 104px; }
+.floor-one-box .flat-team.team-n2 { justify-content: flex-start; gap: 10px; }
+.floor-one-box .flat-team.team-n2 > .mcard.flat { flex: 0 0 auto; width: 92px; max-width: 92px; }
+.floor-one-box .flat-team.team-n3 { justify-content: flex-start; gap: 6px; }
+.floor-one-box .flat-team.team-n3 > .mcard.flat { flex: 0 0 auto; width: 80px; max-width: 80px; }
