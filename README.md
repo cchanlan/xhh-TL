@@ -185,11 +185,11 @@ bh3_stoken_dir: plugins/xhh-TL/data/Stoken
 - `guoba.support.js` - 锅巴配置项
 - `resources/Tl/` - 体力模板
 - `resources/help/` - 帮助图模板
-- `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板
-- `resources/jysy/` - 星铁深渊相关模板资源
+- `resources/all-abyss.html` / `all-abyss-mobile.html` - 星铁全部深渊模板（角色/图标素材走 miao-plugin）
 - `resources/role_combat/` - 剧诗 / 小剧诗模板
 - `resources/gs_all_abyss/` - 原神全部深渊模板
-- `resources/stat/imgs/bg1.png` - 默认背景图
+- `resources/nanoka_abyss/` - Nanoka 深渊模板
+- `resources/stat/imgs/bg1.png` / `bg2.png` - 默认背景图
 
 ## 临时文件清理
 
