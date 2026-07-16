@@ -11,8 +11,8 @@ import YAML from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
-import { enhanceRenderImage } from '../utils/renderImage.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
@@ -398,6 +398,7 @@ export async function allAbyss(e) {
 
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
+      const renderScale = getRenderScaleStyle(config(), isMobile ? 2.0 : 1.0);
       const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
@@ -424,7 +425,7 @@ export async function allAbyss(e) {
             const localPath = ppath;
             return {
               imgType: 'png',
-              sys: { scale: '' },
+              sys: { scale: renderScale },
               ...data,
               ppath,
               tplFile,
@@ -433,7 +434,7 @@ export async function allAbyss(e) {
             };
           }
         });
-        const image = await enhanceRenderImage(renderResult, config());
+        const image = extractRenderBuffer(renderResult);
         if (image) return e.reply(segment.image(image), true);
         throw new Error('渲染结果中没有图片数据');
       } catch (err) {

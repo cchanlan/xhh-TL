@@ -10,8 +10,8 @@ import yaml from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
-import { enhanceRenderImage } from '../utils/renderImage.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -230,6 +230,7 @@ export async function miniPeak(e) {
     };
 
     const templateName = 'game_peak';
+    const renderScale = getRenderScaleStyle(config(), 1.2);
     const tplFile = pluginDir + '/resources/jysy/game_peak.html';
 
     try {
@@ -239,7 +240,7 @@ export async function miniPeak(e) {
         beforeRender({ data }) {
           return {
             imgType: 'png',
-            sys: { scale: '' },
+            sys: { scale: renderScale },
             ...data,
             ppath,
             tplFile,
@@ -248,7 +249,7 @@ export async function miniPeak(e) {
           };
         }
       });
-      const image = await enhanceRenderImage(renderResult, config());
+      const image = extractRenderBuffer(renderResult);
       if (!image) throw new Error('渲染结果中没有图片数据');
       return e.reply(segment.image(image), true);
     } catch (err) {

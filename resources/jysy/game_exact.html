@@ -16,6 +16,8 @@
 body {
     font-family: "SR", "Microsoft YaHei", sans-serif;
     background: #000;
+    width: 1200px;
+    transform-origin: 0 0;
 }
 
 #container {
@@ -213,7 +215,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body {{sys.scale}}>
 <div id="container">
 <div class="page">
     <!-- 左面板 -->

@@ -22,7 +22,7 @@ html, body {
 body {
   color: #e8eaf0;
   font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  /* CSS 始终保持 1:1 布局；超清化在完整截图后由插件处理。 */
+  transform-origin: 0 0;
 }
 
 .nk-page {
@@ -473,8 +473,8 @@ body {
 
   </style>
 </head>
-<body>
-  <div class="nk-page">
+<body {{sys.scale}}>
+  <div class="nk-page" id="container">
     <div class="nk-glow a"></div>
     <div class="nk-glow b"></div>
 

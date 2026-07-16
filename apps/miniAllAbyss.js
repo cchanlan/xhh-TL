@@ -10,8 +10,8 @@ import lodash from 'lodash';
 import sharp from 'sharp';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
-import { enhanceRenderImage, extractRenderBuffer } from '../utils/renderImage.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -193,6 +193,7 @@ function buildAvatarList(avatars, ppath, avatarData) {
  */
 async function renderMiniToBuffer(e, templateName, renderData, ppath) {
   const tplFile = pluginDir + `/resources/jysy/${templateName}.html`;
+  const renderScale = getRenderScaleStyle(config(), 1.2);
 
   const result = await e.runtime.render('xhh-TL', templateName, renderData, {
     retType: 'base64',
@@ -200,7 +201,7 @@ async function renderMiniToBuffer(e, templateName, renderData, ppath) {
     beforeRender({ data }) {
       return {
         imgType: 'png',
-        sys: { scale: '' },
+        sys: { scale: renderScale },
         ...data,
         ppath,
         tplFile,
@@ -453,6 +454,7 @@ export async function miniAllAbyss(e) {
 
     const gridPpath = '../../../../plugins/xhh-TL/resources/';
     const gridTpl = pluginDir + '/resources/grid-abyss.html';
+    const gridScale = getRenderScaleStyle(config(), 1.1);
 
     const gridResult = await e.runtime.render('xhh-TL', 'grid-abyss', {
       img1: tmpFiles[0] || '',
@@ -469,7 +471,7 @@ export async function miniAllAbyss(e) {
       beforeRender({ data }) {
         return {
           imgType: 'png',
-          sys: { scale: '' },
+          sys: { scale: gridScale },
           ...data,
           ppath: gridPpath,
           tplFile: gridTpl,
@@ -478,7 +480,7 @@ export async function miniAllAbyss(e) {
         };
       }
     });
-    const image = await enhanceRenderImage(gridResult, config());
+    const image = extractRenderBuffer(gridResult);
 
     // 清理临时文件
     for (const f of tmpFiles) {

@@ -109,11 +109,17 @@ export function getImageQuality(config = {}, fallback = 100) {
   return Math.min(100, Math.max(1, Math.round(value)))
 }
 
-/** Resolve the plugin-side lossless post-render upscale factor. */
+/** Resolve the global render multiplier. */
 export function getRenderScale(config = {}, fallback = 1) {
   const value = Number(config?.render_scale)
   if (!Number.isFinite(value)) return fallback
-  return Number(Math.min(2, Math.max(1, value)).toFixed(2))
+  return Number(Math.min(1.5, Math.max(0.8, value)).toFixed(2))
+}
+
+/** Match earth-k-plugin: template base scale multiplied by a global adjustment. */
+export function getRenderScaleStyle(config = {}, baseScale = 1) {
+  const scale = Math.min(2, Math.max(1, baseScale * getRenderScale(config, 1)))
+  return `style=transform:scale(${Number(scale.toFixed(2))})`
 }
 
 /** 强制刷新缓存 */

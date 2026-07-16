@@ -1,8 +1,5 @@
 import fs from 'fs'
 import path from 'path'
-import sharp from 'sharp'
-
-import { getRenderScale } from './pluginConfig.js'
 
 /** Extract an image buffer from the return shapes used by different Yunzai runtimes. */
 export function extractRenderBuffer(result) {
@@ -33,32 +30,4 @@ export function extractRenderBuffer(result) {
     } catch (_) {}
   }
   return null
-}
-
-/**
- * Upscale the complete rendered image after capture, so CSS layout and crop bounds
- * remain untouched. Lanczos3 plus mild sharpening improves text/icon edge clarity.
- */
-export async function enhanceRenderImage(result, config = {}, options = {}) {
-  const input = extractRenderBuffer(result)
-  if (!input) return null
-
-  const scale = Number(options.scale ?? getRenderScale(config))
-  let pipeline = sharp(input, { failOn: 'none' })
-  const meta = await pipeline.metadata()
-
-  if (scale > 1 && meta.width && meta.height) {
-    pipeline = pipeline
-      .resize({
-        width: Math.max(1, Math.round(meta.width * scale)),
-        height: Math.max(1, Math.round(meta.height * scale)),
-        fit: 'fill',
-        kernel: sharp.kernel.lanczos3,
-      })
-      .sharpen({ sigma: 0.65 })
-  }
-
-  return pipeline
-    .png({ compressionLevel: 9, adaptiveFiltering: true, palette: false })
-    .toBuffer()
 }

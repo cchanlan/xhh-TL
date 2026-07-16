@@ -50,13 +50,13 @@ export function supportGuoba() {
         {
           field: 'render_scale',
           label: '渲染倍率',
-          bottomHelpMessage: '完整截图后在插件内无损放大并锐化，不改变网页布局；推荐 1.5',
+          bottomHelpMessage: '各模板会按宽度选择合适倍率；此项用于全局微调，推荐保持 1.0',
           component: 'InputNumber',
           componentProps: {
-            min: 1,
-            max: 2,
+            min: 0.8,
+            max: 1.5,
             step: 0.1,
-            placeholder: '默认 1.5'
+            placeholder: '默认 1.0'
           }
         },
         {

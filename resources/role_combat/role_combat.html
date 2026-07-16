@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <link rel="stylesheet" href="{{ppath}}role_combat/role_combat.css" />
 </head>
-<body>
-<div class="page" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
+<body {{sys.scale}}>
+<div class="page" id="container" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
 <div class="bg-orb one"></div><div class="bg-orb two"></div>
 <main class="card">
 <header class="hero">

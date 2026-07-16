@@ -20,7 +20,7 @@ import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
-import { getImageQuality, getRenderScale, readPluginConfig } from '../utils/pluginConfig.js'
+import { getImageQuality, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
 const STATIC = 'https://static.nanoka.cc'
@@ -1939,7 +1939,7 @@ export class nanokaAbyss extends plugin {
 
   async renderToBuffer(e, data, saveId) {
     const renderConfig = cfg()
-    const renderScale = getRenderScale(renderConfig)
+    const renderScale = getRenderScaleStyle(renderConfig, 1.4)
     const renderResult = await e.runtime.render('xhh-TL', 'nanoka_abyss', data, {
       retType: 'base64',
       imgType: 'png',
@@ -1948,7 +1948,7 @@ export class nanokaAbyss extends plugin {
           ...d,
           imgType: 'png',
           sys: {
-            scale: '',
+            scale: renderScale,
           },
           ppath: '../../../../plugins/xhh-TL/resources/',
           tplFile: path.join(pluginDir, 'resources/nanoka_abyss/nanoka_abyss.html'),
@@ -1978,19 +1978,7 @@ export class nanokaAbyss extends plugin {
     if (!buf) return null
 
     try {
-      const meta = await sharp(buf).metadata()
-      let pipeline = sharp(buf)
-      if (renderScale > 1 && meta.width && meta.height) {
-        pipeline = pipeline
-          .resize({
-            width: Math.round(meta.width * renderScale),
-            height: Math.round(meta.height * renderScale),
-            fit: 'fill',
-            kernel: sharp.kernel.lanczos3,
-          })
-          .sharpen({ sigma: 0.65 })
-      }
-      buf = await pipeline
+      buf = await sharp(buf)
         .png({ compressionLevel: 9, adaptiveFiltering: true })
         .toBuffer()
     } catch (err) {

@@ -13,8 +13,8 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
-import { enhanceRenderImage } from '../utils/renderImage.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -653,6 +653,7 @@ export class gsAllAbyss extends plugin {
     const qqname = e.sender?.card || e.sender?.nickname || String(qq)
     const bgImage = pickBgImage()
     // 三列约 1100 宽
+    const renderScale = getRenderScaleStyle(config(), 1.2)
     const tplFile = pluginDir + '/resources/gs_all_abyss/gs_all_abyss.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
 
@@ -675,7 +676,7 @@ export class gsAllAbyss extends plugin {
         beforeRender({ data }) {
           return {
             imgType: 'png',
-            sys: { scale: '' },
+            sys: { scale: renderScale },
             ...data,
             ppath,
             tplFile,
@@ -684,7 +685,7 @@ export class gsAllAbyss extends plugin {
           }
         },
       })
-      const image = await enhanceRenderImage(renderResult, config())
+      const image = extractRenderBuffer(renderResult)
       if (image) return e.reply(segment.image(image), true)
       return e.reply('渲染失败，请稍后再试')
     } catch (err) {

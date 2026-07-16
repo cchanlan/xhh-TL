@@ -13,7 +13,6 @@
 body {
   font-size: 18px;
   color: #1e1f20;
-  transform: scale(1.4);
   transform-origin: 0 0;
   background: url("./imgs/bg1.png") top left no-repeat #2a3860;
   width: 600px;

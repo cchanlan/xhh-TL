@@ -11,8 +11,8 @@ import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
 import { createUser } from '../utils/userBind.js';
 import common from '../../../lib/common/common.js';
-import { getStokenCandidateFiles, getBh3StokenDir, readPluginConfig } from '../utils/pluginConfig.js';
-import { enhanceRenderImage } from '../utils/renderImage.js';
+import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js';
+import { extractRenderBuffer } from '../utils/renderImage.js';
 import path from 'path';
 
 // ============ 本地配置 ============
@@ -483,6 +483,7 @@ export class TL extends plugin {
         return true;
       }
 
+      const renderScale = getRenderScaleStyle(config(), 2.0);
       const ppath = '../../../../../plugins/xhh-TL/resources/';
       const tplFile = pluginDir + '/resources/Tl/Tl.html';
       const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', bh3: 'bh3_list' };
@@ -512,7 +513,7 @@ export class TL extends plugin {
               beforeRender({ data }) {
                 return {
                   imgType: 'png',
-                  sys: { scale: '' },
+                  sys: { scale: renderScale },
                   ...chunkData,
                   ppath: ppath,
                   tplFile: tplFile,
@@ -520,7 +521,7 @@ export class TL extends plugin {
                 };
               },
             });
-            const image = await enhanceRenderImage(renderResult, config());
+            const image = extractRenderBuffer(renderResult);
             if (image) allGameSegments.push(segment.image(image));
           }
         }
@@ -560,7 +561,7 @@ export class TL extends plugin {
                 beforeRender({ data }) {
                   return {
                     imgType: 'png',
-                    sys: { scale: '' },
+                    sys: { scale: renderScale },
                     ...chunkData,
                     ppath: ppath,
                     tplFile: tplFile,
@@ -568,7 +569,7 @@ export class TL extends plugin {
                   };
                 },
               });
-              const image = await enhanceRenderImage(renderResult, config());
+              const image = extractRenderBuffer(renderResult);
               if (image) allGameSegments.push(segment.image(image));
             }
           }
@@ -596,7 +597,7 @@ export class TL extends plugin {
           beforeRender({ data }) {
             return {
               imgType: 'png',
-              sys: { scale: '' },
+              sys: { scale: renderScale },
               ...combinedData,
               ppath: ppath,
               tplFile: tplFile,
@@ -604,7 +605,7 @@ export class TL extends plugin {
             };
           },
         });
-        const image = await enhanceRenderImage(renderResult, config());
+        const image = extractRenderBuffer(renderResult);
         if (image) return e.reply(segment.image(image), true);
         return e.reply('图片渲染失败，请稍后重试', true);
       }
@@ -627,7 +628,7 @@ export class TL extends plugin {
           beforeRender({ data }) {
             return {
               imgType: 'png',
-              sys: { scale: '' },
+              sys: { scale: renderScale },
               ...gameRenderData,
               ppath: ppath,
               tplFile: tplFile,
@@ -635,7 +636,7 @@ export class TL extends plugin {
             };
           },
         });
-        const image = await enhanceRenderImage(renderResult, config());
+        const image = extractRenderBuffer(renderResult);
         if (image) allGameSegments.push(segment.image(image));
       }
 
@@ -655,6 +656,7 @@ export class TL extends plugin {
 
     const tplFile = pluginDir + '/resources/Tl/Tl.html';
     const ppath = '../../../../../plugins/xhh-TL/resources/';
+    const renderScale = getRenderScaleStyle(config(), 2.0);
     await this.hideUidIfNeeded(listData, displayQq);
 
     const renderResult = await e.runtime.render('小花火', 'Tl/Tl', listData, {
@@ -664,7 +666,7 @@ export class TL extends plugin {
         return {
           imgType: 'png',
           sys: {
-            scale: '',
+            scale: renderScale,
           },
           ...listData,
           ppath: ppath,
@@ -673,7 +675,7 @@ export class TL extends plugin {
         };
       },
     });
-    const image = await enhanceRenderImage(renderResult, config());
+    const image = extractRenderBuffer(renderResult);
     if (image) return e.reply(segment.image(image), true);
     return e.reply('图片渲染失败，请稍后重试', true);
   }
