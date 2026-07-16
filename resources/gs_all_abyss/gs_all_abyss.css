@@ -1162,14 +1162,12 @@ footer {
   flex: 1 1 0;
   min-width: 0;
   max-width: 100%;
-  height: 118px;
+  height: 132px; /* 与 1 人 solo 同高，上下半底边对齐 */
   overflow: hidden;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(40, 50, 70, 0.22);
-  box-shadow:
-    0 2px 6px rgba(20, 30, 50, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid rgba(40, 50, 70, 0.18);
+  box-shadow: none;
 }
 .wcard.star-5 {
   border-color: rgba(210, 150, 30, 0.55);
@@ -1235,7 +1233,7 @@ footer {
   flex-direction: column;
   justify-content: flex-start;
   padding: 6px 6px 5px 7px;
-  background: rgba(255, 255, 255, 0.42);
+  background: transparent;
 }
 .wcard-name {
   font-size: 14px;
@@ -1335,35 +1333,101 @@ footer {
   line-height: 12px;
 }
 
-/* 2 人时略收紧 */
+/*
+ * 2 人：高度与 1 人 solo 对齐（132px），底边齐平。
+ * 尽量贴满半框边：减小 gap/padding，立绘与装备略放大。
+ * 预算：半框 ~220 → 两卡均分后每卡 ~106（gap 3）
+ *   face 50 + pad 6 + gbox 22×2 + gap 3 ≈ 103，贴边不裁切。
+ */
+.floor-one-box .wcard-team.team-n2 {
+  gap: 3px;
+  width: 100%;
+}
 .floor-one-box .wcard-team.team-n2 .wcard {
-  height: 112px;
+  height: 132px;
+  background: transparent;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-face {
-  flex: 0 0 86px;
-  width: 86px;
+  flex: 0 0 50px;
+  width: 50px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-info {
+  padding: 5px 3px 4px 4px;
+  min-width: 0;
+  background: transparent;
+  overflow: visible;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-name {
-  font-size: 13px;
+  font-size: 12px;
 }
-.floor-one-box .wcard-team.team-n2 .wcard-talent span {
-  height: 16px;
-  line-height: 16px;
+.floor-one-box .wcard-team.team-n2 .wcard-lv-row {
+  margin-top: 3px;
+  min-height: 15px;
+  gap: 2px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-cons {
+  min-width: 13px;
+  height: 13px;
+  font-size: 9px;
+  padding: 0 2px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-lv {
   font-size: 10px;
 }
+.floor-one-box .wcard-team.team-n2 .wcard-talent {
+  margin-top: 5px;
+  gap: 2px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-talent span {
+  height: 15px;
+  line-height: 15px;
+  font-size: 9px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-gear {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 3px;
+  padding-top: 4px;
+  margin-top: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
 .floor-one-box .wcard-team.team-n2 .wcard-gear .gbox {
-  width: 26px;
-  height: 26px;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-gear .gbox i {
+  font-size: 8px;
+  line-height: 10px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-face-lv {
+  font-size: 8px;
+  padding: 6px 1px 2px;
 }
 
-/* 横卡时 one-box 略增高，保证立绘不挤 */
+/* 横卡时 one-box 两侧等高，底边对齐；贴边少留白 */
 .floor-one-box:has(.wcard-team) {
   align-items: stretch;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding: 4px 4px 4px;
+}
+.floor-one-box .one-box-side {
+  display: flex;
+  flex-direction: column;
+  padding: 0 2px;
+}
+.floor-one-box .one-box-side:has(.wcard-team.team-n2) {
+  padding: 0 1px;
 }
 .floor-one-box .wcard-team {
-  min-height: 112px;
+  flex: 1 1 auto;
+  min-height: 132px;
+  align-items: stretch;
 }
 
 /* —— 12 层半队：1/2 人同样用横版立绘卡 —— */
@@ -1383,9 +1447,10 @@ footer {
 .half-col.shared-box .wcard-team.team-n2 {
   gap: 4px;
 }
-/* 12 层半框更窄，整体略收紧 */
+/* 12 层：1/2 人同高 118px，底边对齐；背景透明 */
 .half-col.shared-box .wcard {
-  height: 108px;
+  height: 118px;
+  background: transparent;
 }
 .half-col.shared-box .wcard.wcard-solo {
   height: 118px;
@@ -1406,6 +1471,7 @@ footer {
 }
 .half-col.shared-box .wcard-info {
   padding: 5px 5px 4px 6px;
+  background: transparent;
 }
 .half-col.shared-box .wcard-talent {
   margin-top: 5px;
@@ -1435,25 +1501,87 @@ footer {
 .half-col.shared-box .wcard.wcard-solo .wcard-face-lv {
   font-size: 10px;
 }
-/* 12 层 2 人再收一点 */
+/*
+ * 12 层 2 人：与 1 人同高 118px，尽量贴满半框。
+ */
+.half-col.shared-box .wcard-team.team-n2 {
+  gap: 2px;
+  width: 100%;
+}
 .half-col.shared-box .wcard-team.team-n2 .wcard {
-  height: 100px;
+  height: 118px;
+  background: transparent;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-face {
-  flex: 0 0 72px;
-  width: 72px;
+  flex: 0 0 44px;
+  width: 44px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-info {
+  padding: 4px 2px 3px 3px;
+  min-width: 0;
+  background: transparent;
+  overflow: visible;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-name {
-  font-size: 12px;
+  font-size: 11px;
 }
-.half-col.shared-box .wcard-team.team-n2 .wcard-talent span {
-  height: 15px;
-  line-height: 15px;
+.half-col.shared-box .wcard-team.team-n2 .wcard-lv-row {
+  margin-top: 2px;
+  min-height: 13px;
+  gap: 2px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-cons {
+  min-width: 12px;
+  height: 12px;
+  font-size: 8px;
+  padding: 0 2px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-lv {
   font-size: 9px;
 }
+.half-col.shared-box .wcard-team.team-n2 .wcard-talent {
+  margin-top: 4px;
+  gap: 1px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-talent span {
+  height: 14px;
+  line-height: 14px;
+  font-size: 8px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-gear {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 2px;
+  padding-top: 3px;
+  margin-top: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
 .half-col.shared-box .wcard-team.team-n2 .wcard-gear .gbox {
-  width: 22px;
-  height: 22px;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-gear .gbox i {
+  font-size: 8px;
+  line-height: 9px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-face-lv {
+  font-size: 7px;
+  padding: 5px 1px 2px;
+}
+/* 有横卡时 shared-box 更贴边 */
+.half-col.shared-box:has(.wcard-team) {
+  padding: 4px 3px 4px;
+  overflow: visible;
+}
+.half-col.shared-box:has(.wcard-team.team-n2) {
+  padding: 4px 2px 4px;
 }
 /* 有横卡时 shared-box 顶部留白稍减 */
 .half-col.shared-box:has(.wcard-team) {
