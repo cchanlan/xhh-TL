@@ -11,7 +11,8 @@ import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
 import { createUser } from '../utils/userBind.js';
 import common from '../../../lib/common/common.js';
-import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js';
+import { getStokenCandidateFiles, getBh3StokenDir, readPluginConfig } from '../utils/pluginConfig.js';
+import { enhanceRenderImage } from '../utils/renderImage.js';
 import path from 'path';
 
 // ============ 本地配置 ============
@@ -482,7 +483,6 @@ export class TL extends plugin {
         return true;
       }
 
-      const renderScale = getRenderScaleStyle(config(), 2.5);
       const ppath = '../../../../../plugins/xhh-TL/resources/';
       const tplFile = pluginDir + '/resources/Tl/Tl.html';
       const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', bh3: 'bh3_list' };
@@ -506,12 +506,13 @@ export class TL extends plugin {
             chunkData[keyMap[game]] = chunk;
             await this.hideUidIfNeeded(chunkData, displayQq);
 
-            const segment = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
+            const renderResult = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
               retType: 'base64',
               imgType: 'png',
               beforeRender({ data }) {
                 return {
-                  sys: { scale: renderScale },
+                  imgType: 'png',
+                  sys: { scale: '' },
                   ...chunkData,
                   ppath: ppath,
                   tplFile: tplFile,
@@ -519,7 +520,8 @@ export class TL extends plugin {
                 };
               },
             });
-            if (segment) allGameSegments.push(segment);
+            const image = await enhanceRenderImage(renderResult, config());
+            if (image) allGameSegments.push(segment.image(image));
           }
         }
 
@@ -552,12 +554,13 @@ export class TL extends plugin {
               chunkData[keyMap[game]] = chunk;
               await this.hideUidIfNeeded(chunkData, displayQq);
 
-              const segment = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
+              const renderResult = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
                 retType: 'base64',
                 imgType: 'png',
                 beforeRender({ data }) {
                   return {
-                    sys: { scale: renderScale },
+                    imgType: 'png',
+                    sys: { scale: '' },
                     ...chunkData,
                     ppath: ppath,
                     tplFile: tplFile,
@@ -565,7 +568,8 @@ export class TL extends plugin {
                   };
                 },
               });
-              if (segment) allGameSegments.push(segment);
+              const image = await enhanceRenderImage(renderResult, config());
+              if (image) allGameSegments.push(segment.image(image));
             }
           }
           if (allGameSegments.length === 1) return e.reply(allGameSegments[0], true);
@@ -591,7 +595,8 @@ export class TL extends plugin {
           imgType: 'png',
           beforeRender({ data }) {
             return {
-              sys: { scale: renderScale },
+              imgType: 'png',
+              sys: { scale: '' },
               ...combinedData,
               ppath: ppath,
               tplFile: tplFile,
@@ -599,10 +604,9 @@ export class TL extends plugin {
             };
           },
         });
-        if (renderResult && Buffer.isBuffer(renderResult.file)) {
-          return e.reply(segment.image(renderResult.file), true);
-        }
-        return true;
+        const image = await enhanceRenderImage(renderResult, config());
+        if (image) return e.reply(segment.image(image), true);
+        return e.reply('图片渲染失败，请稍后重试', true);
       }
 
       // 有游戏存在多个UID → 每个游戏一张图，合并转发
@@ -617,12 +621,13 @@ export class TL extends plugin {
         gameRenderData[keyMap[game]] = dataList;
         await this.hideUidIfNeeded(gameRenderData, displayQq);
 
-        const segment = await e.runtime.render('小花火', 'Tl/Tl', gameRenderData, {
+        const renderResult = await e.runtime.render('小花火', 'Tl/Tl', gameRenderData, {
           retType: 'base64',
           imgType: 'png',
           beforeRender({ data }) {
             return {
-              sys: { scale: renderScale },
+              imgType: 'png',
+              sys: { scale: '' },
               ...gameRenderData,
               ppath: ppath,
               tplFile: tplFile,
@@ -630,7 +635,8 @@ export class TL extends plugin {
             };
           },
         });
-        if (segment) allGameSegments.push(segment);
+        const image = await enhanceRenderImage(renderResult, config());
+        if (image) allGameSegments.push(segment.image(image));
       }
 
       if (allGameSegments.length > 1) {
@@ -649,7 +655,6 @@ export class TL extends plugin {
 
     const tplFile = pluginDir + '/resources/Tl/Tl.html';
     const ppath = '../../../../../plugins/xhh-TL/resources/';
-    const renderScale = getRenderScaleStyle(config(), 2.5);
     await this.hideUidIfNeeded(listData, displayQq);
 
     const renderResult = await e.runtime.render('小花火', 'Tl/Tl', listData, {
@@ -657,8 +662,9 @@ export class TL extends plugin {
       imgType: 'png',
       beforeRender({ data }) {
         return {
+          imgType: 'png',
           sys: {
-            scale: renderScale,
+            scale: '',
           },
           ...listData,
           ppath: ppath,
@@ -667,10 +673,9 @@ export class TL extends plugin {
         };
       },
     });
-    if (renderResult && Buffer.isBuffer(renderResult.file)) {
-      return e.reply(segment.image(renderResult.file), true);
-    }
-    return true;
+    const image = await enhanceRenderImage(renderResult, config());
+    if (image) return e.reply(segment.image(image), true);
+    return e.reply('图片渲染失败，请稍后重试', true);
   }
 
   // 获取当前QQ某游戏的所有绑定UID的体力数据

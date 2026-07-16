@@ -22,7 +22,7 @@ html, body {
 body {
   color: #e8eaf0;
   font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  /* 渲染倍率由 body 的 zoom 控制，布局尺寸会同步扩大，不会像 transform 一样裁切。 */
+  /* CSS 始终保持 1:1 布局；超清化在完整截图后由插件处理。 */
 }
 
 .nk-page {
@@ -473,7 +473,7 @@ body {
 
   </style>
 </head>
-<body {{@sys.scale}}>
+<body>
   <div class="nk-page">
     <div class="nk-glow a"></div>
     <div class="nk-glow b"></div>

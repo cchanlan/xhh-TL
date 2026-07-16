@@ -5,8 +5,8 @@
 Tl: true
 # PNG 主输出为无损；该值用于需要 JPEG 兼容回退时的编码质量
 img_quality: 100
-# 全局倍率乘数：1.0 保持各模板推荐倍率，1.25/1.5 可进一步提高输出像素
-render_scale: 1.0
+# 插件内无损后处理倍率：不改变网页布局，推荐 1.5
+render_scale: 1.5
 tl_priority: -999
 show_all_bindings: true
 tl_render_mode: merge

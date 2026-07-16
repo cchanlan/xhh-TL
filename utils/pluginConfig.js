@@ -109,20 +109,11 @@ export function getImageQuality(config = {}, fallback = 100) {
   return Math.min(100, Math.max(1, Math.round(value)))
 }
 
-/**
- * Resolve the effective render scale.
- * render_scale is a global multiplier: 1 keeps each template's recommended
- * scale, while values above 1 produce more output pixels.
- */
-export function getRenderScale(config = {}, baseScale = 2) {
+/** Resolve the plugin-side lossless post-render upscale factor. */
+export function getRenderScale(config = {}, fallback = 1) {
   const value = Number(config?.render_scale)
-  const multiplier = Number.isFinite(value) ? Math.min(2, Math.max(0.5, value)) : 1
-  return Number((baseScale * multiplier).toFixed(2))
-}
-
-/** Chromium zoom participates in layout and screenshot bounds; transform does not. */
-export function getRenderScaleStyle(config = {}, baseScale = 2) {
-  return `style=zoom:${getRenderScale(config, baseScale)}`
+  if (!Number.isFinite(value)) return fallback
+  return Number(Math.min(2, Math.max(1, value)).toFixed(2))
 }
 
 /** 强制刷新缓存 */

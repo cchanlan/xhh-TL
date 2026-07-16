@@ -50,13 +50,13 @@ export function supportGuoba() {
         {
           field: 'render_scale',
           label: '渲染倍率',
-          bottomHelpMessage: '1.0 保持推荐分辨率；可调至 1.25 或 1.5 获得更清晰的大图',
+          bottomHelpMessage: '完整截图后在插件内无损放大并锐化，不改变网页布局；推荐 1.5',
           component: 'InputNumber',
           componentProps: {
-            min: 0.5,
+            min: 1,
             max: 2,
             step: 0.1,
-            placeholder: '默认 1.0'
+            placeholder: '默认 1.5'
           }
         },
         {

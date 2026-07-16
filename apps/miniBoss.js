@@ -10,7 +10,8 @@ import yaml from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { readPluginConfig } from '../utils/pluginConfig.js'
+import { enhanceRenderImage } from '../utils/renderImage.js'
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
@@ -241,10 +242,7 @@ export async function miniBoss(e) {
     });
 
     // 渲染到 jysy/game_boss.html
-    const renderMode = config().mini_story_render_mode || 'desktop';
-    const isMobile = renderMode === 'mobile';
     const templateName = 'game_boss';
-    const renderScale = getRenderScaleStyle(config(), isMobile ? 1.6 : 2.2);
     const tplFile = pluginDir + '/resources/jysy/game_boss.html';
     const ppath = '../../../../plugins/xhh-TL/resources/jysy/';
 
@@ -299,13 +297,14 @@ export async function miniBoss(e) {
     };
 
     try {
-      await e.runtime.render('xhh-TL', templateName, renderData, {
-        retType: 'default',
+      const renderResult = await e.runtime.render('xhh-TL', templateName, renderData, {
+        retType: 'base64',
         imgType: 'png',
         beforeRender({ data }) {
           const localPath = ppath;
           return {
-            sys: { scale: renderScale },
+            imgType: 'png',
+            sys: { scale: '' },
             ...data,
             ppath,
             tplFile,
@@ -314,6 +313,9 @@ export async function miniBoss(e) {
           };
         }
       });
+      const image = await enhanceRenderImage(renderResult, config());
+      if (!image) throw new Error('渲染结果中没有图片数据');
+      return e.reply(segment.image(image), true);
     } catch (err) {
       logger.error('[xhh-TL][miniBoss] 渲染末日幻影失败:', err);
       e.reply('末日幻影数据渲染失败，请稍后重试');

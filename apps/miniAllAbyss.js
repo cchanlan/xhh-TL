@@ -10,7 +10,8 @@ import lodash from 'lodash';
 import sharp from 'sharp';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { readPluginConfig } from '../utils/pluginConfig.js'
+import { enhanceRenderImage, extractRenderBuffer } from '../utils/renderImage.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -192,16 +193,14 @@ function buildAvatarList(avatars, ppath, avatarData) {
  */
 async function renderMiniToBuffer(e, templateName, renderData, ppath) {
   const tplFile = pluginDir + `/resources/jysy/${templateName}.html`;
-  const renderMode = config().mini_abyss_render_mode || 'desktop';
-  const isMobile = renderMode === 'mobile';
-  const renderScale = getRenderScaleStyle(config(), isMobile ? 1.4 : 2.0);
 
   const result = await e.runtime.render('xhh-TL', templateName, renderData, {
     retType: 'base64',
     imgType: 'png',
     beforeRender({ data }) {
       return {
-        sys: { scale: renderScale },
+        imgType: 'png',
+        sys: { scale: '' },
         ...data,
         ppath,
         tplFile,
@@ -210,41 +209,9 @@ async function renderMiniToBuffer(e, templateName, renderData, ppath) {
       };
     }
   });
-
-  if (!result) return null;
-
-  // 直接返回 Buffer
-  if (Buffer.isBuffer(result)) return result;
-
-  // base64 字符串
-  if (typeof result === 'string') {
-    const clean = result.replace(/^data:image\/\w+;base64,/, '');
-    return Buffer.from(clean, 'base64');
-  }
-
-  // 对象：file 就是图片 Buffer
-  if (typeof result === 'object') {
-    if (Buffer.isBuffer(result.file)) return result.file;
-    if (typeof result.file === 'string') {
-      // base64:// 前缀
-      if (result.file.startsWith('base64://')) {
-        return Buffer.from(result.file.slice(9), 'base64');
-      }
-      // data:image 前缀
-      if (result.file.startsWith('data:image')) {
-        return Buffer.from(result.file.split(',')[1], 'base64');
-      }
-      // 文件路径
-      for (const p of [result.file, path.resolve(result.file), path.resolve(process.cwd(), result.file)]) {
-        if (fs.existsSync(p)) return fs.readFileSync(p);
-      }
-    }
-    if (result.image && Buffer.isBuffer(result.image)) return result.image;
-    if (result.buffer && Buffer.isBuffer(result.buffer)) return result.buffer;
-  }
-
-  logger.warn('[xhh-TL][miniAllAbyss] renderMiniToBuffer: 无法提取图片', typeof result, Object.keys(result || {}));
-  return null;
+  const buffer = extractRenderBuffer(result);
+  if (!buffer) logger.warn('[xhh-TL][miniAllAbyss] renderMiniToBuffer: 无法提取图片');
+  return buffer;
 }
 
 export async function miniAllAbyss(e) {
@@ -501,7 +468,8 @@ export async function miniAllAbyss(e) {
       imgType: 'png',
       beforeRender({ data }) {
         return {
-          sys: { scale: getRenderScaleStyle(config(), 1.6) },
+          imgType: 'png',
+          sys: { scale: '' },
           ...data,
           ppath: gridPpath,
           tplFile: gridTpl,
@@ -510,17 +478,15 @@ export async function miniAllAbyss(e) {
         };
       }
     });
-
-    if (gridResult && Buffer.isBuffer(gridResult.file)) {
-      return e.reply(segment.image(gridResult.file), true);
-    }
+    const image = await enhanceRenderImage(gridResult, config());
 
     // 清理临时文件
     for (const f of tmpFiles) {
       try { fs.unlinkSync(f); } catch (_) {}
     }
 
-    return true;
+    if (image) return e.reply(segment.image(image), true);
+    return e.reply('小深渊图片渲染失败，请稍后重试', true);
 
   } catch (err) {
     console.error('[xhh-TL][miniAllAbyss] error:', err);

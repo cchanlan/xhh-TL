@@ -11,7 +11,8 @@ import YAML from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { readPluginConfig } from '../utils/pluginConfig.js'
+import { enhanceRenderImage } from '../utils/renderImage.js'
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
@@ -397,7 +398,6 @@ export async function allAbyss(e) {
 
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
-      const renderScale = getRenderScaleStyle(config(), isMobile ? 1.6 : 2.0);
       const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
@@ -423,7 +423,8 @@ export async function allAbyss(e) {
           beforeRender({ data }) {
             const localPath = ppath;
             return {
-              sys: { scale: renderScale },
+              imgType: 'png',
+              sys: { scale: '' },
               ...data,
               ppath,
               tplFile,
@@ -432,10 +433,9 @@ export async function allAbyss(e) {
             };
           }
         });
-
-        if (renderResult && Buffer.isBuffer(renderResult.file)) {
-          return e.reply(segment.image(renderResult.file), true);
-        }
+        const image = await enhanceRenderImage(renderResult, config());
+        if (image) return e.reply(segment.image(image), true);
+        throw new Error('渲染结果中没有图片数据');
       } catch (err) {
         logger.error('[xhh-TL][allAbyss] 渲染三合一深渊失败:', err);
         e.reply('深渊数据渲染失败，请稍后重试');

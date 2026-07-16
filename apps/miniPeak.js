@@ -10,7 +10,8 @@ import yaml from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { readPluginConfig } from '../utils/pluginConfig.js'
+import { enhanceRenderImage } from '../utils/renderImage.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -228,19 +229,17 @@ export async function miniPeak(e) {
       }
     };
 
-    const renderMode = config().mini_peak_render_mode || 'desktop';
-    const isMobile = renderMode === 'mobile';
     const templateName = 'game_peak';
-    const renderScale = getRenderScaleStyle(config(), isMobile ? 1.6 : 2.2);
     const tplFile = pluginDir + '/resources/jysy/game_peak.html';
 
     try {
-      await e.runtime.render('xhh-TL', templateName, renderData, {
-        retType: 'default',
+      const renderResult = await e.runtime.render('xhh-TL', templateName, renderData, {
+        retType: 'base64',
         imgType: 'png',
         beforeRender({ data }) {
           return {
-            sys: { scale: renderScale },
+            imgType: 'png',
+            sys: { scale: '' },
             ...data,
             ppath,
             tplFile,
@@ -249,6 +248,9 @@ export async function miniPeak(e) {
           };
         }
       });
+      const image = await enhanceRenderImage(renderResult, config());
+      if (!image) throw new Error('渲染结果中没有图片数据');
+      return e.reply(segment.image(image), true);
     } catch (err) {
       logger.error('[xhh-TL][miniPeak] 渲染异相仲裁失败:', err);
       e.reply('异相仲裁数据渲染失败，请稍后重试');
