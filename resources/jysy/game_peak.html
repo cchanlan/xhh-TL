@@ -16,6 +16,8 @@
 body {
     font-family: "SR", "Microsoft YaHei", sans-serif;
     background: #000;
+    width: 1200px;
+    transform-origin: 0 0;
 }
 
 #container {
@@ -316,7 +318,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body {{sys.scale}}>
 <div id="container">
 <div class="page" style="background: url('{{ppath}}异相背景.png') center/cover no-repeat;">
     <!-- 左侧装饰 -->

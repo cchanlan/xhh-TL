@@ -1,6 +1,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 @font-face { font-family: 'NotoSansSC'; src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype'); font-weight: normal; font-style: normal; }
-body { background: #0a0e1a; color: #e0e0e0; font-family: 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+body { width: 800px; transform-origin: 0 0; background: #0a0e1a; color: #e0e0e0; font-family: 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
 .page { position: relative; width: 800px; min-height: 600px; padding: 40px; background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%); overflow: hidden; }
 .page::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.6) 100%); z-index: 0; pointer-events: none; }
 .bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; pointer-events: none; }

@@ -46,7 +46,7 @@
   - 角色卡：头像、命座、等级、天赋、武器、圣遗物（与全部深渊同款）
   - 支持 @他人（需对方绑定 Cookie）
 - 自定义背景：锅巴配置 `role_combat_bg_folder`（子文件夹名为角色名，随机抽图）
-- 渲染精度跟随 `img_quality`；非体力功能已提高渲染 scale 以减轻模糊
+- 图片编码质量由 `img_quality` 控制；渲染方式参考 [earth-k-plugin](https://github.com/SmallK111407/earth-k-plugin)，按模板宽度设置基础倍率，并固定左上原点输出高清 PNG
 
 ### Nanoka 版本深渊（静态配置，不查个人成绩）
 - 数据源：[Nanoka](https://nanoka.cc/) / `static.nanoka.cc`（与 `#幻想剧诗` 同源）
@@ -125,7 +125,8 @@ cd plugins/xhh-TL && git pull
 ```yaml
 # 体力小组件配置
 Tl: true                 # 是否启用体力查询
-img_quality: 100         # 图片渲染质量 (1-100)，也参与 scale 计算
+img_quality: 100         # 图片编码质量 (1-100)，100 为最高质量
+render_scale: 1.0        # 全局倍率微调；1.0 使用各模板推荐倍率
 tl_priority: -999        # 插件优先级 (数字越小越优先)
 show_all_bindings: true  # 多账号模式：同一游戏的多个UID渲染进同一张图
 

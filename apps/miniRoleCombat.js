@@ -11,7 +11,8 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -422,9 +423,7 @@ export class miniRoleCombat extends plugin {
 
     const tplFile = pluginDir + '/resources/role_combat/mini_role_combat.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
-    const imgQuality = config().img_quality || 100
-    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.2 || 2.2})`
-
+    const renderScale = getRenderScaleStyle(config(), 1.8)
     const renderData = {
       stages,
       stageCount: stages.length,
@@ -448,6 +447,7 @@ export class miniRoleCombat extends plugin {
         imgType: 'png',
         beforeRender({ data }) {
           return {
+            imgType: 'png',
             sys: { scale: renderScale },
             ...data,
             ppath,
@@ -457,10 +457,8 @@ export class miniRoleCombat extends plugin {
           }
         },
       })
-      if (renderResult && Buffer.isBuffer(renderResult.file)) {
-        return e.reply(segment.image(renderResult.file), true)
-      }
-      if (renderResult === true || renderResult?.message_id) return true
+      const image = extractRenderBuffer(renderResult)
+      if (image) return e.reply(segment.image(image), true)
       return e.reply('渲染失败，请稍后再试')
     } catch (err) {
       logger.error('[xhh][miniRoleCombat] 渲染失败:', err)

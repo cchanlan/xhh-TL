@@ -6,7 +6,8 @@ import YAML from 'yaml';
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js';
 import { createUser } from '../utils/userBind.js';
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json';
 const ELEMENT_MAP = {
@@ -404,13 +405,13 @@ export class role_combat extends plugin {
       ckMissing,
       bgImage,
     };
-    const imgQuality = config().img_quality || 100;
-    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.5 || 2.5})`;
+    const renderScale = getRenderScaleStyle(config(), 1.5);
     const renderResult = await e.runtime.render('xhh-TL', 'role_combat', renderData, {
       retType: 'base64',
       imgType: 'png',
       beforeRender({ data }) {
         return {
+          imgType: 'png',
           sys: { scale: renderScale },
           ...data,
           ppath,
@@ -420,9 +421,8 @@ export class role_combat extends plugin {
         };
       }
     });
-    if (renderResult && Buffer.isBuffer(renderResult.file)) {
-      return e.reply(segment.image(renderResult.file), true);
-    }
+    const image = extractRenderBuffer(renderResult);
+    if (image) return e.reply(segment.image(image), true);
     return e.reply('渲染失败，请稍后再试');
   }
 }

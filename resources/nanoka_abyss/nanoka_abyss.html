@@ -22,7 +22,7 @@ html, body {
 body {
   color: #e8eaf0;
   font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  /* 禁止 transform:scale —— 会导致右侧截图被裁 */
+  transform-origin: 0 0;
 }
 
 .nk-page {
@@ -473,8 +473,8 @@ body {
 
   </style>
 </head>
-<body {{@sys.scale}}>
-  <div class="nk-page">
+<body {{sys.scale}}>
+  <div class="nk-page" id="container">
     <div class="nk-glow a"></div>
     <div class="nk-glow b"></div>
 
