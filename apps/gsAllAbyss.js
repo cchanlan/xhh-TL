@@ -11,6 +11,7 @@ import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import lodash from 'lodash'
+import sharp from 'sharp'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
 import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
@@ -652,8 +653,8 @@ export class gsAllAbyss extends plugin {
     const qq = e.user_id || e.sender?.user_id || ''
     const qqname = e.sender?.card || e.sender?.nickname || String(qq)
     const bgImage = pickBgImage()
-    // 三列约 1100 宽
-    const renderScale = getRenderScaleStyle(config(), 1.2)
+    // 保持原三栏布局，分成三张窄图以 2x 渲染后无缩放拼接。
+    const renderScale = getRenderScaleStyle(config(), 2.0)
     const tplFile = pluginDir + '/resources/gs_all_abyss/gs_all_abyss.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
 
@@ -670,24 +671,68 @@ export class gsAllAbyss extends plugin {
     }
 
     try {
-      const renderResult = await e.runtime.render('xhh-TL', 'gs_all_abyss', renderData, {
-        retType: 'base64',
-        imgType: 'png',
-        beforeRender({ data }) {
-          return {
-            imgType: 'png',
-            sys: { scale: renderScale },
-            ...data,
-            ppath,
-            tplFile,
-            saveId: 'gs_all_abyss',
-            _miao_path: ppath,
-          }
+      const slices = [
+        { width: 407, offset: 0 },
+        { width: 407, offset: 407 },
+        { width: 406, offset: 814 },
+      ]
+      const buffers = []
+
+      for (let i = 0; i < slices.length; i++) {
+        const slice = slices[i]
+        const sliceData = {
+          ...renderData,
+          captureStyle: `width:${slice.width}px;overflow:hidden;`,
+          contentStyle: slice.offset ? `transform:translateX(-${slice.offset}px);` : '',
+        }
+        const renderResult = await e.runtime.render('xhh-TL', 'gs_all_abyss', sliceData, {
+          retType: 'base64',
+          imgType: 'png',
+          beforeRender({ data }) {
+            return {
+              imgType: 'png',
+              sys: { scale: renderScale },
+              ...data,
+              ppath,
+              tplFile,
+              saveId: `gs_all_abyss_slice_${i}`,
+              _miao_path: ppath,
+            }
+          },
+        })
+        const buffer = extractRenderBuffer(renderResult)
+        if (!buffer) throw new Error(`第 ${i + 1} 张切片渲染结果为空`)
+        buffers.push(buffer)
+      }
+
+      const metas = await Promise.all(buffers.map(buffer => sharp(buffer).metadata()))
+      const width = metas.reduce((sum, meta) => sum + (meta.width || 0), 0)
+      const heights = metas.map(meta => meta.height || 0)
+      const height = heights[0]
+      if (!width || !height) throw new Error('切片尺寸无效')
+      if (heights.some(value => value !== height)) {
+        throw new Error(`切片高度不一致，停止拼接以避免背景断层：${heights.join('/')}`)
+      }
+
+      let left = 0
+      const composite = buffers.map((input, i) => {
+        const item = { input, left, top: 0 }
+        left += metas[i].width || 0
+        return item
+      })
+      const image = await sharp({
+        create: {
+          width,
+          height,
+          channels: 4,
+          background: { r: 200, g: 208, b: 220, alpha: 1 },
         },
       })
-      const image = extractRenderBuffer(renderResult)
-      if (image) return e.reply(segment.image(image), true)
-      return e.reply('渲染失败，请稍后再试')
+        .composite(composite)
+        .png({ compressionLevel: 9, adaptiveFiltering: true })
+        .toBuffer()
+
+      return e.reply(segment.image(image), true)
     } catch (err) {
       logger.error('[xhh][gsAllAbyss] 渲染失败:', err)
       return e.reply(`渲染失败：${err.message || err}`)

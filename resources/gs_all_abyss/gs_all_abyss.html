@@ -5,7 +5,8 @@
   <link rel="stylesheet" href="{{ppath}}gs_all_abyss/gs_all_abyss.css" />
 </head>
 <body {{sys.scale}}>
-  <div class="container" id="container" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
+  <div class="capture-frame" id="container" style="{{captureStyle}}">
+  <div class="container" style="{{contentStyle}}{{if bgImage}}background: url('{{bgImage}}') center/cover no-repeat !important;{{/if}}">
     <div class="xhh_box">
       <div class="one_box">
         <div class="tx">
@@ -320,6 +321,7 @@
 
       <footer>角色卡：头像·天赋·武器·圣遗物 · from 小花火</footer>
     </div>
+  </div>
   </div>
 </body>
 </html>
