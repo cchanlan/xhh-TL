@@ -1139,3 +1139,324 @@ footer {
 .floor-one-box .flat-team.team-n2 > .mcard.flat { flex: 0 0 auto; width: 92px; max-width: 92px; }
 .floor-one-box .flat-team.team-n3 { justify-content: flex-start; gap: 6px; }
 .floor-one-box .flat-team.team-n3 > .mcard.flat { flex: 0 0 auto; width: 80px; max-width: 80px; }
+
+/* —— 11 层 1/2 人：横版立绘卡（对齐 miao #深渊 wide 卡） —— */
+.floor-one-box .wcard-team {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0;
+  width: 100%;
+}
+.floor-one-box .wcard-team.team-n1 {
+  justify-content: stretch;
+}
+.floor-one-box .wcard-team.team-n2 {
+  gap: 5px;
+}
+
+.wcard {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  height: 118px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(40, 50, 70, 0.22);
+  box-shadow:
+    0 2px 6px rgba(20, 30, 50, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.wcard.star-5 {
+  border-color: rgba(210, 150, 30, 0.55);
+}
+.wcard.star-4 {
+  border-color: rgba(130, 70, 210, 0.5);
+}
+/* 1 人：更宽、立绘区更大 */
+.wcard.wcard-solo {
+  flex: 1 1 auto;
+  max-width: 100%;
+  height: 132px;
+}
+
+.wcard-face {
+  position: relative;
+  flex: 0 0 96px;
+  width: 96px;
+  height: 100%;
+  overflow: hidden;
+  background-color: rgba(40, 50, 70, 0.18);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 50% 12%;
+  border-radius: 9px 0 0 9px;
+}
+.wcard.wcard-solo .wcard-face {
+  flex: 0 0 128px;
+  width: 128px;
+}
+.wcard.star-5 .wcard-face {
+  box-shadow: inset -1px 0 0 rgba(210, 150, 30, 0.35);
+}
+.wcard.star-4 .wcard-face {
+  box-shadow: inset -1px 0 0 rgba(130, 70, 210, 0.3);
+}
+.wcard-face-lv {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 10px 4px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  background: linear-gradient(180deg, rgba(10, 14, 24, 0) 0%, rgba(10, 14, 24, 0.72) 55%, rgba(10, 14, 24, 0.88) 100%);
+}
+.wcard.wcard-solo .wcard-face-lv {
+  font-size: 11px;
+  padding: 12px 6px 5px;
+}
+
+.wcard-info {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 6px 6px 5px 7px;
+  background: rgba(255, 255, 255, 0.42);
+}
+.wcard-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #222;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wcard.wcard-solo .wcard-name {
+  font-size: 16px;
+}
+.wcard-lv-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  min-height: 18px;
+}
+.wcard-cons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #6ea8ff, #4a7fd4);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+/* 命座颜色（对齐 miao 风格） */
+.wcard-cons.cons-0 { background: rgba(120, 120, 120, 0.75); }
+.wcard-cons.cons-1 { background: rgba(100, 200, 240, 0.95); }
+.wcard-cons.cons-2 { background: rgba(110, 175, 30, 0.95); }
+.wcard-cons.cons-3 { background: rgba(30, 160, 215, 0.95); }
+.wcard-cons.cons-4 { background: rgba(225, 90, 90, 0.95); }
+.wcard-cons.cons-5 { background: rgba(110, 90, 220, 0.95); }
+.wcard-cons.cons-6 { background: rgba(235, 60, 25, 0.95); }
+.wcard-lv {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+}
+.wcard.wcard-solo .wcard-lv {
+  font-size: 13px;
+}
+
+.wcard-talent {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.wcard-talent span {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2a3a55;
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(40, 55, 85, 0.28);
+}
+.wcard.wcard-solo .wcard-talent {
+  margin-top: 8px;
+}
+.wcard.wcard-solo .wcard-talent span {
+  height: 20px;
+  line-height: 20px;
+  font-size: 12px;
+}
+
+.wcard-gear {
+  display: flex;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 5px;
+}
+.wcard-gear .gbox {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+}
+.wcard.wcard-solo .wcard-gear .gbox {
+  width: 32px;
+  height: 32px;
+}
+.wcard-gear .gbox i {
+  font-size: 10px;
+  line-height: 12px;
+}
+
+/* 2 人时略收紧 */
+.floor-one-box .wcard-team.team-n2 .wcard {
+  height: 112px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-face {
+  flex: 0 0 86px;
+  width: 86px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-name {
+  font-size: 13px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-talent span {
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+}
+.floor-one-box .wcard-team.team-n2 .wcard-gear .gbox {
+  width: 26px;
+  height: 26px;
+}
+
+/* 横卡时 one-box 略增高，保证立绘不挤 */
+.floor-one-box:has(.wcard-team) {
+  align-items: stretch;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.floor-one-box .wcard-team {
+  min-height: 112px;
+}
+
+/* —— 12 层半队：1/2 人同样用横版立绘卡 —— */
+.half-col.shared-box .wcard-team {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0;
+  width: 100%;
+  min-height: 100px;
+}
+.half-col.shared-box .wcard-team.team-n1 {
+  justify-content: stretch;
+}
+.half-col.shared-box .wcard-team.team-n2 {
+  gap: 4px;
+}
+/* 12 层半框更窄，整体略收紧 */
+.half-col.shared-box .wcard {
+  height: 108px;
+}
+.half-col.shared-box .wcard.wcard-solo {
+  height: 118px;
+}
+.half-col.shared-box .wcard-face {
+  flex: 0 0 82px;
+  width: 82px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-face {
+  flex: 0 0 108px;
+  width: 108px;
+}
+.half-col.shared-box .wcard-name {
+  font-size: 13px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-name {
+  font-size: 15px;
+}
+.half-col.shared-box .wcard-info {
+  padding: 5px 5px 4px 6px;
+}
+.half-col.shared-box .wcard-talent {
+  margin-top: 5px;
+}
+.half-col.shared-box .wcard-talent span {
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-talent span {
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
+}
+.half-col.shared-box .wcard-gear .gbox {
+  width: 24px;
+  height: 24px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-gear .gbox {
+  width: 28px;
+  height: 28px;
+}
+.half-col.shared-box .wcard-face-lv {
+  font-size: 9px;
+  padding: 8px 3px 3px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-face-lv {
+  font-size: 10px;
+}
+/* 12 层 2 人再收一点 */
+.half-col.shared-box .wcard-team.team-n2 .wcard {
+  height: 100px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-face {
+  flex: 0 0 72px;
+  width: 72px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-name {
+  font-size: 12px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-talent span {
+  height: 15px;
+  line-height: 15px;
+  font-size: 9px;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-gear .gbox {
+  width: 22px;
+  height: 22px;
+}
+/* 有横卡时 shared-box 顶部留白稍减 */
+.half-col.shared-box:has(.wcard-team) {
+  padding: 6px 5px 5px;
+  overflow: visible;
+}
