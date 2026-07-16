@@ -38,13 +38,25 @@ export function supportGuoba() {
         },
         {
           field: 'img_quality',
-          label: '图片渲染质量',
-          bottomHelpMessage: '图片渲染质量，范围 1-100，数字越大越清晰',
+          label: '图片编码质量',
+          bottomHelpMessage: 'PNG 主输出始终无损；此项控制需要 JPEG 兼容回退时的质量',
           component: 'InputNumber',
           componentProps: {
             min: 1,
             max: 100,
             placeholder: '请输入 1-100'
+          }
+        },
+        {
+          field: 'render_scale',
+          label: '渲染倍率',
+          bottomHelpMessage: '1.0 保持推荐分辨率；可调至 1.25 或 1.5 获得更清晰的大图',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0.5,
+            max: 2,
+            step: 0.1,
+            placeholder: '默认 1.0'
           }
         },
         {

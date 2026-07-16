@@ -102,6 +102,29 @@ export function readPluginConfig() {
   return _cache
 }
 
+/** Clamp the configured output quality to the range accepted by image encoders. */
+export function getImageQuality(config = {}, fallback = 100) {
+  const value = Number(config?.img_quality)
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(100, Math.max(1, Math.round(value)))
+}
+
+/**
+ * Resolve the effective render scale.
+ * render_scale is a global multiplier: 1 keeps each template's recommended
+ * scale, while values above 1 produce more output pixels.
+ */
+export function getRenderScale(config = {}, baseScale = 2) {
+  const value = Number(config?.render_scale)
+  const multiplier = Number.isFinite(value) ? Math.min(2, Math.max(0.5, value)) : 1
+  return Number((baseScale * multiplier).toFixed(2))
+}
+
+/** Chromium zoom participates in layout and screenshot bounds; transform does not. */
+export function getRenderScaleStyle(config = {}, baseScale = 2) {
+  return `style=zoom:${getRenderScale(config, baseScale)}`
+}
+
 /** 强制刷新缓存 */
 export function reloadPluginConfig() {
   _cache = null

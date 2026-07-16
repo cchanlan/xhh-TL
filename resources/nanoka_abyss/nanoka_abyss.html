@@ -22,7 +22,7 @@ html, body {
 body {
   color: #e8eaf0;
   font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  /* 禁止 transform:scale —— 会导致右侧截图被裁 */
+  /* 渲染倍率由 body 的 zoom 控制，布局尺寸会同步扩大，不会像 transform 一样裁切。 */
 }
 
 .nk-page {

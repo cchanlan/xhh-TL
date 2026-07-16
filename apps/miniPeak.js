@@ -10,7 +10,7 @@ import yaml from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -231,7 +231,7 @@ export async function miniPeak(e) {
     const renderMode = config().mini_peak_render_mode || 'desktop';
     const isMobile = renderMode === 'mobile';
     const templateName = 'game_peak';
-    const renderScale = isMobile ? 1.6 : 2.2;
+    const renderScale = getRenderScaleStyle(config(), isMobile ? 1.6 : 2.2);
     const tplFile = pluginDir + '/resources/jysy/game_peak.html';
 
     try {

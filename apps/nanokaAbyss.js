@@ -20,7 +20,7 @@ import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getImageQuality, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
 const STATIC = 'https://static.nanoka.cc'
@@ -138,16 +138,16 @@ async function makeNameBadge(name = '怪') {
   const hue = h % 360
   const bg = `hsl(${hue} 55% 42%)`
   const svg = `
-  <svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+  <svg width="256" height="256" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="${bg}"/>
         <stop offset="100%" stop-color="hsl(${(hue + 40) % 360} 50% 28%)"/>
       </linearGradient>
     </defs>
-    <circle cx="48" cy="48" r="48" fill="url(#g)"/>
-    <circle cx="48" cy="48" r="45" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
-    <text x="48" y="54" text-anchor="middle" font-size="28" font-weight="700"
+    <circle cx="128" cy="128" r="128" fill="url(#g)"/>
+    <circle cx="128" cy="128" r="120" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="5"/>
+    <text x="128" y="145" text-anchor="middle" font-size="72" font-weight="700"
       font-family="Noto Sans SC, Microsoft YaHei, sans-serif" fill="#fff">${label}</text>
   </svg>`
   return sharp(Buffer.from(svg)).png().toBuffer()
@@ -172,7 +172,7 @@ async function iconToDataUri(icon, name = '', game = 'gi') {
     let out = buf
     try {
       out = await sharp(buf)
-        .resize(96, 96, { fit: 'cover', position: 'centre' })
+        .resize(256, 256, { fit: 'cover', position: 'centre', kernel: sharp.kernel.lanczos3 })
         .png()
         .toBuffer()
     } catch (_) {
@@ -1938,17 +1938,16 @@ export class nanokaAbyss extends plugin {
   }
 
   async renderToBuffer(e, data, saveId) {
-    const imgQuality = Math.min(90, Number(cfg().img_quality) || 85)
-    // 不要对 body 做 CSS transform:scale：
-    // puppeteer 按布局盒截图，scale>1 时右侧/底部视觉溢出会被裁掉（右侧 chip、怪物行消失）
+    const renderConfig = cfg()
+    const renderScale = getRenderScaleStyle(renderConfig, 2.0)
     const renderResult = await e.runtime.render('xhh-TL', 'nanoka_abyss', data, {
       retType: 'base64',
-      quality: imgQuality,
+      imgType: 'png',
       beforeRender({ data: d }) {
         return {
           ...d,
           sys: {
-            scale: 'style="background:#07090f;margin:0;width:860px;"',
+            scale: renderScale,
           },
           ppath: '../../../../plugins/xhh-TL/resources/',
           tplFile: path.join(pluginDir, 'resources/nanoka_abyss/nanoka_abyss.html'),
@@ -1978,23 +1977,10 @@ export class nanokaAbyss extends plugin {
     if (!buf) return null
 
     try {
-      const meta = await sharp(buf).metadata()
-      // 只限制宽度，避免把超高图硬压成 3000 高度导致顶部被裁切
-      let pipeline = sharp(buf)
-      if ((meta.width || 0) > 1200) {
-        pipeline = pipeline.resize({ width: 1100, withoutEnlargement: true })
-      }
-      // 高度过高时等比缩小（保持完整内容）
-      if ((meta.height || 0) > 4500) {
-        const scale = 4200 / meta.height
-        pipeline = sharp(buf).resize({
-          width: Math.round((meta.width || 1100) * scale),
-          height: 4200,
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-      }
-      buf = await pipeline.jpeg({ quality: 85, mozjpeg: true }).toBuffer()
+      // PNG compression is lossless: keep all render pixels and only optimize file size.
+      buf = await sharp(buf)
+        .png({ compressionLevel: 9, adaptiveFiltering: true })
+        .toBuffer()
     } catch (err) {
       logger?.debug?.(`[xhh-TL][nanokaAbyss] compress skip: ${err.message}`)
     }
@@ -2009,11 +1995,11 @@ export class nanokaAbyss extends plugin {
     } catch (err) {
       logger?.warn?.(`[xhh-TL][nanokaAbyss] send fail, retry: ${err.message}`)
       try {
-        const smaller = await sharp(buf)
-          .resize({ width: 900, withoutEnlargement: true })
-          .jpeg({ quality: 70, mozjpeg: true })
+        const fallbackQuality = getImageQuality(cfg(), 100)
+        const fallback = await sharp(buf)
+          .jpeg({ quality: fallbackQuality, chromaSubsampling: '4:4:4', mozjpeg: true })
           .toBuffer()
-        return await e.reply(segment.image(smaller))
+        return await e.reply(segment.image(fallback))
       } catch (err2) {
         return e.reply(`发图失败（图片可能过大）：${err2.message || err.message}`)
       }

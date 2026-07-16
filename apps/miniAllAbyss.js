@@ -10,7 +10,7 @@ import lodash from 'lodash';
 import sharp from 'sharp';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
 
@@ -194,7 +194,7 @@ async function renderMiniToBuffer(e, templateName, renderData, ppath) {
   const tplFile = pluginDir + `/resources/jysy/${templateName}.html`;
   const renderMode = config().mini_abyss_render_mode || 'desktop';
   const isMobile = renderMode === 'mobile';
-  const renderScale = isMobile ? 1.4 : 2.0;
+  const renderScale = getRenderScaleStyle(config(), isMobile ? 1.4 : 2.0);
 
   const result = await e.runtime.render('xhh-TL', templateName, renderData, {
     retType: 'base64',
@@ -458,9 +458,24 @@ export async function miniAllAbyss(e) {
     const targetH = Math.max(...metas.map(m => m.height || 400));
     const bg = { r: 0, g: 0, b: 0, alpha: 0 };
 
-    const normalized = await Promise.all(buffers.map(b =>
-      sharp(b).resize(targetW, targetH, { fit: 'contain', background: bg }).png().toBuffer()
-    ));
+    const normalized = await Promise.all(buffers.map(async (b) => {
+      const resized = await sharp(b)
+        .resize({
+          width: targetW,
+          height: targetH,
+          fit: 'inside',
+          withoutEnlargement: true,
+          kernel: sharp.kernel.lanczos3,
+        })
+        .png()
+        .toBuffer();
+      return sharp({
+        create: { width: targetW, height: targetH, channels: 4, background: bg },
+      })
+        .composite([{ input: resized, gravity: 'centre' }])
+        .png()
+        .toBuffer();
+    }));
 
     const tmpFiles = [];
     for (let i = 0; i < normalized.length; i++) {
@@ -483,9 +498,10 @@ export async function miniAllAbyss(e) {
       Array: (n) => n ? Array(n) : []
     }, {
       retType: 'base64',
+      imgType: 'png',
       beforeRender({ data }) {
         return {
-          sys: { scale: 1.6 },
+          sys: { scale: getRenderScaleStyle(config(), 1.6) },
           ...data,
           ppath: gridPpath,
           tplFile: gridTpl,

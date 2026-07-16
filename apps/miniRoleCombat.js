@@ -11,7 +11,7 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -422,8 +422,7 @@ export class miniRoleCombat extends plugin {
 
     const tplFile = pluginDir + '/resources/role_combat/mini_role_combat.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
-    const imgQuality = config().img_quality || 100
-    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.2 || 2.2})`
+    const renderScale = getRenderScaleStyle(config(), 2.2)
 
     const renderData = {
       stages,

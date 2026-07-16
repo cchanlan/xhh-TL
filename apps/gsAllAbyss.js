@@ -13,7 +13,7 @@ import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -651,9 +651,8 @@ export class gsAllAbyss extends plugin {
     const qq = e.user_id || e.sender?.user_id || ''
     const qqname = e.sender?.card || e.sender?.nickname || String(qq)
     const bgImage = pickBgImage()
-    const imgQuality = config().img_quality || 100
     // 三列约 1100 宽
-    const renderScale = `style=transform:scale(${(imgQuality / 100) * 2.0 || 2.0})`
+    const renderScale = getRenderScaleStyle(config(), 2.0)
     const tplFile = pluginDir + '/resources/gs_all_abyss/gs_all_abyss.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
 
