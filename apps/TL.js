@@ -749,21 +749,52 @@ export class TL extends plugin {
 
     e.reply(`开始${isForce ? '强制' : ''}更新 xhh-TL...`, true);
 
-    exec(cmd, { windowsHide: true }, async (error, stdout, stderr) => {
-      if (error) {
-        logger.error(`[xhh-TL] 更新失败: ${stderr || error.message}`);
-        e.reply(`xhh-TL 更新失败: ${stderr || error.message}`, true);
-        return;
-      }
-      if (/Already up|已经是最新/.test(stdout)) {
-        e.reply('xhh-TL 已经是最新版本', true);
-      } else {
-        exec(`git -C ${pluginDir} log -1 --format="%cd" --date=format:"%m-%d %H:%M"`, (err, timeOut) => {
-          const time = timeOut?.trim() || '未知';
-          e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n用户配置 config.yaml 已保留\n请重启以应用更新`, true);
-        });
-      }
+    const execAsync = (command) => new Promise((resolve) => {
+      exec(command, { windowsHide: true }, (error, stdout, stderr) => {
+        resolve({ error, stdout: stdout || '', stderr: stderr || '' });
+      });
     });
+
+    const { stdout: oldHeadOut } = await execAsync(`git -C ${pluginDir} rev-parse --short HEAD`);
+    const oldCommitId = oldHeadOut.trim();
+
+    const { error, stdout, stderr } = await execAsync(cmd);
+    if (error) {
+      logger.error(`[xhh-TL] 更新失败: ${stderr || error.message}`);
+      e.reply(`xhh-TL 更新失败: ${stderr || error.message}`, true);
+      return true;
+    }
+    if (/Already up|已经是最新/.test(stdout)) {
+      e.reply('xhh-TL 已经是最新版本', true);
+      return true;
+    }
+
+    const { stdout: timeOut } = await execAsync(
+      `git -C ${pluginDir} log -1 --format="%cd" --date=format:"%m-%d %H:%M"`,
+    );
+    const time = timeOut.trim() || '未知';
+    e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n请重启以应用更新`, true);
+
+    // 合并转发本次更新日志
+    try {
+      const logCmd = oldCommitId
+        ? `git -C ${pluginDir} log ${oldCommitId}..HEAD --pretty="[%cd] %s" --date=format:"%F %T"`
+        : `git -C ${pluginDir} log -20 --pretty="[%cd] %s" --date=format:"%F %T"`;
+      const { stdout: logOut } = await execAsync(logCmd);
+      const entries = logOut
+        .split('\n')
+        .map((s) => s.trim())
+        .filter((s) => s && !s.includes('Merge branch'));
+      if (entries.length) {
+        const forwardMsg = await common.makeForwardMsg(e, [
+          `xhh-TL 更新日志，共${entries.length}条`,
+          entries.join('\n\n'),
+        ]);
+        await replyForward(e, forwardMsg);
+      }
+    } catch (errLog) {
+      logger.error(`[xhh-TL] 获取更新日志失败: ${errLog?.message || errLog}`);
+    }
     return true;
   }
 
