@@ -259,10 +259,13 @@ function buildAbyssSection(resAbyss, avatarDataMap, { showAllHigh = true } = {})
     return { ok: false, reason: '无深渊数据' }
   }
   let floors = resAbyss.floors.slice()
-  const high = floors.filter(f => Number(f.index) >= 9)
+  // 仅展示 11-12 层（去掉 9/10 层）
+  const high = floors.filter(f => Number(f.index) >= 11)
   if (high.length) {
     if (showAllHigh) floors = high
     else floors = [high.reduce((a, b) => (Number(a.index) >= Number(b.index) ? a : b))]
+  } else {
+    floors = []
   }
   // 12 层在上、11 层在下（层数从高到低）
   floors = floors.sort((a, b) => Number(b.index) - Number(a.index))
@@ -639,7 +642,7 @@ export class gsAllAbyss extends plugin {
 
     const hardLvs = getVal(resHard, 'data.0')
     const roleLvs = getVal(resRole, 'data.0')
-    // 默认展示 9-12 全层
+    // 默认展示 11-12 全层（不含 9/10）
     const showAllHigh = true
 
     // 收集角色 id，统一取面板（含圣遗物套装需要 detail）
