@@ -16,6 +16,7 @@ import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/mode
 import { prepareMysContext } from '../utils/runtimePatch.js'
 import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
+import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -595,7 +596,7 @@ export class gsAllAbyss extends plugin {
 
     const periodText = '本期'
 
-    await e.reply(`正在获取${periodText}原神全部深渊…`, true)
+    await replyProgress(e, `正在获取${periodText}原神全部深渊…`)
 
     await prepareMysContext(e, 'gs')
     const mys = await MysApi.init(e, 'cookie')
@@ -789,7 +790,7 @@ export class gsAllAbyss extends plugin {
       })
       const image = extractRenderBuffer(renderResult)
       if (!image) throw new Error('渲染结果中没有图片数据')
-      return e.reply(segment.image(image), true)
+      return replyQuote(e, segment.image(image))
     } catch (err) {
       logger.error('[xhh][gsAllAbyss] 渲染失败:', err)
       return e.reply(`渲染失败：${err.message || err}`)

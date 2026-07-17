@@ -13,6 +13,7 @@ import lodash from 'lodash';
 import { prepareMysContext } from '../utils/runtimePatch.js';
 import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
+import { replyQuote } from '../utils/replyHelper.js'
 // 配置读取
 const pluginDir = process.cwd() + '/plugins/xhh-TL';
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
@@ -433,7 +434,7 @@ export async function allAbyss(e) {
           }
         });
         const image = extractRenderBuffer(renderResult);
-        if (image) return e.reply(segment.image(image), true);
+        if (image) return replyQuote(e, segment.image(image));
         throw new Error('渲染结果中没有图片数据');
       } catch (err) {
         logger.error('[xhh-TL][allAbyss] 渲染三合一深渊失败:', err);

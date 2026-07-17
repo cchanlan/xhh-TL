@@ -13,6 +13,7 @@ import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
 import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
+import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
 const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
@@ -269,7 +270,7 @@ export class miniRoleCombat extends plugin {
       if (!targetName) targetName = String(targetQq)
     }
 
-    await e.reply(`正在获取${periodText}小剧诗关键关卡…`, true)
+    await replyProgress(e, `正在获取${periodText}小剧诗关键关卡…`)
 
     await prepareMysContext(e, 'gs')
     const mys = await MysApi.init(e, 'cookie')
@@ -419,7 +420,7 @@ export class miniRoleCombat extends plugin {
         },
       })
       const image = extractRenderBuffer(renderResult)
-      if (image) return e.reply(segment.image(image), true)
+      if (image) return replyQuote(e, segment.image(image))
       return e.reply('渲染失败，请稍后再试')
     } catch (err) {
       logger.error('[xhh][miniRoleCombat] 渲染失败:', err)

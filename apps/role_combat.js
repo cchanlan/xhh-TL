@@ -8,6 +8,7 @@ import { createUser } from '../utils/userBind.js';
 import { prepareMysContext } from '../utils/runtimePatch.js';
 import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
+import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json';
 const ELEMENT_MAP = {
@@ -233,7 +234,7 @@ export class role_combat extends plugin {
   }
 
   async roleCombat(e) {
-    await e.reply('正在获取幻想真境剧诗数据，请稍后...', true);
+    await replyProgress(e, '正在获取幻想真境剧诗数据，请稍后...');
     const requestedMonth = parseMonth(e.msg || '');
 
     // 检测 @提及
@@ -408,7 +409,7 @@ export class role_combat extends plugin {
       }
     });
     const image = extractRenderBuffer(renderResult);
-    if (image) return e.reply(segment.image(image), true);
+    if (image) return replyQuote(e, segment.image(image));
     return e.reply('渲染失败，请稍后再试');
   }
 }

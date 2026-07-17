@@ -21,6 +21,7 @@ import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
 import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
 const STATIC = 'https://static.nanoka.cc'
@@ -1814,7 +1815,7 @@ export class nanokaAbyss extends plugin {
   }
 
   async renderMode(e, loader, saveId) {
-    await e.reply('正在从 Nanoka 拉取版本数据…', true)
+    await replyProgress(e, '正在从 Nanoka 拉取版本数据…')
     let data
     try {
       data = this.trimPayload(await loader())
@@ -1988,17 +1989,17 @@ export class nanokaAbyss extends plugin {
   }
 
   async sendImage(e, buf) {
-    if (!buf) return e.reply('渲染失败，请稍后重试', true)
-    // 大图不带引用回复，降低 NT 发送失败概率
+    if (!buf) return replyQuote(e, '渲染失败，请稍后重试')
+    // 单图引用触发消息
     try {
-      return await e.reply(segment.image(buf))
+      return await replyQuote(e, segment.image(buf))
     } catch (err) {
       logger?.warn?.(`[xhh-TL][nanokaAbyss] send fail, retry: ${err.message}`)
       try {
         const fallback = await sharp(buf)
           .jpeg({ quality: 85, chromaSubsampling: '4:4:4', mozjpeg: true })
           .toBuffer()
-        return await e.reply(segment.image(fallback))
+        return await replyQuote(e, segment.image(fallback))
       } catch (err2) {
         return e.reply(`发图失败（图片可能过大）：${err2.message || err.message}`)
       }

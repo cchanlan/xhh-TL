@@ -13,6 +13,7 @@ import { createUser } from '../utils/userBind.js';
 import common from '../../../lib/common/common.js';
 import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js';
 import { extractRenderBuffer } from '../utils/renderImage.js';
+import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import path from 'path';
 
 // ============ 本地配置 ============
@@ -527,13 +528,14 @@ export class TL extends plugin {
           }
         }
 
-        // 总卡片数超过阈值 → 全部合并转发
+        // 总卡片数超过阈值 → 全部合并转发（不引用触发消息）
         if (allGameSegments.length > cardsPerMsg) {
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-          return e.reply(forwardMsg, true);
+          return replyForward(e, forwardMsg);
         }
-        if (allGameSegments.length === 1) return e.reply(allGameSegments[0], true);
-        return e.reply(allGameSegments, true);
+        // 单图 / 少量多图：引用触发消息
+        if (allGameSegments.length === 1) return replyQuote(e, allGameSegments[0]);
+        return replyQuote(e, allGameSegments);
       }
 
       // 默认合并模式：每个游戏的所有UID合并进一张图
@@ -574,9 +576,9 @@ export class TL extends plugin {
               if (image) allGameSegments.push(segment.image(image));
             }
           }
-          if (allGameSegments.length === 1) return e.reply(allGameSegments[0], true);
+          if (allGameSegments.length === 1) return replyQuote(e, allGameSegments[0]);
           const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-          return e.reply(forwardMsg, true);
+          return replyForward(e, forwardMsg);
         }
       }
 
@@ -607,8 +609,8 @@ export class TL extends plugin {
           },
         });
         const image = extractRenderBuffer(renderResult);
-        if (image) return e.reply(segment.image(image), true);
-        return e.reply('图片渲染失败，请稍后重试', true);
+        if (image) return replyQuote(e, segment.image(image));
+        return replyQuote(e, '图片渲染失败，请稍后重试');
       }
 
       // 有游戏存在多个UID → 每个游戏一张图，合并转发
@@ -643,9 +645,9 @@ export class TL extends plugin {
 
       if (allGameSegments.length > 1) {
         const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-        return e.reply(forwardMsg, true);
+        return replyForward(e, forwardMsg);
       }
-      return e.reply(allGameSegments[0], true);
+      return replyQuote(e, allGameSegments[0]);
     }
 
     // 原始单图模式：数据转 _list 格式
@@ -677,8 +679,8 @@ export class TL extends plugin {
       },
     });
     const image = extractRenderBuffer(renderResult);
-    if (image) return e.reply(segment.image(image), true);
-    return e.reply('图片渲染失败，请稍后重试', true);
+    if (image) return replyQuote(e, segment.image(image));
+    return replyQuote(e, '图片渲染失败，请稍后重试');
   }
 
   // 获取当前QQ某游戏的所有绑定UID的体力数据
