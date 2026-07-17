@@ -159,6 +159,18 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
+          field: 'gs_all_abyss_theme',
+          label: '全部深渊主题',
+          bottomHelpMessage: '毛玻璃遮罩配色。浅色=初版白玻璃；深色=黑色半透明（文字自动适配）',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '浅色（初版）', value: 'light' },
+              { label: '深色', value: 'dark' }
+            ]
+          }
+        },
+        {
           component: 'Divider',
           label: '帮助图'
         },

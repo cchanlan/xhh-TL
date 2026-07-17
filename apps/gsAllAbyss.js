@@ -753,6 +753,9 @@ export class gsAllAbyss extends plugin {
     const qqname = await resolveDisplayName(e, qq)
     const bgImage = pickBgImage()
     const renderScale = getRenderScaleStyle(config(), 2.0)
+    // 毛玻璃主题：light=初版浅色玻璃 / dark=深色半透明（锅巴可配）
+    const themeRaw = String(config().gs_all_abyss_theme || 'light').toLowerCase()
+    const theme = themeRaw === 'dark' ? 'dark' : 'light'
     const tplFile = pluginDir + '/resources/gs_all_abyss/gs_all_abyss.html'
     const ppath = '../../../../plugins/xhh-TL/resources/'
 
@@ -762,6 +765,7 @@ export class gsAllAbyss extends plugin {
       qq,
       qqname,
       bgImage,
+      theme,
       generatedAt: moment().format('MM-DD HH:mm'),
       abyss,
       hard,

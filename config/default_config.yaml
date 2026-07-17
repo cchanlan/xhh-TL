@@ -23,6 +23,8 @@ role_combat: true
 # Windows 也可用绝对路径：D:/Yunzai/plugins/...
 role_combat_bg_folder: plugins/xhh-TL/resources/stat/imgs/bg1.png
 gs_all_abyss: true
+# 原神全部深渊毛玻璃主题：light=初版浅色玻璃 / dark=深色半透明
+gs_all_abyss_theme: light
 
 # 帮助图背景（#小火花帮助）
 # 默认插件自带 bg2.png，Linux/Win 通用相对路径：
