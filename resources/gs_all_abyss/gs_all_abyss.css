@@ -1844,3 +1844,25 @@ body.theme-dark .block-card {
   background: rgba(0, 0, 0, 0.62);
 }
 
+/* —— 深色主题：container 背景 —— */
+body.theme-dark .container {
+  background-color: #1a1d24;
+}
+
+/* —— 深色主题：危战 dps-row / hard-desc 遮罩 —— */
+body.theme-dark .dps-row {
+  background: rgba(0, 0, 0, 0.45);
+}
+body.theme-dark .dps-t {
+  color: #a8b0be;
+}
+body.theme-dark .dps-n {
+  color: #7ab6ff;
+}
+body.theme-dark .hard-desc,
+body.theme-dark .hard-desc.full {
+  background: rgba(0, 0, 0, 0.28);
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
