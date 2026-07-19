@@ -180,6 +180,29 @@ body {
 }
 .nk-sec-head h2 { font-size: 18px; color: #fff; font-weight: 700; }
 
+.nk-season .season-group { margin-bottom: 14px; }
+.nk-season .season-group:last-child { margin-bottom: 0; }
+.season-group-lab {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8eb7ff;
+  margin: 4px 0 8px;
+}
+.season-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.season-buff { padding: 12px 14px; }
+.season-buff h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.season-buff .nk-desc { font-size: 12px; line-height: 1.5; }
+
 .nk-stage-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

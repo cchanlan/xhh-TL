@@ -353,6 +353,47 @@ function stripColor(s = '') {
     .trim()
 }
 
+/**
+ * 赛季效果/祝福描述：把 #1[i]% / #2[i] 占位替换为真实数值
+ * - 带 % 的占位：param 视为比例，×100 后补 %（0.25 → 25%）
+ * - 不带 % 的占位：直接取 param 原值（回合数、层数等）
+ */
+function formatBuffDesc(desc = '', param = []) {
+  const p = Array.isArray(param) ? param : []
+  const fmtNum = (n) => {
+    const v = Number(n)
+    if (!Number.isFinite(v)) return String(n)
+    return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100)
+  }
+  return String(desc)
+    .replace(/<\/?color[^>]*>/gi, '')
+    .replace(/<\/?unbreak>/gi, '')
+    .replace(/#(\d+)\[i\](%?)/g, (m, idx, pct) => {
+      const raw = p[Number(idx) - 1]
+      if (raw == null) return pct ? '' : ''
+      if (pct) {
+        const v = Number(raw)
+        return Number.isFinite(v) ? `${fmtNum(v * 100)}%` : `${raw}%`
+      }
+      return fmtNum(raw)
+    })
+    .replace(/\\n/g, '\n')
+    .trim()
+}
+
+/** 归一化一组 buff（含 param 替换），过滤空项 */
+function normalizeBuffList(list = []) {
+  return (Array.isArray(list) ? list : [])
+    .map((b) => {
+      if (!b) return null
+      const name = stripColor(b.name || '')
+      const desc = formatBuffDesc(b.desc || '', b.param)
+      if (!name && !desc) return null
+      return { name, desc }
+    })
+    .filter(Boolean)
+}
+
 function fmtRange(begin, end) {
   const b = begin ? moment(begin).format('MM-DD HH:mm') : '?'
   const e = end ? moment(end).format('MM-DD HH:mm') : '?'
@@ -835,6 +876,8 @@ const HSR_MODES = {
     overview: 'maze_peak.json',
     detail: (ver, id) => `${STATIC}/hsr/${ver}/zh/peak/${id}.json`,
     filterIds: () => true,
+    // 异相 maze_peak：正式包里「最大 id」就是当期（不像混沌/末日那样带一期占位）
+    liveTop: true,
   },
   memory: {
     key: 'memory',
@@ -875,9 +918,11 @@ function parseHsrFloorNo(name = '', index = 0) {
 /**
  * 最大 id = 下期；第二大 = 正式；再叠加上期 offset
  */
-function pickHsrByRank(list, offset = 0, channel = 'live') {
+function pickHsrByRank(list, offset = 0, channel = 'live', { liveTop = false } = {}) {
   if (!list.length) return null
-  const baseFromEnd = channel === 'latest' ? 0 : Math.min(1, list.length - 1)
+  // 一般模式：正式包最大 id 是下期占位，正式当期取第二大；
+  // liveTop 模式（异相）：正式包最大 id 即当期。
+  const baseFromEnd = channel === 'latest' || liveTop ? 0 : Math.min(1, list.length - 1)
   const fromEnd = baseFromEnd + Math.max(0, offset)
   const idx = Math.max(0, list.length - 1 - fromEnd)
   return {
@@ -1543,7 +1588,7 @@ async function loadHsrEndgame(modeKey = 'chaos', offset = 0, channel = 'live') {
   list.sort((a, b) => Number(a.id) - Number(b.id))
   if (!list.length) throw new Error(`${mode.modeName} 数据为空`)
 
-  const picked = pickHsrByRank(list, offset, channel)
+  const picked = pickHsrByRank(list, offset, channel, { liveTop: !!mode.liveTop })
   const meta = picked.meta
   const detail = await fetchJson(mode.detail(version, meta.id))
   const monDb = await fetchJson(`${STATIC}/hsr/${version}/monster.json`).catch(() => ({}))
@@ -1553,6 +1598,8 @@ async function loadHsrEndgame(modeKey = 'chaos', offset = 0, channel = 'live') {
   let floors = []
   let buffTitle = meta.zh || meta.en || meta.id
   let buffDesc = ''
+  // 赛季效果：分组展示 [{ label, buffs: [{name, desc}] }]
+  let seasonEffects = []
 
   if (modeKey === 'chaos' || modeKey === 'memory') {
     floors = floorsFromMazeNodes(detail, meta, resolveMon, tables)
@@ -1567,14 +1614,51 @@ async function loadHsrEndgame(modeKey = 'chaos', offset = 0, channel = 'live') {
     buffDesc = opts.length
       ? `周期选项：${opts.join(' / ')}`
       : stripColor(detail.buff?.desc || '')
+    // 虚构叙事：周期加持（option）+ 通用增益（sub_option）
+    const optionBuffs = normalizeBuffList(detail.option)
+    const subBuffs = normalizeBuffList(detail.sub_option)
+    if (optionBuffs.length) seasonEffects.push({ label: '周期加持', buffs: optionBuffs })
+    if (subBuffs.length) seasonEffects.push({ label: '通用增益', buffs: subBuffs })
   } else if (modeKey === 'boss') {
     floors = floorsFromBossDetail(detail, resolveMon, tables)
     buffTitle = detail.name || buffTitle
     buffDesc = stripColor(detail.buff?.desc || detail.buff?.name || '')
+    // 末日幻影：环境效果（buff）+ 可选增益池（buff_list1/2/3）
+    if (detail.buff && (detail.buff.name || detail.buff.desc)) {
+      seasonEffects.push({
+        label: '环境效果',
+        buffs: [
+          {
+            name: stripColor(detail.buff.name || ''),
+            desc: formatBuffDesc(detail.buff.desc || '', detail.buff.param),
+          },
+        ],
+      })
+    }
+    ;[detail.buff_list1, detail.buff_list2, detail.buff_list3].forEach((bl, i) => {
+      const buffs = normalizeBuffList(bl)
+      if (buffs.length) seasonEffects.push({ label: `增益 ${i + 1}`, buffs })
+    })
   } else if (modeKey === 'peak') {
     floors = floorsFromPeakDetail(detail, resolveMon, tables)
     buffTitle = detail.name || buffTitle
     buffDesc = ''
+    // 异相仲裁：赛季增益藏在 boss_config / boss_level 的 buff_list
+    const bcBuffs = normalizeBuffList(detail.boss_config?.buff_list)
+    const blBuffs = normalizeBuffList(detail.boss_level?.buff_list)
+    if (bcBuffs.length) seasonEffects.push({ label: '绝境增益', buffs: bcBuffs })
+    if (blBuffs.length) seasonEffects.push({ label: '首领增益', buffs: blBuffs })
+    if (!seasonEffects.length && detail.buff && (detail.buff.name || detail.buff.desc)) {
+      seasonEffects.push({
+        label: '赛季效果',
+        buffs: [
+          {
+            name: stripColor(detail.buff.name || ''),
+            desc: formatBuffDesc(detail.buff.desc || '', detail.buff.param),
+          },
+        ],
+      })
+    }
   }
 
   floors = sortFloorsHighToLow(floors, modeKey)
@@ -1592,6 +1676,7 @@ async function loadHsrEndgame(modeKey = 'chaos', offset = 0, channel = 'live') {
     timeRange: fmtRange(detail.begin_time || meta.begin || meta.live_begin, detail.end_time || meta.end || meta.live_end),
     buffTitle,
     buffDesc,
+    seasonEffects,
     floors,
     offset: picked.offset,
     total: list.length,
@@ -1686,7 +1771,7 @@ async function listPeriods(game, channel = 'live') {
     .map(([id, v]) => ({ id: String(id), ...v }))
     .sort((a, b) => Number(a.id) - Number(b.id))
   const ch = channelLabel(channel)
-  const picked = pickHsrByRank(list, 0, channel)
+  const picked = pickHsrByRank(list, 0, channel, { liveTop: !!mode.liveTop })
   const baseIdx = list.findIndex((x) => String(x.id) === String(picked?.baseId))
   const bi = baseIdx >= 0 ? baseIdx : list.length - 1
   const window = []
@@ -1934,6 +2019,19 @@ export class nanokaAbyss extends plugin {
     }
     if (out.buffDesc && out.buffDesc.length > 280) {
       out.buffDesc = `${out.buffDesc.slice(0, 280)}…`
+    }
+    // 赛季效果：限制分组数与每组条目，压描述长度，避免超长图
+    if (Array.isArray(out.seasonEffects)) {
+      out.seasonEffects = out.seasonEffects
+        .slice(0, 4)
+        .map((g) => ({
+          label: g.label,
+          buffs: (g.buffs || []).slice(0, 4).map((b) => ({
+            name: b.name,
+            desc: b.desc && b.desc.length > 180 ? `${b.desc.slice(0, 180)}…` : b.desc,
+          })),
+        }))
+        .filter((g) => g.buffs.length)
     }
     return out
   }

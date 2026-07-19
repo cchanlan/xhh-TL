@@ -507,6 +507,28 @@ body {
     </section>
     {{/if}}
 
+    {{if seasonEffects && seasonEffects.length}}
+    <section class="nk-section nk-season">
+      <div class="nk-sec-head">
+        <span>SEASON EFFECTS</span>
+        <h2>赛季效果</h2>
+      </div>
+      {{each seasonEffects g}}
+      <div class="season-group">
+        {{if g.label}}<div class="season-group-lab">{{g.label}}</div>{{/if}}
+        <div class="season-grid">
+          {{each g.buffs b}}
+          <article class="nk-card season-buff">
+            {{if b.name}}<h3>{{b.name}}</h3>{{/if}}
+            {{if b.desc}}<p class="nk-desc">{{b.desc}}</p>{{/if}}
+          </article>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </section>
+    {{/if}}
+
     {{if note}}
     <div class="nk-note">{{note}}</div>
     {{/if}}
