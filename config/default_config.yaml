@@ -5,6 +5,17 @@
 Tl: true
 # 全局倍率微调：1.0=模板推荐倍率；可调 0.8~1.5，最终 scale 上限 2.5
 render_scale: 1.0
+# 体力卡片样式（仅原神/星铁生效；绝区零/崩三始终经典）
+#   classic  = 经典多合一卡片（默认）
+#   portrait = 大立绘卡片（右侧角色立绘，原神抽原神、星铁抽星铁）
+tl_card_style: classic
+# 立绘卡的立绘目录（tl_card_style=portrait 时生效）
+# 默认用 miao-plugin 角色面板图，按游戏自动过滤原神/星铁角色
+# 结构：子文件夹=角色名，内含图片随机抽取。也可改成自己的图库或绝对路径
+tl_portrait_folder: plugins/miao-plugin/resources/profile/normal-character
+# 立绘卡的底图（tl_card_style=portrait 时生效）
+# 支持：单张图片文件 / 目录（目录则随机抽一张）；相对 Yunzai 根或绝对路径
+tl_portrait_bg: plugins/xhh-TL/resources/stat/imgs/bg1.png
 tl_priority: -999
 show_all_bindings: true
 tl_render_mode: merge

@@ -11,7 +11,7 @@ import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
 import { createUser } from '../utils/userBind.js';
 import common from '../../../lib/common/common.js';
-import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js';
+import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
 import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import path from 'path';
@@ -459,6 +459,16 @@ export class TL extends plugin {
 
     const { ..._data_ } = { ...renderData, ...resultData };
 
+    // 立绘卡样式：仅原神/星铁走大立绘卡片，绝区零/崩三仍用经典模板
+    if (config().tl_card_style === 'portrait') {
+      const displayInfo = { qq: displayQq, qqname: displayName };
+      const handled = await this.renderPortraitFlow(e, {
+        isQueryAll, isStarRail, isZZZ, isBH3, isGenshin,
+        resultData: _data_, displayInfo, targetQq,
+      });
+      if (handled) return true;
+    }
+
     // 多UID模式：一个游戏的所有ID渲染进一张图
     if (config().show_all_bindings) {
       const games = isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
@@ -803,6 +813,193 @@ export class TL extends plugin {
     await redis.set(`xhh:show_uid:${e.user_id}`, String(enable));
     e.reply(enable ? '已开启体力UID显示' : '已关闭体力UID显示，查询体力时将隐藏UID');
     return true;
+  }
+
+  // ============ 立绘卡（原神/星铁大立绘） ============
+
+  // 立绘卡总流程：gs/sr 渲染立绘卡，zzz/bh3 回退经典卡，合并回复
+  async renderPortraitFlow(e, opts) {
+    const { isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, resultData, displayInfo, targetQq } = opts;
+    const games = isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
+      : isStarRail ? ['sr']
+        : isZZZ ? ['zzz']
+          : isBH3 ? ['bh3']
+            : isGenshin ? ['gs']
+              : ['gs'];
+
+    // 纯 zzz/bh3 请求不接管，交回经典流程
+    if (!games.includes('gs') && !games.includes('sr')) return false;
+
+    const cfg = config();
+    const multi = cfg.show_all_bindings;
+    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大；
+    // zzz/bh3 回退经典卡仍用 2.0（body 480px）保持与经典模式一致
+    const portraitScale = getRenderScaleStyle(cfg, 1.0);
+    const classicScale = getRenderScaleStyle(cfg, 2.0);
+    const qq = targetQq || e.user_id;
+
+    // 收集每个游戏的数据列表
+    const dataMap = {};
+    for (const game of games) {
+      let list = [];
+      if (multi) {
+        list = await this.fetchGameDataList(e, game, true, qq);
+      } else {
+        const single = resultData[`${game}_data`];
+        if (single && !['没有', '过期'].includes(single) && single !== false) list = [single];
+      }
+      if (list.length) dataMap[game] = list;
+    }
+
+    if (!Object.keys(dataMap).length) {
+      e.reply('没有找到有效绑定的账号', true);
+      return true;
+    }
+
+    const segments = [];
+    for (const game of games) {
+      const list = dataMap[game];
+      if (!list) continue;
+      if (game === 'gs' || game === 'sr') {
+        for (const item of list) {
+          const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
+          if (seg) segments.push(seg);
+        }
+      } else {
+        const seg = await this.renderClassicGameCard(e, game, list, displayInfo, classicScale);
+        if (seg) segments.push(seg);
+      }
+    }
+
+    if (!segments.length) {
+      e.reply('图片渲染失败，请稍后重试', true);
+      return true;
+    }
+
+    const cardsPerMsg = cfg.tl_cards_per_msg || 3;
+    if (segments.length === 1) {
+      await replyQuote(e, segments[0]);
+    } else if (segments.length > cardsPerMsg) {
+      const fwd = await common.makeForwardMsg(e, segments);
+      await replyForward(e, fwd);
+    } else {
+      await replyQuote(e, segments);
+    }
+    return true;
+  }
+
+  // 单个 gs/sr UID → 一张立绘卡 segment
+  async renderPortraitCard(e, game, item, displayInfo, renderScale) {
+    const showUid = await getShowUid(displayInfo.qq);
+    const uid = showUid ? item.uid : '****';
+    const portrait = pickCharacterPortrait(game);
+    const bg = pickPortraitBg();
+
+    const pct = (cur, max) => {
+      const c = Number(cur) || 0, m = Number(max) || 0;
+      if (m <= 0) return 0;
+      return Math.max(0, Math.min(100, Math.round((c / m) * 100)));
+    };
+    const done = (cur, max) => Number(max) > 0 && Number(cur) >= Number(max);
+
+    let bars = [], stats = [], status = [];
+    if (game === 'gs') {
+      const resin = Number(item.current_resin) || 0;
+      bars = [
+        { icon: '树脂.png', name: '原粹树脂', cur: resin, max: item.max_resin || 160, pct: pct(resin, item.max_resin || 160), warn: resin >= 160 },
+        { icon: '洞天宝钱.png', name: '洞天宝钱', cur: item.current_home_coin || 0, max: item.max_home_coin || 0, pct: pct(item.current_home_coin, item.max_home_coin), warn: done(item.current_home_coin, item.max_home_coin) },
+        { icon: '冒险委托.png', name: '每日委托', cur: item.finished_task_num || 0, max: item.total_task_num || 0, pct: pct(item.finished_task_num, item.total_task_num), warn: false },
+      ];
+      status = [
+        { ok: done(item.finished_task_num, item.total_task_num), text: done(item.finished_task_num, item.total_task_num) ? '每日委托已完成！' : '每日委托未完成' },
+        { ok: !!item.is_extra_task_reward_received, text: item.is_extra_task_reward_received ? '委托奖励已领取！' : '委托奖励未领取' },
+      ];
+      stats = [
+        { val: item.level != null ? `Lv.${item.level}` : '—', key: '冒险等阶' },
+        { val: `${item.current_expedition_num || 0}/${item.max_expedition_num || 0}`, key: '探索派遣' },
+        { val: `${item.finished_task_num || 0}/${item.total_task_num || 0}`, key: '每日委托' },
+      ];
+    } else {
+      const st = Number(item.current_stamina) || 0;
+      bars = [
+        { icon: '开拓力.png', name: '开拓力', cur: st, max: item.max_stamina || 300, pct: pct(st, item.max_stamina || 300), warn: done(st, item.max_stamina) },
+        { icon: '每日实训.png', name: '每日实训', cur: item.current_train_score || 0, max: item.max_train_score || 0, pct: pct(item.current_train_score, item.max_train_score), warn: false },
+        { icon: '模拟宇宙.png', name: '模拟宇宙', cur: item.current_rogue_score || 0, max: item.max_rogue_score || 0, pct: pct(item.current_rogue_score, item.max_rogue_score), warn: false },
+      ];
+      status = [
+        { ok: done(item.current_train_score, item.max_train_score), text: done(item.current_train_score, item.max_train_score) ? '每日实训已满！' : '每日实训未满' },
+        { ok: !!item.expeditions_, text: item.expeditions_ ? '委托已全部完成！' : '委托未全部完成' },
+      ];
+      stats = [
+        { val: item.level != null ? `Lv.${item.level}` : '—', key: '开拓等级' },
+        { val: `${item.accepted_expedition_num || 0}/${item.total_expedition_num || 0}`, key: '委托派遣' },
+        { val: `${item.current_reserve_stamina || 0}`, key: '后备开拓力' },
+      ];
+    }
+
+    const d = {
+      game,
+      uid,
+      time: item.time || '已满',
+      portrait,
+      bg,
+      bars,
+      stats,
+      status,
+    };
+
+    const ppath = '../../../../../plugins/xhh-TL/resources/';
+    const tplFile = pluginDir + '/resources/Tl/Portrait.html';
+    const renderData = { d, qq: displayInfo.qq, qqname: displayInfo.qqname };
+
+    const renderResult = await e.runtime.render('小花火', 'Tl/Portrait', renderData, {
+      retType: 'base64',
+      imgType: 'png',
+      beforeRender({ data }) {
+        return {
+          imgType: 'png',
+          sys: { scale: renderScale },
+          ...renderData,
+          ppath,
+          tplFile,
+          saveId: `Portrait_${game}`,
+        };
+      },
+    });
+    const image = extractRenderBuffer(renderResult);
+    return image ? segment.image(image) : null;
+  }
+
+  // zzz/bh3 用经典 Tl 模板渲染成一张 segment（立绘卡模式下的回退）
+  async renderClassicGameCard(e, game, dataList, displayInfo, renderScale) {
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', bh3: 'bh3_list' };
+    const data = {
+      bg: 'bg1',
+      qq: displayInfo.qq,
+      qqname: displayInfo.qqname,
+      time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
+    };
+    data[keyMap[game]] = dataList;
+    await this.hideUidIfNeeded(data, displayInfo.qq);
+
+    const ppath = '../../../../../plugins/xhh-TL/resources/';
+    const tplFile = pluginDir + '/resources/Tl/Tl.html';
+    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', data, {
+      retType: 'base64',
+      imgType: 'png',
+      beforeRender({ data: _d }) {
+        return {
+          imgType: 'png',
+          sys: { scale: renderScale },
+          ...data,
+          ppath,
+          tplFile,
+          saveId: 'Tl',
+        };
+      },
+    });
+    const image = extractRenderBuffer(renderResult);
+    return image ? segment.image(image) : null;
   }
 
   async hideUidIfNeeded(data, qq) {

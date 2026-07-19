@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/tl.css" />
+  <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/portrait.css" />
+</head>
+
+<body {{sys.scale}}>
+  <div class="pt-card pt-{{d.game}}">
+    <!-- 最底层背景图（可自定义：单图或目录随机） -->
+    {{if d.bg}}
+    <div class="pt-base" style="background-image: url({{d.bg}})"></div>
+    {{/if}}
+    <!-- 右侧清晰立绘 -->
+    {{if d.portrait}}
+    <div class="pt-portrait" style="background-image: url({{d.portrait}})"></div>
+    {{/if}}
+    <div class="pt-shade"></div>
+
+    <!-- 顶部状态 -->
+    <div class="pt-status">
+      {{each d.status s}}
+      <div class="pt-status-item {{s.ok ? 'ok' : 'no'}}">
+        <span class="pt-dot">{{s.ok ? '✓' : '✕'}}</span>
+        <span>{{s.text}}</span>
+      </div>
+      {{/each}}
+    </div>
+
+    <!-- 主体：恢复时间 + 三条进度 -->
+    <div class="pt-main">
+      <div class="pt-recover">
+        <span class="pt-recover-label">恢复时间</span>
+        <span class="pt-recover-time">{{d.time}}</span>
+      </div>
+
+      {{each d.bars bar}}
+      <div class="pt-bar-row">
+        <div class="pt-bar-icon" style="background-image: url({{ppath}}Tl/imgs/{{bar.icon}})"></div>
+        <div class="pt-bar-body">
+          <div class="pt-bar-head">
+            <span class="pt-bar-name">{{bar.name}}</span>
+            <span class="pt-bar-val {{bar.warn ? 'warn' : ''}}">{{bar.cur}}<i>/{{bar.max}}</i></span>
+          </div>
+          <div class="pt-bar-track">
+            <div class="pt-bar-fill {{bar.warn ? 'warn' : ''}}" style="width: {{bar.pct}}%"></div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+
+    <!-- 底部信息条 -->
+    <div class="pt-footer">
+      <div class="pt-user">
+        <img class="pt-avatar" src="https://q1.qlogo.cn/g?b=qq&s=640&nk={{qq}}.jpg" />
+        <div class="pt-user-text">
+          <div class="pt-name"><span class="pt-name-icon">◆</span>{{qqname}}</div>
+          {{if d.uid}}<div class="pt-uid">UID：{{d.uid}}</div>{{/if}}
+        </div>
+      </div>
+      <div class="pt-stats">
+        {{each d.stats st}}
+        <div class="pt-stat">
+          <div class="pt-stat-val">{{st.val}}</div>
+          <div class="pt-stat-key">{{st.key}}</div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="pt-brand">Power by 小花火体力 · {{d.game == 'sr' ? 'HONKAI STAR RAIL' : 'GENSHIN IMPACT'}}</div>
+  </div>
+</body>
+
+</html>

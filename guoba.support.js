@@ -49,6 +49,39 @@ export function supportGuoba() {
           }
         },
         {
+          field: 'tl_card_style',
+          label: '体力卡片样式',
+          bottomHelpMessage:
+            '仅原神/星铁生效（绝区零/崩三始终经典）。经典=多合一卡片；立绘卡=右侧大角色立绘（原神抽原神、星铁抽星铁）',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '经典（默认）', value: 'classic' },
+              { label: '立绘卡', value: 'portrait' }
+            ]
+          }
+        },
+        {
+          field: 'tl_portrait_folder',
+          label: '立绘卡角色图目录',
+          bottomHelpMessage:
+            '立绘卡样式的右侧立绘来源。默认 miao-plugin 角色面板图，按游戏自动过滤原神/星铁。结构：子文件夹=角色名，内含图片随机抽取。也可填自己的图库或绝对路径',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/miao-plugin/resources/profile/normal-character'
+          }
+        },
+        {
+          field: 'tl_portrait_bg',
+          label: '立绘卡底图',
+          bottomHelpMessage:
+            '立绘卡样式的底图。支持单张图片文件，或目录（目录则每次随机抽一张）。相对 Yunzai 根或绝对路径。默认 bg1.png',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+          }
+        },
+        {
           field: 'tl_priority',
           label: '插件优先级',
           bottomHelpMessage: '插件优先级，数字越小越优先',

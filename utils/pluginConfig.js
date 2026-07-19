@@ -327,8 +327,9 @@ export function resolveRoleCombatBgFolder(raw) {
 export function pickRoleCombatBgImage(opts = {}) {
   const cfg = readPluginConfig()
   const tag = opts.logTag || 'xhh-TL'
-  // 用户配置优先；空则用插件内置默认图
-  const raw = (cfg.role_combat_bg_folder && String(cfg.role_combat_bg_folder).trim())
+  // 优先 opts.folder（调用方显式指定），其次用户配置，最后插件内置默认图
+  const raw = (opts.folder && String(opts.folder).trim())
+    || (cfg.role_combat_bg_folder && String(cfg.role_combat_bg_folder).trim())
     || DEFAULT_ROLE_COMBAT_BG
 
   const { abs, kind } = resolveRoleCombatBgPath(raw)
@@ -402,6 +403,81 @@ export function pickRoleCombatBgImage(opts = {}) {
     const fallback = resolveRoleCombatBgPath(DEFAULT_ROLE_COMBAT_BG)
     return fallback.kind === 'file' ? toFileUrl(fallback.abs) : ''
   }
+}
+
+/** 立绘卡默认立绘目录（miao-plugin 角色面板图） */
+export const DEFAULT_TL_PORTRAIT_FOLDER =
+  'plugins/miao-plugin/resources/profile/normal-character'
+
+/** 原神/星铁角色名清单缓存（用于按游戏过滤立绘目录） */
+const _charNameCache = { gs: null, sr: null }
+
+/**
+ * 读取 miao-plugin 某游戏的角色名清单（目录名）
+ * @param {'gs'|'sr'} game
+ * @returns {Set<string>|null}
+ */
+function getMiaoCharNames(game) {
+  if (_charNameCache[game]) return _charNameCache[game]
+  const metaDir = game === 'sr' ? 'meta-sr' : 'meta-gs'
+  const abs = path.join(process.cwd(), 'plugins/miao-plugin/resources', metaDir, 'character')
+  try {
+    if (!fs.existsSync(abs)) return null
+    const names = new Set()
+    for (const item of fs.readdirSync(abs)) {
+      try {
+        if (fs.statSync(path.join(abs, item)).isDirectory()) names.add(item)
+      } catch (_) {}
+    }
+    if (!names.size) return null
+    _charNameCache[game] = names
+    return names
+  } catch (_) {
+    return null
+  }
+}
+
+/**
+ * 按游戏挑一张角色立绘，返回 file URL（失败返回 ''）
+ * - 从 tl_portrait_folder 目录随机抽图（复用 pickRoleCombatBgImage）
+ * - 用 meta-gs / meta-sr 角色名清单过滤子目录：原神抽原神、星铁抽星铁
+ * - 清单缺失时不过滤，退化为整目录随机
+ * @param {'gs'|'sr'} game
+ * @param {object} [opts]
+ */
+export function pickCharacterPortrait(game, opts = {}) {
+  const cfg = readPluginConfig()
+  const folder =
+    (cfg.tl_portrait_folder && String(cfg.tl_portrait_folder).trim()) ||
+    DEFAULT_TL_PORTRAIT_FOLDER
+
+  const names = getMiaoCharNames(game === 'sr' ? 'sr' : 'gs')
+  const filterDir = names ? (name) => names.has(name) : null
+
+  return pickRoleCombatBgImage({
+    folder,
+    filterDir,
+    logTag: opts.logTag || 'xhh-TL:portrait',
+  })
+}
+
+/** 立绘卡底图默认路径 */
+export const DEFAULT_TL_PORTRAIT_BG = 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+
+/**
+ * 立绘卡底图，返回 file URL（失败返回 ''）
+ * 配置项 tl_portrait_bg：支持单张图片文件或目录（目录则随机抽一张）
+ * @param {object} [opts]
+ */
+export function pickPortraitBg(opts = {}) {
+  const cfg = readPluginConfig()
+  const folder =
+    (cfg.tl_portrait_bg && String(cfg.tl_portrait_bg).trim()) ||
+    DEFAULT_TL_PORTRAIT_BG
+  return pickRoleCombatBgImage({
+    folder,
+    logTag: opts.logTag || 'xhh-TL:portraitBg',
+  })
 }
 
 /**
