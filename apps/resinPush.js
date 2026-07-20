@@ -82,7 +82,7 @@ export class resinPush extends plugin {
       name: '[小花火]体力阈值推送',
       dsc: '体力达到阈值自动@提醒',
       event: 'message',
-      priority: -1000,
+      priority: -Infinity,
       rule: [
         { reg: '^\\s*#?原神体力推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offGs' },
         { reg: '^\\s*#?星铁体力推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offSr' },
