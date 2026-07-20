@@ -131,6 +131,29 @@ export class resinPush extends plugin {
       return true
     }
 
+    // 开启前先校验：必须真能查到自己该游戏的体力（已扫码绑定 stoken）才允许订阅，
+    // 否则要么根本没绑（不该推送），要么会被兜底 CK 顶成别人的号（串号）。
+    let item
+    try {
+      item = await new TL().note(e, game, true)
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][体力推送] 设置校验查询失败 ${e.user_id}: ${err.message}`)
+      e.reply('查询体力失败，请稍后再试~', true)
+      return true
+    }
+    if (item === '没有' || !item) {
+      e.reply(`你还没有绑定${meta.label}账号，请先【扫码绑定】米游社后再开启体力推送~`, true)
+      return true
+    }
+    if (item === '过期') {
+      e.reply(`你的${meta.label}米游社登录已过期，请重新【扫码绑定】后再开启体力推送~`, true)
+      return true
+    }
+    if (item[meta.field] === undefined || item[meta.field] === null) {
+      e.reply(`暂时查不到你的${meta.unit}，请确认已正确绑定后再试~`, true)
+      return true
+    }
+
     const subs = loadSubs()
     subs[game][String(e.user_id)] = {
       threshold,
