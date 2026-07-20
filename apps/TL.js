@@ -48,6 +48,12 @@ async function getShowUid(qq) {
   return val === null ? true : val !== 'false';
 }
 
+// 每个用户可单独开关「体力总览」里是否显示绝区零，默认 true（显示）
+async function getShowZzz(qq) {
+  const val = await redis.get(`xhh:show_zzz:${qq}`);
+  return val === null ? true : val !== 'false';
+}
+
 // ============ MHY 工具函数 (内联自 xhh/system/mhy.js) ============
 const mysSalt = 'rtvTthKxEyreVXQCnhluFgLXPOFKPHlA'; // k2 2.71.1
 const mysSalt2 = 't0qEgfub6cvueAPgR5m9aQWWVciEer7v'; // 6x
@@ -152,6 +158,26 @@ async function getstoken(qq, uid) {
     if (!entry) continue;
     return entry.ck_stoken || `stuid=${entry.stuid};stoken=${entry.stoken};mid=${entry.mid};`;
   }
+
+  // 兜底：stoken yaml 没有时，从 SQLite/redis 绑定（createUser）里取完整 CK。
+  // 深渊用的就是这把 CK；widget 体力接口在带 cookie_token 时通常也能查。
+  // 优先返回含 cookie_token 的 CK，其次含 ltoken，最后任意可用 CK。
+  try {
+    const nu = await createUser(qq);
+    const cks = Object.values(nu?.mysUsers || {})
+      .map((m) => m?.ck)
+      .filter(Boolean);
+    if (cks.length) {
+      return (
+        cks.find((ck) => /cookie_token=/.test(ck)) ||
+        cks.find((ck) => /ltoken=/.test(ck)) ||
+        cks[0]
+      );
+    }
+  } catch (err) {
+    logger?.debug?.(`[xhh-TL][getstoken] SQLite 兜底失败: ${err?.message}`);
+  }
+
   return false;
 }
 
@@ -327,6 +353,10 @@ export class TL extends plugin {
           reg: '^\\s*#?(?:关闭|关掉)体力uid\\s*$',
           fnc: 'toggleUidDisplay',
         },
+        {
+          reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:绝区零|zzz)体力\\s*$',
+          fnc: 'toggleZzzDisplay',
+        },
       ],
     });
     this.gsUrl =
@@ -377,21 +407,26 @@ export class TL extends plugin {
 
     let resultData = {};
 
+    // 绝区零显示开关：仅影响「体力总览」，默认显示；关闭后总览不查/不显示 zzz。
+    // 以被查者为准：某人关了绝区零后，无论他自己查还是别人艾特查他，都不显示其绝区零。
+    // 单独 #绝区零体力 不受此开关影响。
+    const showZzz = isQueryAll ? await getShowZzz(targetQq || e.user_id) : true;
+
     if (isQueryAll) {
       hasAllData = true;
       logger.info('[xhh-TL][note_] 开始查询所有游戏体力');
       const [gsData, srData, zzzData, bh3Data] = await Promise.all([
         this.note(e, 'gs', true, targetQq),
         this.note(e, 'sr', true, targetQq),
-        getZZZData(),
+        showZzz ? getZZZData() : Promise.resolve('没有'),
         this.bh3Note(e, true, targetQq),
       ]);
       resultData = {
         gs_data: gsData,
         sr_data: srData,
-        zzz_data: zzzData,
         bh3_data: bh3Data,
       };
+      if (showZzz) resultData.zzz_data = zzzData;
     } else if (isStarRail) {
       resultData = { sr_data: await this.note(e, 'sr', false, targetQq) };
     } else if (isZZZ) {
@@ -463,7 +498,7 @@ export class TL extends plugin {
     if (config().tl_card_style === 'portrait') {
       const displayInfo = { qq: displayQq, qqname: displayName };
       const handled = await this.renderPortraitFlow(e, {
-        isQueryAll, isStarRail, isZZZ, isBH3, isGenshin,
+        isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, showZzz,
         resultData: _data_, displayInfo, targetQq,
       });
       if (handled) return true;
@@ -471,12 +506,12 @@ export class TL extends plugin {
 
     // 多UID模式：一个游戏的所有ID渲染进一张图
     if (config().show_all_bindings) {
-      const games = isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
+      const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
         : isStarRail ? ['sr']
         : isZZZ ? ['zzz']
         : isBH3 ? ['bh3']
         : isGenshin ? ['gs']
-        : ['gs'];
+        : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
 
       const allGameData = {};
       let totalUids = 0;
@@ -815,17 +850,24 @@ export class TL extends plugin {
     return true;
   }
 
+  async toggleZzzDisplay(e) {
+    const enable = /开启|打开/.test(e.msg);
+    await redis.set(`xhh:show_zzz:${e.user_id}`, String(enable));
+    e.reply(enable ? '已开启绝区零体力显示，体力总览将包含绝区零' : '已关闭绝区零体力显示，体力总览将隐藏绝区零');
+    return true;
+  }
+
   // ============ 立绘卡（原神/星铁大立绘） ============
 
   // 立绘卡总流程：gs/sr 渲染立绘卡，zzz/bh3 回退经典卡，合并回复
   async renderPortraitFlow(e, opts) {
-    const { isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, resultData, displayInfo, targetQq } = opts;
-    const games = isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
+    const { isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, resultData, displayInfo, targetQq, showZzz = true } = opts;
+    const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
       : isStarRail ? ['sr']
         : isZZZ ? ['zzz']
           : isBH3 ? ['bh3']
             : isGenshin ? ['gs']
-              : ['gs'];
+              : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
 
     // 纯 zzz/bh3 请求不接管，交回经典流程
     if (!games.includes('gs') && !games.includes('sr')) return false;

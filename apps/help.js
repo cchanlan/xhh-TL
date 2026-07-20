@@ -95,6 +95,11 @@ export function buildHelpGroups() {
           desc: '控制卡片是否显示游戏 UID',
         },
         {
+          icon: 'zzz-battery.webp',
+          title: '#开启绝区零体力 / #关闭绝区零体力',
+          desc: '控制「体力总览」是否包含绝区零（默认显示）',
+        },
+        {
           icon: 'plugin.webp',
           title: '#体力插件更新 #小花火体力更新',
           desc: '拉取插件更新；加「强制」放弃本地修改',
@@ -177,7 +182,7 @@ export function buildHelpGroups() {
         },
         {
           icon: 'gs-神里绫华.webp',
-          title: '#版本危战 #幽境危战',
+          title: '#版本危战 #危战版本',
           desc: '幽境危战强敌；#下期危战 看下期',
         },
         {
