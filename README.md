@@ -229,7 +229,8 @@ tmp_clean_max_age_hours: 24   # 0 = 每次清空全部
 - 原项目：[xhh](https://github.com/YUYUYUYU2147/xhh/tree/v2) by YUYUYUYU2147
 - [StarRail-plugin](https://github.com/TsukinaKasumi/StarRail-plugin) - 星铁深渊 API 参考
 - [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin) - 角色数据和渲染框架
-- 剧诗静态配置数据：[Nanoka](https://static.nanoka.cc/)
+- 剧诗静态配置数据：[Nanoka](https://nanoka.cc/)
+- 立绘体力模板[xwuid](https://github.com/Loping151/XutheringWavesUID)
 
 ## License
 
