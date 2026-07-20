@@ -114,7 +114,17 @@ export class resinPush extends plugin {
     return this._set(e, 'sr')
   }
 
+  /** 功能总开关：锅巴里关闭 resin_push_enable 时，所有指令一并停用 */
+  _pushDisabled(e) {
+    if (readPluginConfig().resin_push_enable === false) {
+      e.reply('体力推送功能已被管理员关闭~', true)
+      return true
+    }
+    return false
+  }
+
   async _set(e, game) {
+    if (this._pushDisabled(e)) return true
     const meta = GAME_META[game]
     if (!e.isGroup) {
       e.reply('体力推送只能在群里设置哦，请在需要接收提醒的群内发送该指令~', true)
@@ -193,6 +203,7 @@ export class resinPush extends plugin {
 
   // -------- 指令：用法 --------
   async usage(e) {
+    if (this._pushDisabled(e)) return true
     e.reply(
       [
         '📌 体力阈值推送用法',
