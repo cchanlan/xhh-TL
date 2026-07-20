@@ -22,7 +22,7 @@ export function supportGuoba() {
       link: 'https://github.com/cchanlan/xhh-TL',
       isV3: true,
       isV2: false,
-      description: '支持原神/星铁/绝区零/崩坏3四游戏体力查询+全部深渊三合一'
+      description: '支持原神/星铁双游戏体力查询+全部深渊三合一'
     },
     configInfo: {
       schemas: [
@@ -52,7 +52,7 @@ export function supportGuoba() {
           field: 'tl_card_style',
           label: '体力卡片样式',
           bottomHelpMessage:
-            '仅原神/星铁生效（绝区零/崩三始终经典）。经典=多合一卡片；立绘卡=右侧大角色立绘（原神抽原神、星铁抽星铁）',
+            '经典=多合一卡片；立绘卡=右侧大角色立绘（原神抽原神、星铁抽星铁）',
           component: 'Select',
           componentProps: {
             options: [
@@ -232,16 +232,6 @@ export function supportGuoba() {
             rows: 4,
             placeholder:
               'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
-          }
-        },
-        {
-          field: 'bh3_stoken_dir',
-          label: '崩三绑定保存目录',
-          bottomHelpMessage:
-            '#崩三扫码绑定 写入的目录，以及 #崩三体力 读取目录。支持绝对/相对路径；留空默认 plugins/xhh-TL/data/Stoken',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'plugins/xhh-TL/data/Stoken'
           }
         },
         {

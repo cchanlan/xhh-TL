@@ -26,9 +26,6 @@ export const DEFAULT_STOKEN_DIRS = [
   'plugins/xhh-TL/data/Stoken',
 ]
 
-/** 默认崩三绑定保存目录 */
-export const DEFAULT_BH3_STOKEN_DIR = 'plugins/xhh-TL/data/Stoken'
-
 let _cache = null
 let _cacheKey = ''
 
@@ -504,16 +501,6 @@ export function getStokenDirs() {
   let list = parsePathList(cfg.stoken_paths)
   if (!list.length) list = [...DEFAULT_STOKEN_DIRS]
   return list.map(resolvePluginPath).filter(Boolean)
-}
-
-/**
- * 崩三 stoken 保存/读取目录
- * 配置项：bh3_stoken_dir
- */
-export function getBh3StokenDir() {
-  const cfg = readPluginConfig()
-  const dir = cfg.bh3_stoken_dir || DEFAULT_BH3_STOKEN_DIR
-  return resolvePluginPath(dir)
 }
 
 /**

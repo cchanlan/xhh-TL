@@ -1,6 +1,3 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const QR = require('qrcode');
 import { exec } from 'child_process';
 import fetch from 'node-fetch';
 import moment from 'moment';
@@ -9,9 +6,10 @@ import md5 from 'md5';
 import lodash from 'lodash';
 import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
-import { createUser } from '../utils/userBind.js';
+import { createUser, getAliveMysIds } from '../utils/userBind.js';
+import { getDeletedMap, getFingerprint, fingerprintStoken, removeDeleted } from '../utils/deletedCk.js';
 import common from '../../../lib/common/common.js';
-import { getStokenCandidateFiles, getBh3StokenDir, getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
+import { getStokenCandidateFiles, getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
 import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import path from 'path';
@@ -45,12 +43,6 @@ try {
 async function getShowUid(qq) {
   const val = await redis.get(`xhh:show_uid:${qq}`);
   // 默认 true（显示）
-  return val === null ? true : val !== 'false';
-}
-
-// 每个用户可单独开关「体力总览」里是否显示绝区零，默认 true（显示）
-async function getShowZzz(qq) {
-  const val = await redis.get(`xhh:show_zzz:${qq}`);
   return val === null ? true : val !== 'false';
 }
 
@@ -93,7 +85,6 @@ function getDs2(query = '', body = '', salt = mysSalt2) {
 }
 
 function getServer(uid, game) {
-  if (game === 'zzz') return 'prod_gf_cn';
   const isSr = game === 'sr';
   switch (String(uid)[0]) {
     case '1': case '2': case '3':
@@ -137,16 +128,67 @@ function readYaml(filePath) {
 }
 
 async function getstoken(qq, uid) {
-  // 辅助函数：从 stoken 数据中查找
+  // 存活账号判定：#删除ck 会把对应米游社账号(ltuid)从 Yunzai 绑定库 Users.ltuids 移除。
+  // - bind.hasRow=false：该 QQ 没走 genshin 绑定体系（纯扫码 stoken 用户）→ 无从比对，保持旧行为，全部放行。
+  // - bind.hasRow=true：只使用「属主账号(stuid/ltuid)仍在存活集合里」的 stoken；被删账号的 stoken 判死。
+  let bind = { hasRow: false, ids: new Set() };
+  try {
+    bind = await getAliveMysIds(qq);
+  } catch (_) {}
+
+  // 已删名单：#删除ck 时由钩子(delCkHook)记录的被删 stuid → 删除当时的 stoken 指纹。
+  // 这是区分「用户主动删过的号」与「从没绑过 ck 的纯扫码号」的唯一可靠依据——
+  // 二者在绑定库里长得一样，只能靠删除那一刻的记录来判定。属主在名单里 → 判死。
+  const deletedMap = getDeletedMap(qq); // { stuid: fingerprint }
+
+  // 判定某 stuid 是否仍处于「已删」状态；顺带做自愈：
+  // 若名单里记了指纹，而当前这把 stoken 的指纹已变（说明用户重新扫码登录、xiaoyao 覆写了 yaml），
+  // 则视为已重新绑定 → 移出名单并放行。无指纹（旧格式/兜底 CK）时无法比对，保持判死。
+  const isStillDeleted = (sid, curStoken) => {
+    if (!sid || !(sid in deletedMap)) return false;
+    const oldFp = deletedMap[sid];
+    if (oldFp && curStoken) {
+      const curFp = fingerprintStoken(curStoken);
+      if (curFp !== oldFp) {
+        // 重新登录后的新 stoken → 自愈
+        removeDeleted(qq, [sid]);
+        delete deletedMap[sid];
+        logger?.info?.(`[xhh-TL][getstoken] QQ ${qq} 账号 ${sid} 检测到重新登录，已恢复体力查询`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // 判断某 stoken 条目对应的米游社账号是否仍存活
+  const aliveEntry = (entry) => {
+    if (!entry || !(entry.ck_stoken || entry.stoken)) return false;
+    const sid = String(
+      entry.stuid ||
+      cookiePart(entry.ck_stoken || '', 'stuid') ||
+      cookiePart(entry.ck_stoken || '', 'ltuid') ||
+      entry.ltuid ||
+      ''
+    );
+    // 被用户主动 #删除ck 过的号：无论有没有 genshin 绑定行，一律判死（除非已重新登录自愈）
+    if (sid && isStillDeleted(sid, entry.stoken || entry.ck_stoken)) return false;
+    if (!bind.hasRow) return true; // 无 genshin 绑定行：不误伤纯 stoken 用户
+    if (!sid) return true; // 无法判定属主时保守放行，避免误杀正常绑定
+    return bind.ids.has(sid);
+  };
+
+  // 从一份 yaml 数据里挑选可用条目：
+  // - 有 genshin 绑定行(hasRow=true)：只认「请求的 uid 自己那条」，且其属主账号必须存活。
+  //   绝不跨账号顶替——widget 接口只认 stoken、URL 不带 uid，拿别的账号 stoken 会串号，
+  //   且已删账号会被存活账号顶包而“复活”。查不到就应停查。
+  // - 纯 stoken 用户(hasRow=false)：无删除语义，保持宽松：先精确 uid，再退回任意条目。
   const findInData = (data) => {
     if (!data) return false;
-    // 先精确匹配 uid
-    if (data[uid]) return data[uid];
-    // 如果找不到，尝试用任意条目（同一米游社账号的 stoken 通用）
+    const exact = data[uid] || data[String(uid)];
+    if (aliveEntry(exact)) return exact;
+    if (bind.hasRow) return false; // 有绑定体系：精确匹配失败即判死，不回退
     for (const key of Object.keys(data)) {
-      if (data[key]?.ck_stoken || data[key]?.stoken) {
-        return data[key];
-      }
+      if (aliveEntry(data[key])) return data[key];
     }
     return false;
   };
@@ -161,12 +203,25 @@ async function getstoken(qq, uid) {
 
   // 兜底：stoken yaml 没有时，从 SQLite/redis 绑定（createUser）里取完整 CK。
   // 深渊用的就是这把 CK；widget 体力接口在带 cookie_token 时通常也能查。
-  // 优先返回含 cookie_token 的 CK，其次含 ltoken，最后任意可用 CK。
+  // 规则与上面 yaml 部分一致，避免绕过 gating / 串号：
+  // - hasRow=true：只用「该账号存活」且「该账号名下确实包含当前 uid」的 CK，绝不跨账号顶替；
+  //   （createUser 会合并 yaml 的 mysUsers，被 #删除ck 清掉的账号必须靠存活集合挡掉）
+  // - hasRow=false（纯 stoken 用户）：保持宽松，任意可用 CK 兜底。
   try {
     const nu = await createUser(qq);
-    const cks = Object.values(nu?.mysUsers || {})
-      .map((m) => m?.ck)
-      .filter(Boolean);
+    const entries = Object.entries(nu?.mysUsers || {});
+    const usable = entries.filter(([ltuid, m]) => {
+      if (!m?.ck) return false;
+      if (isStillDeleted(String(ltuid), cookiePart(m.ck, 'stoken'))) return false; // 被 #删除ck 过的号，一律判死（除非已重新登录自愈）
+      if (!bind.hasRow) return true; // 纯 stoken 用户不收窄
+      if (!bind.ids.has(String(ltuid))) return false; // 账号已被删除
+      // 该账号名下必须包含当前查询的 uid，防止用存活账号顶替已删 uid
+      const owned = [].concat(
+        m.uids?.gs || [], m.uids?.sr || [],
+      ).map(String);
+      return owned.length === 0 || owned.includes(String(uid));
+    });
+    const cks = usable.map(([, m]) => m.ck).filter(Boolean);
     if (cks.length) {
       return (
         cks.find((ck) => /cookie_token=/.test(ck)) ||
@@ -186,8 +241,6 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
   const signActId = {
     gs: 'e202311201442471',
     sr: 'e202304121516551',
-    zzz: 'e202406242138391',
-    bh3: 'e202306201626331',
   };
 
   const apiList = {
@@ -197,14 +250,6 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
     },
     sign_info: {
       url: `https://api-takumi.mihoyo.com/event/luna/info?act_id=${signActId[game]}&region=${server}&uid=${uid}&lang=zh-cn`,
-      method: 'GET',
-    },
-    bh3_index: {
-      url: `https://api-takumi-record.mihoyo.com/game_record/appv2/honkai3rd/api/index?role_id=${uid}&server=${server}`,
-      method: 'GET',
-    },
-    bh3_note: {
-      url: `https://api-takumi-record.mihoyo.com/game_record/app/honkai3rd/api/note?role_id=${uid}&server=${server}`,
       method: 'GET',
     },
   };
@@ -227,26 +272,6 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
     fetchHeaders['User-Agent'] = 'Mozilla/5.0 (Linux; Android 12; Mi 10 Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.88 Mobile Safari/537.36 miHoYoBBS/2.73.1';
   }
 
-  // 崩3 API 使用 4x salt DS
-  if (type && (type.startsWith('bh3_'))) {
-    const urlStr = apiItem.url;
-    const queryString = urlStr.includes('?') ? urlStr.split('?')[1] : '';
-    fetchHeaders.DS = getDs2(queryString, '', '4');
-    fetchHeaders['x-rpc-client_type'] = '5';
-    fetchHeaders['x-rpc-app_version'] = '2.73.1';
-    fetchHeaders.Referer = 'https://webstatic.mihoyo.com/';
-    fetchHeaders['User-Agent'] = 'Mozilla/5.0 (Linux; Android 12; XQ-AT52 Build/58.2.A.7.93; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.88 Mobile Safari/537.36 miHoYoBBS/2.73.1';
-    delete fetchHeaders.Origin;
-    delete fetchHeaders['X-Requested-With'];
-    delete fetchHeaders['x-rpc-sys_version'];
-    delete fetchHeaders['x-rpc-device_id'];
-    delete fetchHeaders['x-rpc-device_name'];
-    delete fetchHeaders['x-rpc-device_model'];
-    delete fetchHeaders['x-rpc-channel'];
-    delete fetchHeaders['x-rpc-verify_key'];
-    delete fetchHeaders['x-rpc-app_id'];
-  }
-
   let res;
   try {
     res = await fetch(apiItem.url, { method: apiItem.method, headers: fetchHeaders }).then(r => r.json());
@@ -265,7 +290,7 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
         }
         break;
       case -110:
-        msg = `${uid ? 'UID:' + uid : ''}该账号没有绑定崩坏3角色，请检查UID是否正确`;
+        msg = `${uid ? 'UID:' + uid : ''}该账号没有绑定对应游戏角色，请检查UID是否正确`;
         break;
       case 10102: case 5003: case 10041:
         msg = `${uid ? 'UID:' + uid : ''}米游社账号异常,无法查询！`;
@@ -288,25 +313,6 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
 function cookiePart(ck = '', key) {
   const m = String(ck).match(new RegExp(`(?:^|;\\s*)${key}=([^;]+)`));
   return m ? m[1] : '';
-}
-
-async function ensureCookieToken(e, ck, entry = null) {
-  if (!ck || /(?:^|;\s*)cookie_token=/.test(ck)) return ck;
-  const stuid = entry?.stuid || cookiePart(ck, 'stuid') || cookiePart(ck, 'ltuid');
-  const stoken = entry?.stoken || cookiePart(ck, 'stoken');
-  if (!stuid || !stoken) return ck;
-  try {
-    const headers = getHeaders(e, ck);
-    const cookieRes = await fetch(`https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoBySToken?stoken=${encodeURIComponent(stoken)}&uid=${encodeURIComponent(stuid)}`, { method: 'GET', headers }).then(r => r.json());
-    const ltokenRes = await fetch('https://passport-api.mihoyo.com/account/auth/api/getLTokenBySToken', { method: 'GET', headers }).then(r => r.json());
-    const cookieToken = cookieRes?.data?.cookie_token;
-    const ltoken = ltokenRes?.data?.ltoken || entry?.ltoken;
-    if (cookieToken && ltoken) return `ltoken=${ltoken};ltuid=${stuid};cookie_token=${cookieToken};account_id=${stuid};`;
-    if (cookieToken) return `stuid=${stuid};stoken=${stoken};cookie_token=${cookieToken};account_id=${stuid};`;
-  } catch (err) {
-    logger.debug?.(`[xhh-TL][bh3] refresh cookie_token failed: ${err.message}`);
-  }
-  return ck;
 }
 
 function getTime(time) {
@@ -334,12 +340,8 @@ export class TL extends plugin {
       rule: [
         {
           // 可选 #/*/%；关键词必须完整结束，尾部多余字不触发
-          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl)|(?:崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(?:体力|tl))\\s*$',
+          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl))\\s*$',
           fnc: 'note_',
-        },
-        {
-          reg: '^\\s*#?(?:崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b)(?:扫码|绑定|扫码绑定|扫码登录|扫码登陆)\\s*$',
-          fnc: 'bh3ScanBind',
         },
         {
           reg: '^\\s*#?(?:体力插件|小花火体力)(?:强制)?更新\\s*$',
@@ -353,18 +355,12 @@ export class TL extends plugin {
           reg: '^\\s*#?(?:关闭|关掉)体力uid\\s*$',
           fnc: 'toggleUidDisplay',
         },
-        {
-          reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:绝区零|zzz)体力\\s*$',
-          fnc: 'toggleZzzDisplay',
-        },
       ],
     });
     this.gsUrl =
       'https://api-takumi-record.mihoyo.com/game_record/genshin/aapi/widget/v2';
     this.srUrl =
       'https://api-takumi-record.mihoyo.com/game_record/app/hkrpg/aapi/widget';
-    this.zzzUrl =
-      'https://api-takumi-record.mihoyo.com/event/game_record_zzz/api/zzz/widget';
     this.week = [
       '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六',
     ];
@@ -390,49 +386,23 @@ export class TL extends plugin {
     const isQueryAll = ['体力', '全体力', '四游戏体力', '米游社体力', '体力总览', 'tl'].includes(rawMsg);
     logger.info(`[xhh-TL][note_] rawMsg: ${rawMsg}, isQueryAll: ${isQueryAll}`);
     const isStarRail = /星铁|xt|^\*/.test(rawMsg) || e.msg.includes('*体力') || e.msg.includes('*tl');
-    const isZZZ = /绝区零|zzz/i.test(rawMsg);
-    const isBH3 = /崩三|崩坏3|崩坏三|BH3|bh3|bbb|3b/i.test(rawMsg);
     const isGenshin = /原神|ys/i.test(rawMsg);
-    const getZZZData = async () => {
-      const data = await this.note(e, 'zzz', isQueryAll, targetQq);
-      if (
-        data &&
-        !['过期', '没有'].includes(data) &&
-        !data.s2_bounty_commission
-      ) {
-        data.s2_bounty_commission = { num: 0, total: 0 };
-      }
-      return data;
-    };
 
     let resultData = {};
-
-    // 绝区零显示开关：仅影响「体力总览」，默认显示；关闭后总览不查/不显示 zzz。
-    // 以被查者为准：某人关了绝区零后，无论他自己查还是别人艾特查他，都不显示其绝区零。
-    // 单独 #绝区零体力 不受此开关影响。
-    const showZzz = isQueryAll ? await getShowZzz(targetQq || e.user_id) : true;
 
     if (isQueryAll) {
       hasAllData = true;
       logger.info('[xhh-TL][note_] 开始查询所有游戏体力');
-      const [gsData, srData, zzzData, bh3Data] = await Promise.all([
+      const [gsData, srData] = await Promise.all([
         this.note(e, 'gs', true, targetQq),
         this.note(e, 'sr', true, targetQq),
-        showZzz ? getZZZData() : Promise.resolve('没有'),
-        this.bh3Note(e, true, targetQq),
       ]);
       resultData = {
         gs_data: gsData,
         sr_data: srData,
-        bh3_data: bh3Data,
       };
-      if (showZzz) resultData.zzz_data = zzzData;
     } else if (isStarRail) {
       resultData = { sr_data: await this.note(e, 'sr', false, targetQq) };
-    } else if (isZZZ) {
-      resultData = { zzz_data: await getZZZData() };
-    } else if (isBH3) {
-      resultData = { bh3_data: await this.bh3Note(e, false, targetQq) };
     } else {
       resultData = { gs_data: await this.note(e, 'gs', false, targetQq) };
     }
@@ -494,11 +464,11 @@ export class TL extends plugin {
 
     const { ..._data_ } = { ...renderData, ...resultData };
 
-    // 立绘卡样式：仅原神/星铁走大立绘卡片，绝区零/崩三仍用经典模板
+    // 立绘卡样式：仅原神/星铁走大立绘卡片
     if (config().tl_card_style === 'portrait') {
       const displayInfo = { qq: displayQq, qqname: displayName };
       const handled = await this.renderPortraitFlow(e, {
-        isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, showZzz,
+        isQueryAll, isStarRail, isGenshin,
         resultData: _data_, displayInfo, targetQq,
       });
       if (handled) return true;
@@ -506,12 +476,10 @@ export class TL extends plugin {
 
     // 多UID模式：一个游戏的所有ID渲染进一张图
     if (config().show_all_bindings) {
-      const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
+      const games = isQueryAll ? ['gs', 'sr']
         : isStarRail ? ['sr']
-        : isZZZ ? ['zzz']
-        : isBH3 ? ['bh3']
         : isGenshin ? ['gs']
-        : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
+        : ['gs'];
 
       const allGameData = {};
       let totalUids = 0;
@@ -533,7 +501,7 @@ export class TL extends plugin {
       const renderScale = getRenderScaleStyle(config(), 2.0);
       const ppath = '../../../../../plugins/xhh-TL/resources/';
       const tplFile = pluginDir + '/resources/Tl/Tl.html';
-      const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', bh3: 'bh3_list' };
+      const keyMap = { gs: 'gs_list', sr: 'sr_list' };
       const tlRenderMode = config().tl_render_mode || 'merge';
       const uidsPerImage = config().tl_uids_per_image || 2;
       const cardsPerMsg = config().tl_cards_per_msg || 3;
@@ -699,8 +667,6 @@ export class TL extends plugin {
     const listData = { ...renderData };
     if (_data_.gs_data) listData.gs_list = [_data_.gs_data];
     if (_data_.sr_data) listData.sr_list = [_data_.sr_data];
-    if (_data_.zzz_data) listData.zzz_list = [_data_.zzz_data];
-    if (_data_.bh3_data) listData.bh3_list = [_data_.bh3_data];
 
     const tplFile = pluginDir + '/resources/Tl/Tl.html';
     const ppath = '../../../../../plugins/xhh-TL/resources/';
@@ -732,38 +698,7 @@ export class TL extends plugin {
   async fetchGameDataList(e, game, san, qq) {
     const results = [];
 
-    if (game === 'bh3') {
-      // BH3：从配置的崩三 stoken 目录读取
-      const stokenPaths = [
-        path.join(getBh3StokenDir(), `${qq}.yaml`),
-      ];
-      const bh3Regions = ['android01', 'ios01', 'pc01', 'bb01', 'yyb01', 'hun01', 'hun02'];
-      const bh3Entries = [];
-      const seenBh3Uids = new Set();
-      for (const p of stokenPaths) {
-        if (!fs.existsSync(p)) continue;
-        const stokenData = readYaml(p);
-        if (!stokenData) continue;
-        for (const [key, entry] of Object.entries(stokenData)) {
-          if (!entry || !bh3Regions.includes(entry?.region || '')) continue;
-          const uid = String(key);
-          if (seenBh3Uids.has(uid)) continue;
-          seenBh3Uids.add(uid);
-          bh3Entries.push({ uid, ...entry });
-        }
-      }
-
-      for (const entry of bh3Entries) {
-        // CK 由 bh3Note 内部的 getBh3Auth 按 stuid 匹配绑定 Cookie，不用 entry.ck_stoken
-        const data = await this.bh3Note(e, san, qq, entry.uid, entry.region);
-        if (data && data !== '没有' && data !== '过期') {
-          results.push(data);
-        }
-      }
-      return results;
-    }
-
-    // 其他游戏：通过兼容层枚举 UID（不依赖 genshin import）
+    // 通过兼容层枚举 UID（不依赖 genshin import）
     const noteUser = await createUser(qq, e);
     const uidList = noteUser.getUidList(game) || [];
     for (const item of uidList) {
@@ -771,9 +706,6 @@ export class TL extends plugin {
       if (!uid) continue;
       const data = await this.note(e, game, san, qq, uid);
       if (data && data !== '没有' && data !== '过期') {
-        if (game === 'zzz' && !data.s2_bounty_commission) {
-          data.s2_bounty_commission = { num: 0, total: 0 };
-        }
         results.push(data);
       }
     }
@@ -850,34 +782,20 @@ export class TL extends plugin {
     return true;
   }
 
-  async toggleZzzDisplay(e) {
-    const enable = /开启|打开/.test(e.msg);
-    await redis.set(`xhh:show_zzz:${e.user_id}`, String(enable));
-    e.reply(enable ? '已开启绝区零体力显示，体力总览将包含绝区零' : '已关闭绝区零体力显示，体力总览将隐藏绝区零');
-    return true;
-  }
-
   // ============ 立绘卡（原神/星铁大立绘） ============
 
-  // 立绘卡总流程：gs/sr 渲染立绘卡，zzz/bh3 回退经典卡，合并回复
+  // 立绘卡总流程：gs/sr 渲染立绘卡，合并回复
   async renderPortraitFlow(e, opts) {
-    const { isQueryAll, isStarRail, isZZZ, isBH3, isGenshin, resultData, displayInfo, targetQq, showZzz = true } = opts;
-    const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'bh3']
+    const { isQueryAll, isStarRail, isGenshin, resultData, displayInfo, targetQq } = opts;
+    const games = isQueryAll ? ['gs', 'sr']
       : isStarRail ? ['sr']
-        : isZZZ ? ['zzz']
-          : isBH3 ? ['bh3']
-            : isGenshin ? ['gs']
-              : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
-
-    // 纯 zzz/bh3 请求不接管，交回经典流程
-    if (!games.includes('gs') && !games.includes('sr')) return false;
+        : isGenshin ? ['gs']
+          : ['gs'];
 
     const cfg = config();
     const multi = cfg.show_all_bindings;
-    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大；
-    // zzz/bh3 回退经典卡仍用 2.0（body 480px）保持与经典模式一致
+    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大
     const portraitScale = getRenderScaleStyle(cfg, 1.0);
-    const classicScale = getRenderScaleStyle(cfg, 2.0);
     const qq = targetQq || e.user_id;
 
     // 收集每个游戏的数据列表
@@ -902,13 +820,8 @@ export class TL extends plugin {
     for (const game of games) {
       const list = dataMap[game];
       if (!list) continue;
-      if (game === 'gs' || game === 'sr') {
-        for (const item of list) {
-          const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
-          if (seg) segments.push(seg);
-        }
-      } else {
-        const seg = await this.renderClassicGameCard(e, game, list, displayInfo, classicScale);
+      for (const item of list) {
+        const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
         if (seg) segments.push(seg);
       }
     }
@@ -1012,42 +925,10 @@ export class TL extends plugin {
     return image ? segment.image(image) : null;
   }
 
-  // zzz/bh3 用经典 Tl 模板渲染成一张 segment（立绘卡模式下的回退）
-  async renderClassicGameCard(e, game, dataList, displayInfo, renderScale) {
-    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', bh3: 'bh3_list' };
-    const data = {
-      bg: 'bg1',
-      qq: displayInfo.qq,
-      qqname: displayInfo.qqname,
-      time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
-    };
-    data[keyMap[game]] = dataList;
-    await this.hideUidIfNeeded(data, displayInfo.qq);
-
-    const ppath = '../../../../../plugins/xhh-TL/resources/';
-    const tplFile = pluginDir + '/resources/Tl/Tl.html';
-    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', data, {
-      retType: 'base64',
-      imgType: 'png',
-      beforeRender({ data: _d }) {
-        return {
-          imgType: 'png',
-          sys: { scale: renderScale },
-          ...data,
-          ppath,
-          tplFile,
-          saveId: 'Tl',
-        };
-      },
-    });
-    const image = extractRenderBuffer(renderResult);
-    return image ? segment.image(image) : null;
-  }
-
   async hideUidIfNeeded(data, qq) {
     const showUid = await getShowUid(qq);
     if (showUid) return;
-    const keyMap = ['gs_list', 'sr_list', 'zzz_list', 'bh3_list'];
+    const keyMap = ['gs_list', 'sr_list'];
     for (const key of keyMap) {
       if (data[key]) {
         for (const item of data[key]) {
@@ -1055,245 +936,6 @@ export class TL extends plugin {
         }
       }
     }
-  }
-
-  async getBh3Auth(e, targetQq = null) {
-    let qq = targetQq || e.user_id;
-    if (!targetQq) {
-      for (const msg of e.message || []) {
-        if (msg.type === 'at') { qq = msg.qq; break; }
-      }
-    }
-
-    let uid = await redis.get(`xhh:bh3_uid:${qq}`);
-    let region = uid ? await redis.get(`xhh:bh3_region:${qq}`) : null;
-    let ck = null;
-    let signEntry = null;
-
-    // BH3 从配置目录读取
-    const stokenPaths = [
-      path.join(getBh3StokenDir(), `${qq}.yaml`),
-    ];
-    let stokenData = null;
-    for (const stokenPath of stokenPaths) {
-      if (fs.existsSync(stokenPath)) {
-        stokenData = readYaml(stokenPath);
-        break;
-      }
-    }
-
-    if (stokenData) {
-      if (!uid) {
-        const bh3Regions = ['android01', 'ios01', 'pc01', 'bb01', 'yyb01', 'hun01', 'hun02'];
-        for (const key of Object.keys(stokenData)) {
-          const entry = stokenData[key];
-          if (bh3Regions.includes(entry?.region || '')) {
-            uid = key;
-            region = entry.region || region;
-            break;
-          }
-        }
-      }
-      const entry = stokenData[uid];
-      if (entry) {
-        signEntry = entry;
-        region = entry.region || region;
-      }
-      if (entry?.stuid) {
-        try {
-          const nu = await createUser(qq, e);
-          for (const ltuid in nu.mysUsers || {}) {
-            if (String(ltuid) === String(entry.stuid)) {
-              ck = nu.mysUsers[ltuid].ck;
-              break;
-            }
-          }
-        } catch (_) {}
-      }
-    }
-
-    if (!uid) return { uid: null, region: null, ck: null, signEntry: null };
-    if (!region || region === 'cn_gf01') region = 'android01';
-    if (!ck) {
-      try {
-        const nu = await createUser(qq, e);
-        for (const ltuid in nu.mysUsers || {}) {
-          if (nu.mysUsers[ltuid]?.ck) { ck = nu.mysUsers[ltuid].ck; break; }
-        }
-      } catch (_) {}
-    }
-    return { uid, region, ck, signEntry };
-  }
-
-  // 崩3扫码绑定（移植自 xhh 插件）
-  async bh3ScanBind(e) {
-    const toDataURL = QR.toDataURL;
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    // 生成一组固定的 headers，整个扫码流程复用同一 device_id
-    const qrHeaders = getHeaders(e);
-
-    // 获取二维码
-    let res = await fetch('https://passport-api.mihoyo.com/account/ma-cn-passport/app/createQRLogin', {
-      method: 'POST',
-      headers: qrHeaders,
-      body: JSON.stringify({}),
-    }).then(r => r.json());
-
-    if (!res?.data?.url) return e.reply('获取二维码失败，请稍后重试', true);
-
-    const ticket = res.data.ticket;
-    const img = segment.image((await toDataURL(res.data.url)).replace('data:image/png;base64,', 'base64://'));
-    await e.reply(['请在60秒内使用手机米游社扫码绑定崩坏3\n谁触发谁扫码，不要帮别人绑定！', img], true);
-
-    await sleep(2000);
-
-    // 轮询扫码状态（复用同一 headers）
-    let scanned = false;
-    for (let n = 0; n < 150; n++) {
-      await sleep(1000);
-      res = await fetch('https://passport-api.mihoyo.com/account/ma-cn-passport/app/queryQRLoginStatus', {
-        method: 'POST',
-        headers: qrHeaders,
-        body: JSON.stringify({ ticket }),
-      }).then(r => r.json());
-
-      if (res.retcode !== 0) { logger.error(`[xhh-TL][bh3] QR query failed: ${JSON.stringify(res)}`); return e.reply(`二维码状态查询失败: ${res.message || res.retcode}`, true); }
-      if (res.data.status === 'Init') continue;
-      if (res.data.status === 'Scanned' && !scanned) { scanned = true; e.reply('二维码已扫描，请确认登录~', true); continue; }
-      if (res.data.status === 'Scanned') continue;
-
-      if (res.data.status === 'Confirmed') {
-        const stoken = (res.data.tokens.find(i => i.name === 'stoken' || i.name === 'stoken_v2') || res.data.tokens[0])?.token;
-        const stuid = res.data.user_info.aid || res.data.user_info.uid || res.data.user_info.account_id;
-        const mid = res.data.user_info.mid;
-
-        if (!stoken || !stuid) return e.reply('获取登录凭证失败', true);
-
-        // 用 stoken 获取 ltoken 和 cookie_token
-        const ck = `stuid=${stuid};stoken=${stoken};mid=${mid};`;
-        const headers = getHeaders(e, ck);
-
-        // 获取 ltoken
-        let ltoken = '';
-        try {
-          const ltokenRes = await fetch('https://passport-api.mihoyo.com/account/auth/api/getLTokenBySToken', {
-            method: 'GET', headers,
-          }).then(r => r.json());
-          ltoken = ltokenRes?.data?.ltoken || '';
-        } catch (_) {}
-
-        // 获取 GameRoles，包含 bh3_cn
-        res = await callApi(e, 'GameRoles', null, null, null, headers, true);
-        if (!res?.data?.list) return e.reply('获取游戏角色失败', true);
-
-        // 查找所有 BH3 角色（一个米游社号可能有多个渠道服崩3）
-        const bh3List = res.data.list.filter(v => v.game_biz === 'bh3_cn');
-        if (bh3List.length === 0) return e.reply('该米游社账号下没有崩坏3角色，请确认是否绑定了正确的账号', true);
-
-        const bh3Dir = getBh3StokenDir();
-        try {
-          if (!fs.existsSync(bh3Dir)) fs.mkdirSync(bh3Dir, { recursive: true });
-        } catch (_) {}
-        const savePath = path.join(bh3Dir, `${e.user_id}.yaml`);
-        let existingData = {};
-        if (fs.existsSync(savePath)) existingData = readYaml(savePath);
-
-        const saved = [];
-        for (const bh3Entry of bh3List) {
-          const bh3Uid = bh3Entry.game_uid;
-          const bh3Region = bh3Entry.region;
-
-          // 保存到 Redis（第一个作为默认）
-          if (saved.length === 0) {
-            await redis.set(`xhh:bh3_uid:${e.user_id}`, bh3Uid);
-            await redis.set(`xhh:bh3_region:${e.user_id}`, bh3Region);
-          }
-
-          existingData[bh3Uid] = {
-            uid: bh3Uid,
-            stuid: String(stuid),
-            stoken,
-            ck_stoken: `stuid=${stuid};stoken=${stoken};mid=${mid};`,
-            mid,
-            ltoken,
-            region_name: bh3Entry.region_name || '崩坏3',
-            region: bh3Region,
-          };
-          saved.push(`${bh3Uid}(${bh3Region})`);
-        }
-        fs.writeFileSync(savePath, YAML.stringify(existingData), 'utf-8');
-
-        return e.reply(`崩坏3绑定成功！\n${saved.join('\n')}\n现在可以发送 #崩三体力 查询了`);
-      }
-    }
-    return e.reply('扫码超时，请重新操作', true);
-  }
-
-  async bh3Note(e, san = true, targetQq = null, forceUid = null, forceRegion = null, forceCk = null) {
-    const auth = await this.getBh3Auth(e, targetQq);
-    if (forceUid) {
-      auth.uid = forceUid;
-      if (forceRegion) auth.region = forceRegion;
-    }
-    if (forceCk) auth.ck = forceCk;
-    if (!auth.uid) {
-      if (!san) e.reply('请先扫码绑定崩坏3账号');
-      return '没有';
-    }
-    if (!auth.ck) {
-      if (!san) e.reply('未找到有效Cookie，请先扫码绑定');
-      return '没有';
-    }
-    const headers = getHeaders(e, auth.ck);
-    const signCk = await ensureCookieToken(e, auth.signEntry?.ck_stoken || auth.ck, auth.signEntry);
-    const signHeaders = getHeaders(e, signCk);
-    let indexRes, noteRes, signRes;
-    try {
-      [indexRes, noteRes, signRes] = await Promise.all([
-        callApi(e, 'bh3_index', 'bh3', auth.uid, auth.region, headers, san),
-        callApi(e, 'bh3_note', 'bh3', auth.uid, auth.region, headers, san),
-        callApi(e, 'sign_info', 'bh3', auth.uid, auth.region, signHeaders, true).catch(() => null),
-      ]);
-    } catch (err) {
-      logger.error('[xhh-TL][bh3] API error:', err);
-      return false;
-    }
-    if ([-10001, 10001, -100].includes(indexRes?.retcode) || [-10001, 10001, -100].includes(noteRes?.retcode)) {
-      if (!san) e.reply('米游社验证已过期。请重新：扫码绑定');
-      return '过期';
-    }
-    // 1008 = 该账号没有崩坏3角色，静默跳过
-    if (indexRes?.retcode === 1008 || noteRes?.retcode === 1008) return false;
-    if (indexRes?.retcode !== 0 || noteRes?.retcode !== 0) {
-      logger.error(`[xhh-TL][bh3] API failed uid=${auth.uid} region=${auth.region}: index=${indexRes?.retcode} note=${noteRes?.retcode}`);
-      return false;
-    }
-    const role = indexRes.data?.role || {};
-    const note = noteRes.data || {};
-    const level = Number(role.level || 0);
-    const ultra = note.ultra_endless || null;
-    const greedy = note.greedy_endless || null;
-    const isOldAbyss = level > 0 && level <= 80;
-    const abyss = isOldAbyss
-      ? (greedy || ultra || null)
-      : (ultra?.is_open ? ultra : greedy?.is_open ? greedy : ultra || greedy || null);
-    const abyssName = isOldAbyss ? '量子流形' : (ultra ? '超弦空间' : greedy ? '量子流形' : '超弦空间');
-    return {
-      uid: auth.uid,
-      level,
-      name: role.nickname || '未知舰长',
-      current_stamina: note.current_stamina || 0,
-      max_stamina: note.max_stamina || 200,
-      time: note.stamina_recover_time ? getTime(note.stamina_recover_time) : '已满',
-      current_train_score: note.current_train_score || 0,
-      max_train_score: note.max_train_score || 500,
-      abyss,
-      abyss_name: abyssName,
-      battle_field: note.battle_field || null,
-      god_war: note.god_war || null,
-      is_sign: signRes?.data?.is_sign === true,
-    };
   }
 
   // 体力
@@ -1325,13 +967,7 @@ export class TL extends plugin {
       return '没有';
     }
     let headers = getHeaders(e, sk, false);
-    let url =
-      game == 'gs' ? this.gsUrl : game == 'sr' ? this.srUrl : this.zzzUrl;
-    // ZZZ API 需要特定 game_biz header
-    if (game === 'zzz') {
-      headers['x-rpc-game_biz'] = 'nap_cn';
-      headers['x-rpc-signgame'] = 'zzz';
-    }
+    let url = game == 'gs' ? this.gsUrl : this.srUrl;
     let res = await fetch(url, {
       method: 'get',
       headers,

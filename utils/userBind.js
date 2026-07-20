@@ -526,6 +526,48 @@ export async function createUser(qqOrE, e = null) {
   return new BindUser(qq, merged)
 }
 
+/**
+ * 读取某 QQ 在 Yunzai 绑定库中「存活」的米游社账号 id（Users.ltuids）。
+ * genshin 的 #删除ck 会把对应 ltuid 从 Users.ltuids 移除，据此判断某个 stoken 是否还该被启用。
+ *
+ * 返回：
+ * - { hasRow: false, ids: Set }        —— 该 QQ 没有 Users 绑定行（纯 stoken 用户 / 无 genshin），
+ *                                          调用方应保持「直接用 stoken」的旧行为，不做 gating。
+ * - { hasRow: true,  ids: Set<string>} —— 有绑定行；ids 为当前存活的米游社账号 id 集合（可能为空）。
+ */
+export async function getAliveMysIds(qqOrE) {
+  let qq = qqOrE
+  if (qqOrE && typeof qqOrE === 'object' && qqOrE.user_id) {
+    qq = qqOrE.originalUserId || qqOrE.user_id
+  }
+  qq = await resolveMainQq(qq)
+
+  const dbPath = path.join(process.cwd(), 'data/db/data.db')
+  if (!fs.existsSync(dbPath)) return { hasRow: false, ids: new Set() }
+
+  let db
+  try {
+    db = await openSqlite(dbPath)
+  } catch (_) {
+    return { hasRow: false, ids: new Set() }
+  }
+  try {
+    const rows = await dbAll(db, 'SELECT ltuids FROM Users WHERE id = ? LIMIT 1', [String(qq)])
+    if (!rows[0]) return { hasRow: false, ids: new Set() }
+    const ids = new Set(
+      String(rows[0].ltuids || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+    return { hasRow: true, ids }
+  } catch (_) {
+    return { hasRow: false, ids: new Set() }
+  } finally {
+    if (db) await dbClose(db)
+  }
+}
+
 /** 兼容旧名 */
 export const NoteUserCompat = { create: createUser }
 

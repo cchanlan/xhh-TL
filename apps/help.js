@@ -50,19 +50,19 @@ function withIconSrc(groups) {
  * icon 为本插件 resources/help/icons 下文件名，全部互不重复：
  * - 原神相关 → gs-* 原神角色
  * - 星铁相关 → sr-* 星铁角色
- * - 多游戏/管理 → multi / zzz / bh3 / spark 等
+ * - 多游戏/管理 → multi / spark 等
  */
 export function buildHelpGroups() {
   return [
     {
       group: '体力查询',
-      desc: 'TL · 四游戏实时体力',
+      desc: 'TL · 双游戏实时体力',
       color: 'blue',
       list: [
         {
           icon: 'multi.webp',
           title: '#体力 #tl #体力总览',
-          desc: '一次查原神 / 星铁 / 绝区零 / 崩三',
+          desc: '一次查原神 / 星铁',
         },
         {
           icon: 'gs-纳西妲.webp',
@@ -75,29 +75,9 @@ export function buildHelpGroups() {
           desc: '仅查星穹铁道体力',
         },
         {
-          icon: 'zzz-battery.webp',
-          title: '#绝区零体力 #zzztl',
-          desc: '仅查绝区零体力',
-        },
-        {
-          icon: 'bh3.webp',
-          title: '#崩三体力 #bbbtl',
-          desc: '仅查崩坏3体力',
-        },
-        {
-          icon: 'bh3-stamina.webp',
-          title: '#崩三扫码绑定 #bbb扫码绑定',
-          desc: '独立扫码绑定崩坏3（全渠道服）',
-        },
-        {
           icon: 'mask.webp',
           title: '#开启体力uid / #关闭体力uid',
           desc: '控制卡片是否显示游戏 UID',
-        },
-        {
-          icon: 'zzz-battery.webp',
-          title: '#开启绝区零体力 / #关闭绝区零体力',
-          desc: '控制「体力总览」是否包含绝区零（默认显示）',
         },
         {
           icon: 'plugin.webp',
