@@ -214,6 +214,34 @@ body {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
+/* 双图标并排（体力总览：原神 + 星铁 logo） */
+.hp-icon-dual {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: block;
+}
+.hp-icon-half {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.hp-icon-half.back {
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
+.hp-icon-dual .hp-icon-half:not(.back) {
+  left: 0;
+  top: 0;
+  z-index: 1;
+}
+
 .hp-body { min-width: 0; flex: 1 1 auto; padding-top: 2px; }
 
 .hp-cmd {
@@ -292,7 +320,12 @@ body {
         <div class="hp-list">
           {{each g.list item}}
           <div class="hp-item">
-            {{if item.iconSrc}}
+            {{if item.icon2Src}}
+            <span class="hp-icon-dual">
+              <img class="hp-icon-half" src="{{ppath}}{{item.iconSrc}}" alt="" />
+              <img class="hp-icon-half back" src="{{ppath}}{{item.icon2Src}}" alt="" />
+            </span>
+            {{else if item.iconSrc}}
             <img class="hp-icon" src="{{ppath}}{{item.iconSrc}}" alt="" />
             {{else}}
             <span class="hp-icon"></span>

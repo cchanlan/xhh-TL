@@ -20,6 +20,17 @@
 - 支持 `#开启体力uid` / `#关闭体力uid` 控制查询体力时是否显示游戏UID（每个用户独立设置）
 - 图形化卡片输出，包含体力恢复倒计时、委托派遣、每日实训等信息
 - **回复规则**：单图结果引用触发消息；多图合并转发**不引用**；相关「正在…」进度提示约 30 秒后自动撤回
+
+### 体力阈值推送
+- 每个用户在**群里**各自设定阈值，体力恢复到阈值（含）以上时，机器人在该群 **@你** 并发送体力立绘卡片
+- 原神 / 星铁**分开**：分开指令、分开阈值、分开推送
+  - 原神看**原粹树脂**（`current_resin`）：`#原神体力推送 130`
+  - 星铁看**开拓力**（`current_stamina`）：`#星铁体力推送 200`
+- 关闭：`#原神体力推送关闭` / `#星铁体力推送关闭`
+- 查看订阅：`#体力推送列表`
+- **只提醒一次**：达到阈值推送后进入静默，体力回落到阈值以下后自动重新监控，下次再满再提醒
+- 默认每 10 分钟检查一次（`resin_push_cron` 可调，不建议太频繁以免米游社风控）；订阅存于 `data/resin_push.json`
+- 复用体力查询与立绘卡出图，无需额外绑定；开关：`resin_push_enable`（锅巴可配）
 - **已删 CK 对账**：在装有 genshin 的环境下，`#删除ck` 只从 Yunzai 绑定库移除账号，却不会清理扫码/逍遥写入的 stoken yaml，导致被删账号残留 stoken 被体力查询「复活」。本插件注册一条低优先级 `#删除ck` 钩子（`apps/delCkHook.js`），在删除前后快照存活账号求差，把被删的 stuid 连同当时 stoken 指纹记入本地名单（`data/deleted_ck.yaml`），体力查询时据此判死；重新扫码登录覆盖 stoken 后指纹变化，自动移出名单并放行（自愈，无需改 genshin / 逍遥）。无 genshin 环境不会触发，零副作用。
 
 ### 星铁全部深渊（四合一）
@@ -146,6 +157,10 @@ gs_all_abyss: true
 # 毛玻璃主题：light=浅色白玻璃 / dark=深色半透明（锅巴「全部深渊主题」）
 gs_all_abyss_theme: light
 
+# 体力阈值推送（阈值由用户在群里用指令各自设置，存 data/resin_push.json）
+resin_push_enable: true          # 是否启用体力阈值推送
+resin_push_cron: "*/10 * * * *"  # 检查频率 cron，默认每 10 分钟；不建议太频繁
+
 # SToken/CK 搜索路径（多行，按优先级）。留空=默认 xhh / 逍遥 / 本插件
 # stoken_paths: |
 #   plugins/xhh/data/Stoken
@@ -154,11 +169,14 @@ gs_all_abyss_theme: light
 stoken_paths: ""
 ```
 
-也可在 **锅巴** 中配置：体力、全部深渊（含浅色/深色主题）、剧诗开关与背景路径、**CK/SToken 路径**、`render_scale`。
+> 阈值本身由每个用户在群里用指令各自设置（存于 `data/resin_push.json`），锅巴/配置只控制全局开关与检查频率。
+
+也可在 **锅巴** 中配置：体力、体力阈值推送（开关 + 频率）、全部深渊（含浅色/深色主题）、剧诗开关与背景路径、**CK/SToken 路径**、`render_scale`。
 
 ## 文件说明
 
 - `apps/TL.js` - 体力查询
+- `apps/resinPush.js` - 体力阈值推送（达阈值在群 @用户 发图，原神/星铁分开）
 - `apps/help.js` - `#小火花帮助` 指令总览图
 - `apps/delCkHook.js` - `#删除ck` 对账钩子（记录被 genshin 删除的账号，防残留 stoken 复活体力）
 - `utils/deletedCk.js` - 已删 CK 本地名单（`data/deleted_ck.yaml`，含 stoken 指纹自愈）

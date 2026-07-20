@@ -8,6 +8,7 @@ import { gsAllAbyss } from './apps/gsAllAbyss.js'
 import { TmpCleaner } from './apps/tmpCleaner.js'
 import { nanokaAbyss } from './apps/nanokaAbyss.js'
 import { help } from './apps/help.js'
+import { resinPush } from './apps/resinPush.js'
 
 export {
   TL,
@@ -19,4 +20,5 @@ export {
   TmpCleaner,
   nanokaAbyss,
   help,
+  resinPush,
 }

@@ -236,6 +236,27 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
+          label: '体力阈值推送'
+        },
+        {
+          field: 'resin_push_enable',
+          label: '启用体力阈值推送',
+          bottomHelpMessage:
+            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #原神体力推送关闭 / #体力推送列表',
+          component: 'Switch'
+        },
+        {
+          field: 'resin_push_cron',
+          label: '检查频率 cron',
+          bottomHelpMessage:
+            '标准 5 段 cron（分 时 日 月 周）。默认每 10 分钟检查一次：*/10 * * * *。不建议太频繁以免触发米游社风控',
+          component: 'Input',
+          componentProps: {
+            placeholder: '*/10 * * * *'
+          }
+        },
+        {
+          component: 'Divider',
           label: '临时文件清理'
         },
         {

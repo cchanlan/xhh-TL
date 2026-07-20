@@ -34,13 +34,14 @@ function iconSrc(icon) {
   return `${HELP_ICON_DIR}/${icon}`
 }
 
-/** 为指令表补全 icon 图片路径 */
+/** 为指令表补全 icon 图片路径（支持 icon2 双图标并排，如原神+星铁 logo） */
 function withIconSrc(groups) {
   return groups.map((g) => ({
     ...g,
     list: (g.list || []).map((item) => ({
       ...item,
       iconSrc: iconSrc(item.icon),
+      icon2Src: item.icon2 ? iconSrc(item.icon2) : '',
     })),
   }))
 }
@@ -60,7 +61,8 @@ export function buildHelpGroups() {
       color: 'blue',
       list: [
         {
-          icon: 'multi.webp',
+          icon: 'gs-logo.webp',
+          icon2: 'sr-logo.webp',
           title: '#体力 #tl #体力总览',
           desc: '一次查原神 / 星铁',
         },
@@ -73,6 +75,21 @@ export function buildHelpGroups() {
           icon: 'sr-花火.webp',
           title: '#星铁体力 #xttl *体力',
           desc: '仅查星穹铁道体力',
+        },
+        {
+          icon: 'gs-resin.webp',
+          title: '#原神体力推送 130',
+          desc: '树脂达阈值时在群@你发图；关闭：#原神体力推送关闭',
+        },
+        {
+          icon: 'sr-trailblaze.webp',
+          title: '#星铁体力推送 200',
+          desc: '开拓力达阈值时在群@你发图；关闭：#星铁体力推送关闭',
+        },
+        {
+          icon: 'signin.webp',
+          title: '#体力推送列表',
+          desc: '查看自己的体力推送订阅',
         },
         {
           icon: 'mask.webp',
@@ -108,7 +125,7 @@ export function buildHelpGroups() {
         },
         {
           icon: 'gs-八重神子.webp',
-          title: '#幻想剧诗 #幻想角色',
+          title: '#幻想角色',
           desc: '当期限制元素 / 特邀 / 可用角色',
         },
         {
