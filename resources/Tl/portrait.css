@@ -1,4 +1,4 @@
-/* 立绘卡 —— 原神/星铁体力大立绘样式 */
+/* 立绘卡 —— 原神/星铁/绝区零体力大立绘样式 */
 body {
   width: 900px;
 }
@@ -22,6 +22,11 @@ body {
   --accent: #6ea8ff;
   --accent2: #a8ccff;
   background: linear-gradient(135deg, #182234 0%, #0d1420 55%, #080b12 100%);
+}
+.pt-zzz {
+  --accent: #ff5a9a;
+  --accent2: #7cf5ff;
+  background: linear-gradient(135deg, #2a1424 0%, #14101c 55%, #0a0810 100%);
 }
 
 /* 最底层背景图（bg1.png 铺满） */

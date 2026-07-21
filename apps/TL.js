@@ -535,7 +535,7 @@ export class TL extends plugin {
 
     const { ..._data_ } = { ...renderData, ...resultData };
 
-    // 立绘卡样式：仅原神/星铁走大立绘卡片，绝区零仍用经典模板
+    // 立绘卡样式：原神/星铁/绝区零均走大立绘卡片
     if (config().tl_card_style === 'portrait') {
       const displayInfo = { qq: displayQq, qqname: displayName };
       const handled = await this.renderPortraitFlow(e, {
@@ -867,7 +867,7 @@ export class TL extends plugin {
 
   // ============ 立绘卡（原神/星铁大立绘） ============
 
-  // 立绘卡总流程：gs/sr 渲染立绘卡，zzz 回退经典卡，合并回复
+  // 立绘卡总流程：gs/sr/zzz 均渲染立绘卡，合并回复
   async renderPortraitFlow(e, opts) {
     const { isQueryAll, isStarRail, isZZZ, isGenshin, resultData, displayInfo, targetQq, showZzz = true } = opts;
     const games = (isQueryAll ? ['gs', 'sr', 'zzz']
@@ -876,15 +876,10 @@ export class TL extends plugin {
           : isGenshin ? ['gs']
             : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
 
-    // 纯 zzz 请求不接管，交回经典流程
-    if (!games.includes('gs') && !games.includes('sr')) return false;
-
     const cfg = config();
     const multi = cfg.show_all_bindings;
-    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大；
-    // zzz 回退经典卡仍用 2.0（body 480px）保持与经典模式一致
+    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大
     const portraitScale = getRenderScaleStyle(cfg, 1.0);
-    const classicScale = getRenderScaleStyle(cfg, 2.0);
     const qq = targetQq || e.user_id;
 
     // 收集每个游戏的数据列表
@@ -909,13 +904,8 @@ export class TL extends plugin {
     for (const game of games) {
       const list = dataMap[game];
       if (!list) continue;
-      if (game === 'gs' || game === 'sr') {
-        for (const item of list) {
-          const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
-          if (seg) segments.push(seg);
-        }
-      } else {
-        const seg = await this.renderClassicGameCard(e, game, list, displayInfo, classicScale);
+      for (const item of list) {
+        const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
         if (seg) segments.push(seg);
       }
     }
@@ -937,7 +927,7 @@ export class TL extends plugin {
     return true;
   }
 
-  // 单个 gs/sr UID → 一张立绘卡 segment
+  // 单个 gs/sr/zzz UID → 一张立绘卡 segment
   async renderPortraitCard(e, game, item, displayInfo, renderScale) {
     const showUid = await getShowUid(displayInfo.qq);
     const uid = showUid ? item.uid : '****';
@@ -967,6 +957,36 @@ export class TL extends plugin {
         { val: item.level != null ? `Lv.${item.level}` : '—', key: '冒险等阶' },
         { val: `${item.current_expedition_num || 0}/${item.max_expedition_num || 0}`, key: '探索派遣' },
         { val: `${item.finished_task_num || 0}/${item.total_task_num || 0}`, key: '每日委托' },
+      ];
+    } else if (game === 'zzz') {
+      const energy = item.energy?.progress || {};
+      const cur = Number(energy.current) || 0;
+      const max = Number(energy.max) || 240;
+      const vitality = item.vitality || {};
+      const bounty = item.s2_bounty_commission || { num: 0, total: 0 };
+      const weekly = item.weekly_task || {};
+      const cardDone = item.card_sign === 'CardSignDone';
+      const vhsDoing = item.vhs_sale?.sale_state === 'SaleStateDoing';
+      bars = [
+        { icon: '电池.png', name: '电量', cur, max, pct: pct(cur, max), warn: max > 0 && cur >= max },
+        { icon: '活跃度.png', name: '今日活跃度', cur: Number(vitality.current) || 0, max: Number(vitality.max) || 0, pct: pct(vitality.current, vitality.max), warn: false },
+        { icon: 'zzz.png', name: '悬赏委托', cur: Number(bounty.num) || 0, max: Number(bounty.total) || 0, pct: pct(bounty.num, bounty.total), warn: false },
+      ];
+      status = [
+        { ok: cardDone, text: cardDone ? '刮刮卡已签到！' : '刮刮卡尚未签到' },
+        { ok: vhsDoing, text: vhsDoing ? '录像店营业中' : '录像店待结算' },
+      ];
+      const weekCur = Number(weekly.cur_point);
+      const weekMax = Number(weekly.max_point);
+      stats = [
+        { val: item.level != null ? `Lv.${item.level}` : '—', key: '绳网等级' },
+        {
+          val: Number.isFinite(weekCur) && Number.isFinite(weekMax)
+            ? `${weekCur}/${weekMax}`
+            : '未解锁',
+          key: '丽都周纪',
+        },
+        { val: `${Number(bounty.num) || 0}/${Number(bounty.total) || 0}`, key: '悬赏委托' },
       ];
     } else {
       const st = Number(item.current_stamina) || 0;
@@ -1012,38 +1032,6 @@ export class TL extends plugin {
           ppath,
           tplFile,
           saveId: `Portrait_${game}`,
-        };
-      },
-    });
-    const image = extractRenderBuffer(renderResult);
-    return image ? segment.image(image) : null;
-  }
-
-  // zzz 用经典 Tl 模板渲染成一张 segment（立绘卡模式下的回退）
-  async renderClassicGameCard(e, game, dataList, displayInfo, renderScale) {
-    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
-    const data = {
-      bg: 'bg1',
-      qq: displayInfo.qq,
-      qqname: displayInfo.qqname,
-      time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
-    };
-    data[keyMap[game]] = dataList;
-    await this.hideUidIfNeeded(data, displayInfo.qq);
-
-    const ppath = '../../../../../plugins/xhh-TL/resources/';
-    const tplFile = pluginDir + '/resources/Tl/Tl.html';
-    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', data, {
-      retType: 'base64',
-      imgType: 'png',
-      beforeRender({ data: _d }) {
-        return {
-          imgType: 'png',
-          sys: { scale: renderScale },
-          ...data,
-          ppath,
-          tplFile,
-          saveId: 'Tl',
         };
       },
     });
