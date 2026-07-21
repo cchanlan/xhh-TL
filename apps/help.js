@@ -51,20 +51,20 @@ function withIconSrc(groups) {
  * icon 为本插件 resources/help/icons 下文件名，全部互不重复：
  * - 原神相关 → gs-* 原神角色
  * - 星铁相关 → sr-* 星铁角色
- * - 多游戏/管理 → multi / spark 等
+ * - 多游戏/管理 → multi / zzz / spark 等
  */
 export function buildHelpGroups() {
   return [
     {
       group: '体力查询',
-      desc: 'TL · 双游戏实时体力',
+      desc: 'TL · 三游戏实时体力',
       color: 'blue',
       list: [
         {
           icon: 'gs-logo.webp',
           icon2: 'sr-logo.webp',
           title: '#体力 #tl #体力总览',
-          desc: '一次查原神 / 星铁',
+          desc: '一次查原神 / 星铁 / 绝区零',
         },
         {
           icon: 'gs-纳西妲.webp',
@@ -75,6 +75,16 @@ export function buildHelpGroups() {
           icon: 'sr-花火.webp',
           title: '#星铁体力 #xttl *体力',
           desc: '仅查星穹铁道体力',
+        },
+        {
+          icon: 'zzz-battery.webp',
+          title: '#绝区零体力 #zzztl',
+          desc: '仅查绝区零电量',
+        },
+        {
+          icon: 'zzz.webp',
+          title: '#开启绝区零体力 / #关闭绝区零体力',
+          desc: '控制「体力总览」是否包含绝区零（默认显示）',
         },
         {
           icon: 'gs-resin.webp',

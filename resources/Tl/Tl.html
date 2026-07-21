@@ -23,6 +23,8 @@
                 <p>原神</p>
                 {{/if}} {{if sr_list}}
                 <p>崩坏星穹铁道</p>
+                {{/if}} {{if zzz_list}}
+                <p>绝区零</p>
                 {{/if}}
               </div>
             </div>
@@ -181,6 +183,86 @@
               <p>后备开拓力</p>
               <div class="right_">
                 <span>{{$value.current_reserve_stamina}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+      {{/if}}
+
+      {{if zzz_list}}
+      {{each zzz_list}}
+      <div class="__box">
+        <div class="game">
+          <img src="{{ppath}}Tl/imgs/绝区零.jpg" />
+          <p>UID：{{$value.uid}}</p>
+          <p>{{$value.level}}级</p>
+          <p class="game-nick">昵称：{{$value.name}}</p>
+          <div class="sign">
+            <img src="{{ppath}}Tl/imgs/签到.png" />
+            <span class="{{$value.has_signed  ?  '' :  'red'}}">{{$value.has_signed ? '今日已签' : '尚未签到'}}</span>
+          </div>
+        </div>
+        <div class="_box">
+          <div class="left_box">
+            <div class="top_box">
+              <img class="tl" src="{{ppath}}Tl/imgs/电池.png" />
+              <div class="k">
+                <p>电量</p>
+                <div class="k_">
+                  <span
+                    class="{{$value.energy.progress.current>$value.energy.progress.max ? 'red' : 'blue'}}">{{$value.energy.progress.current}}</span><span>/{{$value.energy.progress.max}}</span>
+                </div>
+              </div>
+            </div>
+
+            <strong class="huifu">预计恢复时间</strong>
+            <strong class="huifu_time">{{$value.time}}</strong>
+          </div>
+          <div class="right_box">
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/活跃度.png" />
+              <p>今日活跃度</p>
+              <div class="right_">
+                <span class="{{$value.vitality.current<$value.vitality.max ? 'red' : 'blue'}}">{{$value.vitality.current}}/{{$value.vitality.max}}</span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/zzz.png" />
+              <p>占卜/刮刮卡</p>
+              <div class="right_">
+                <span class="{{$value.card_sign=='CardSignDone' ? 'blue' : 'red' }}">
+                  {{$value.card_sign=='CardSignDone' ? '今日已签' : '尚未签到'}}
+                </span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/zzz.png" />
+              <p>录像店经营</p>
+              <div class="right_">
+                {{$value.vhs_sale && $value.vhs_sale.sale_state=='SaleStateDoing' ? '正在营业'
+                : '待结算'}}
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/zzz.png" />
+              <p>悬赏委托</p>
+              <div class="right_">
+                <span class="{{$value.s2_bounty_commission.num<$value.s2_bounty_commission.total ? 'red' : '' }}">{{$value.s2_bounty_commission.num}}/{{$value.s2_bounty_commission.total}}</span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/zzz.png" />
+              <p>丽都周纪积分</p>
+              <div class="right_">
+                {{if $value.weekly_task}}
+                <span class="{{$value.weekly_task.cur_point<800 ? 'red' : 'blue' }}">{{$value.weekly_task.cur_point}}/{{$value.weekly_task.max_point}}</span>
+                {{else}}未解锁{{/if}}
               </div>
             </div>
           </div>

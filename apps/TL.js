@@ -46,6 +46,12 @@ async function getShowUid(qq) {
   return val === null ? true : val !== 'false';
 }
 
+// 每个用户可单独开关「体力总览」里是否显示绝区零，默认 true（显示）
+async function getShowZzz(qq) {
+  const val = await redis.get(`xhh:show_zzz:${qq}`);
+  return val === null ? true : val !== 'false';
+}
+
 // ============ MHY 工具函数 (内联自 xhh/system/mhy.js) ============
 const mysSalt = 'rtvTthKxEyreVXQCnhluFgLXPOFKPHlA'; // k2 2.71.1
 const mysSalt2 = 't0qEgfub6cvueAPgR5m9aQWWVciEer7v'; // 6x
@@ -85,6 +91,7 @@ function getDs2(query = '', body = '', salt = mysSalt2) {
 }
 
 function getServer(uid, game) {
+  if (game === 'zzz') return 'prod_gf_cn';
   const isSr = game === 'sr';
   switch (String(uid)[0]) {
     case '1': case '2': case '3':
@@ -277,6 +284,7 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
   const signActId = {
     gs: 'e202311201442471',
     sr: 'e202304121516551',
+    zzz: 'e202406242138391',
   };
 
   const apiList = {
@@ -376,7 +384,7 @@ export class TL extends plugin {
       rule: [
         {
           // 可选 #/*/%；关键词必须完整结束，尾部多余字不触发
-          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl))\\s*$',
+          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl))\\s*$',
           fnc: 'note_',
         },
         {
@@ -391,12 +399,18 @@ export class TL extends plugin {
           reg: '^\\s*#?(?:关闭|关掉)体力uid\\s*$',
           fnc: 'toggleUidDisplay',
         },
+        {
+          reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:绝区零|zzz)体力\\s*$',
+          fnc: 'toggleZzzDisplay',
+        },
       ],
     });
     this.gsUrl =
       'https://api-takumi-record.mihoyo.com/game_record/genshin/aapi/widget/v2';
     this.srUrl =
       'https://api-takumi-record.mihoyo.com/game_record/app/hkrpg/aapi/widget';
+    this.zzzUrl =
+      'https://api-takumi-record.mihoyo.com/event/game_record_zzz/api/zzz/widget';
     this.week = [
       '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六',
     ];
@@ -422,23 +436,44 @@ export class TL extends plugin {
     const isQueryAll = ['体力', '全体力', '四游戏体力', '米游社体力', '体力总览', 'tl'].includes(rawMsg);
     logger.info(`[xhh-TL][note_] rawMsg: ${rawMsg}, isQueryAll: ${isQueryAll}`);
     const isStarRail = /星铁|xt|^\*/.test(rawMsg) || e.msg.includes('*体力') || e.msg.includes('*tl');
+    const isZZZ = /绝区零|zzz/i.test(rawMsg);
     const isGenshin = /原神|ys/i.test(rawMsg);
+    const getZZZData = async () => {
+      const data = await this.note(e, 'zzz', isQueryAll, targetQq);
+      if (
+        data &&
+        !['过期', '没有'].includes(data) &&
+        !data.s2_bounty_commission
+      ) {
+        data.s2_bounty_commission = { num: 0, total: 0 };
+      }
+      return data;
+    };
 
     let resultData = {};
+
+    // 绝区零显示开关：仅影响「体力总览」，默认显示；关闭后总览不查/不显示 zzz。
+    // 以被查者为准：某人关了绝区零后，无论他自己查还是别人艾特查他，都不显示其绝区零。
+    // 单独 #绝区零体力 不受此开关影响。
+    const showZzz = isQueryAll ? await getShowZzz(targetQq || e.user_id) : true;
 
     if (isQueryAll) {
       hasAllData = true;
       logger.info('[xhh-TL][note_] 开始查询所有游戏体力');
-      const [gsData, srData] = await Promise.all([
+      const [gsData, srData, zzzData] = await Promise.all([
         this.note(e, 'gs', true, targetQq),
         this.note(e, 'sr', true, targetQq),
+        showZzz ? getZZZData() : Promise.resolve('没有'),
       ]);
       resultData = {
         gs_data: gsData,
         sr_data: srData,
       };
+      if (showZzz) resultData.zzz_data = zzzData;
     } else if (isStarRail) {
       resultData = { sr_data: await this.note(e, 'sr', false, targetQq) };
+    } else if (isZZZ) {
+      resultData = { zzz_data: await getZZZData() };
     } else {
       resultData = { gs_data: await this.note(e, 'gs', false, targetQq) };
     }
@@ -500,11 +535,11 @@ export class TL extends plugin {
 
     const { ..._data_ } = { ...renderData, ...resultData };
 
-    // 立绘卡样式：仅原神/星铁走大立绘卡片
+    // 立绘卡样式：仅原神/星铁走大立绘卡片，绝区零仍用经典模板
     if (config().tl_card_style === 'portrait') {
       const displayInfo = { qq: displayQq, qqname: displayName };
       const handled = await this.renderPortraitFlow(e, {
-        isQueryAll, isStarRail, isGenshin,
+        isQueryAll, isStarRail, isZZZ, isGenshin, showZzz,
         resultData: _data_, displayInfo, targetQq,
       });
       if (handled) return true;
@@ -512,10 +547,11 @@ export class TL extends plugin {
 
     // 多UID模式：一个游戏的所有ID渲染进一张图
     if (config().show_all_bindings) {
-      const games = isQueryAll ? ['gs', 'sr']
+      const games = (isQueryAll ? ['gs', 'sr', 'zzz']
         : isStarRail ? ['sr']
+        : isZZZ ? ['zzz']
         : isGenshin ? ['gs']
-        : ['gs'];
+        : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
 
       const allGameData = {};
       let totalUids = 0;
@@ -537,7 +573,7 @@ export class TL extends plugin {
       const renderScale = getRenderScaleStyle(config(), 2.0);
       const ppath = '../../../../../plugins/xhh-TL/resources/';
       const tplFile = pluginDir + '/resources/Tl/Tl.html';
-      const keyMap = { gs: 'gs_list', sr: 'sr_list' };
+      const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
       const tlRenderMode = config().tl_render_mode || 'merge';
       const uidsPerImage = config().tl_uids_per_image || 2;
       const cardsPerMsg = config().tl_cards_per_msg || 3;
@@ -703,6 +739,7 @@ export class TL extends plugin {
     const listData = { ...renderData };
     if (_data_.gs_data) listData.gs_list = [_data_.gs_data];
     if (_data_.sr_data) listData.sr_list = [_data_.sr_data];
+    if (_data_.zzz_data) listData.zzz_list = [_data_.zzz_data];
 
     const tplFile = pluginDir + '/resources/Tl/Tl.html';
     const ppath = '../../../../../plugins/xhh-TL/resources/';
@@ -742,6 +779,9 @@ export class TL extends plugin {
       if (!uid) continue;
       const data = await this.note(e, game, san, qq, uid);
       if (data && data !== '没有' && data !== '过期') {
+        if (game === 'zzz' && !data.s2_bounty_commission) {
+          data.s2_bounty_commission = { num: 0, total: 0 };
+        }
         results.push(data);
       }
     }
@@ -818,20 +858,33 @@ export class TL extends plugin {
     return true;
   }
 
+  async toggleZzzDisplay(e) {
+    const enable = /开启|打开/.test(e.msg);
+    await redis.set(`xhh:show_zzz:${e.user_id}`, String(enable));
+    e.reply(enable ? '已开启绝区零体力显示，体力总览将包含绝区零' : '已关闭绝区零体力显示，体力总览将隐藏绝区零');
+    return true;
+  }
+
   // ============ 立绘卡（原神/星铁大立绘） ============
 
-  // 立绘卡总流程：gs/sr 渲染立绘卡，合并回复
+  // 立绘卡总流程：gs/sr 渲染立绘卡，zzz 回退经典卡，合并回复
   async renderPortraitFlow(e, opts) {
-    const { isQueryAll, isStarRail, isGenshin, resultData, displayInfo, targetQq } = opts;
-    const games = isQueryAll ? ['gs', 'sr']
+    const { isQueryAll, isStarRail, isZZZ, isGenshin, resultData, displayInfo, targetQq, showZzz = true } = opts;
+    const games = (isQueryAll ? ['gs', 'sr', 'zzz']
       : isStarRail ? ['sr']
-        : isGenshin ? ['gs']
-          : ['gs'];
+        : isZZZ ? ['zzz']
+          : isGenshin ? ['gs']
+            : ['gs']).filter(g => !(isQueryAll && g === 'zzz' && !showZzz));
+
+    // 纯 zzz 请求不接管，交回经典流程
+    if (!games.includes('gs') && !games.includes('sr')) return false;
 
     const cfg = config();
     const multi = cfg.show_all_bindings;
-    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大
+    // 立绘卡 body 本身 900px（横版宽卡），基准倍率用 1.0 即可，避免出图过大；
+    // zzz 回退经典卡仍用 2.0（body 480px）保持与经典模式一致
     const portraitScale = getRenderScaleStyle(cfg, 1.0);
+    const classicScale = getRenderScaleStyle(cfg, 2.0);
     const qq = targetQq || e.user_id;
 
     // 收集每个游戏的数据列表
@@ -856,8 +909,13 @@ export class TL extends plugin {
     for (const game of games) {
       const list = dataMap[game];
       if (!list) continue;
-      for (const item of list) {
-        const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
+      if (game === 'gs' || game === 'sr') {
+        for (const item of list) {
+          const seg = await this.renderPortraitCard(e, game, item, displayInfo, portraitScale);
+          if (seg) segments.push(seg);
+        }
+      } else {
+        const seg = await this.renderClassicGameCard(e, game, list, displayInfo, classicScale);
         if (seg) segments.push(seg);
       }
     }
@@ -961,10 +1019,42 @@ export class TL extends plugin {
     return image ? segment.image(image) : null;
   }
 
+  // zzz 用经典 Tl 模板渲染成一张 segment（立绘卡模式下的回退）
+  async renderClassicGameCard(e, game, dataList, displayInfo, renderScale) {
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
+    const data = {
+      bg: 'bg1',
+      qq: displayInfo.qq,
+      qqname: displayInfo.qqname,
+      time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
+    };
+    data[keyMap[game]] = dataList;
+    await this.hideUidIfNeeded(data, displayInfo.qq);
+
+    const ppath = '../../../../../plugins/xhh-TL/resources/';
+    const tplFile = pluginDir + '/resources/Tl/Tl.html';
+    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', data, {
+      retType: 'base64',
+      imgType: 'png',
+      beforeRender({ data: _d }) {
+        return {
+          imgType: 'png',
+          sys: { scale: renderScale },
+          ...data,
+          ppath,
+          tplFile,
+          saveId: 'Tl',
+        };
+      },
+    });
+    const image = extractRenderBuffer(renderResult);
+    return image ? segment.image(image) : null;
+  }
+
   async hideUidIfNeeded(data, qq) {
     const showUid = await getShowUid(qq);
     if (showUid) return;
-    const keyMap = ['gs_list', 'sr_list'];
+    const keyMap = ['gs_list', 'sr_list', 'zzz_list'];
     for (const key of keyMap) {
       if (data[key]) {
         for (const item of data[key]) {
@@ -1003,7 +1093,13 @@ export class TL extends plugin {
       return '没有';
     }
     let headers = getHeaders(e, sk, false);
-    let url = game == 'gs' ? this.gsUrl : this.srUrl;
+    let url =
+      game == 'gs' ? this.gsUrl : game == 'sr' ? this.srUrl : this.zzzUrl;
+    // ZZZ API 需要特定 game_biz header
+    if (game === 'zzz') {
+      headers['x-rpc-game_biz'] = 'nap_cn';
+      headers['x-rpc-signgame'] = 'zzz';
+    }
     let res = await fetch(url, {
       method: 'get',
       headers,
