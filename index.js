@@ -1,4 +1,4 @@
-// 插件入口文件 - 从 apps 目录导出所有应用
+// 插件入口：Yunzai 有 index.js 时只加载本文件导出，不会自动扫 apps/*
 import { TL } from './apps/TL.js'
 import { Abyss } from './apps/Abyss.js'
 import { allAbyss } from './apps/allAbyssModule.js'
@@ -9,6 +9,7 @@ import { TmpCleaner } from './apps/tmpCleaner.js'
 import { nanokaAbyss } from './apps/nanokaAbyss.js'
 import { help } from './apps/help.js'
 import { resinPush } from './apps/resinPush.js'
+import { TLDelCkHook } from './apps/delCkHook.js'
 
 export {
   TL,
@@ -21,4 +22,6 @@ export {
   nanokaAbyss,
   help,
   resinPush,
+  TLDelCkHook,
 }
+

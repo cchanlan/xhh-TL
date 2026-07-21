@@ -1,7 +1,7 @@
 {
   "name": "xhh-TL",
   "version": "1.0.0",
-  "description": "小花火体力小组件 - 支持原神/星铁/绝区零/崩坏3四游戏体力查询+全部深渊三合一",
+  "description": "小花火体力小组件 - 原神/星铁/绝区零体力查询 + 全部深渊与幻想剧诗",
   "type": "module",
   "main": "index.js",
   "dependencies": {
@@ -9,7 +9,6 @@
     "md5": "^2.3.0",
     "moment": "^2.30.1",
     "node-fetch": "^3.3.2",
-    "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
     "yaml": "^2.8.1"
   }

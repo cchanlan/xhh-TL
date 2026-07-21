@@ -384,7 +384,8 @@ export class TL extends plugin {
       rule: [
         {
           // 可选 #/*/%；关键词必须完整结束，尾部多余字不触发
-          reg: '^\\s*(?:#|\\*|%)*(?:全体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl))\\s*$',
+          // 「四游戏体力」保留作兼容别名（历史指令，现为三游戏）
+          reg: '^\\s*(?:#|\\*|%)*(?:全体力|三游戏体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl))\\s*$',
           fnc: 'note_',
         },
         {
@@ -433,7 +434,7 @@ export class TL extends plugin {
 
     let hasAllData = false;
     const rawMsg = (e.msg || '').replace(/^(#|\\*|%)*/, '');
-    const isQueryAll = ['体力', '全体力', '四游戏体力', '米游社体力', '体力总览', 'tl'].includes(rawMsg);
+    const isQueryAll = ['体力', '全体力', '三游戏体力', '四游戏体力', '米游社体力', '体力总览', 'tl'].includes(rawMsg);
     logger.info(`[xhh-TL][note_] rawMsg: ${rawMsg}, isQueryAll: ${isQueryAll}`);
     const isStarRail = /星铁|xt|^\*/.test(rawMsg) || e.msg.includes('*体力') || e.msg.includes('*tl');
     const isZZZ = /绝区零|zzz/i.test(rawMsg);
