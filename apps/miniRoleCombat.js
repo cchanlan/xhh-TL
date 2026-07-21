@@ -5,37 +5,16 @@
  */
 
 import moment from 'moment'
-import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import lodash from 'lodash'
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
-import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickRoleCombatBgImage, config, pluginDir, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
-const pluginDir = process.cwd() + '/plugins/xhh-TL'
-const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */
 const miaoRes = process.cwd() + '/plugins/miao-plugin/resources'
-let _configCache = null
-
-function readConfig() {
-  return readPluginConfig()
-}
-
-function config() {
-  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
-  return readConfig()
-}
-
-try {
-  if (fs.existsSync(configPath)) {
-    fs.watch(configPath, () => {
-      _configCache = readConfig()
-    })
-  }
-} catch (_) {}
 
 function intToRoman(num) {
   if (num < 1 || num > 3999) return String(num)

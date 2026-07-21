@@ -5,38 +5,12 @@
  */
 
 import moment from 'moment';
-import fs from 'fs';
-import path from 'path';
-import YAML from 'yaml';
 import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, config, pluginDir } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 import { replyQuote } from '../utils/replyHelper.js'
-// 配置读取
-const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
-
-let _configCache = null;
-
-function readConfig() {
-  return readPluginConfig();
-}
-
-function config() {
-  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
-  return readConfig();
-}
-
-// 监听配置文件变化，自动热重载
-try {
-  if (fs.existsSync(configPath)) {
-    fs.watch(configPath, () => {
-      _configCache = readConfig();
-    });
-  }
-} catch (_) {}
 
 // miao-plugin 模块（动态导入）
 let MysApi, Player, Character, Common;
@@ -400,7 +374,6 @@ export async function allAbyss(e) {
       // 使用三合一模板渲染
       const templateName = isMobile ? 'all-abyss-mobile' : 'all-abyss';
       const renderScale = getRenderScaleStyle(config(), isMobile ? 2.0 : 1.2);
-      const pluginDir = process.cwd() + '/plugins/xhh-TL';
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
       const renderData = {

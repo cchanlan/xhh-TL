@@ -6,7 +6,7 @@
 import fs from 'fs'
 import path from 'path'
 import plugin from '../../../lib/plugins/plugin.js'
-import { readPluginConfig, pluginDir } from '../utils/pluginConfig.js'
+import { config, pluginDir } from '../utils/pluginConfig.js'
 
 const DEFAULT_CRON = '17 4 * * *'
 const DEFAULT_MAX_AGE_HOURS = 24
@@ -82,7 +82,7 @@ function formatBytes(n) {
 
 export class TmpCleaner extends plugin {
   constructor() {
-    const cfg = readPluginConfig()
+    const cfg = config()
     const cron = cfg.tmp_clean_cron || DEFAULT_CRON
     const enabled = cfg.tmp_clean_enable !== false
 
@@ -114,7 +114,7 @@ export class TmpCleaner extends plugin {
   }
 
   autoClean() {
-    const cfg = readPluginConfig()
+    const cfg = config()
     if (cfg.tmp_clean_enable === false) return
     const maxAgeHours = Number(cfg.tmp_clean_max_age_hours ?? DEFAULT_MAX_AGE_HOURS)
     const r = cleanTmpDir({ maxAgeHours })
@@ -127,7 +127,7 @@ export class TmpCleaner extends plugin {
 
   async manualClean(e) {
     const forceAll = /全部|强制|所有/.test(e.msg || '')
-    const cfg = readPluginConfig()
+    const cfg = config()
     const maxAgeHours = forceAll
       ? 0
       : Number(cfg.tmp_clean_max_age_hours ?? DEFAULT_MAX_AGE_HOURS)

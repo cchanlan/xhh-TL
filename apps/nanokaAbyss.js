@@ -20,7 +20,7 @@ import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
-import { getRenderScaleStyle, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, config as cfg, pluginDir } from '../utils/pluginConfig.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
@@ -314,12 +314,6 @@ const ELEM_CLASS = {
   量子: 'quantum',
   虚数: 'imaginary',
   物理: 'physical',
-}
-
-const pluginDir = path.join(process.cwd(), 'plugins/xhh-TL')
-
-function cfg() {
-  return readPluginConfig()
 }
 
 async function fetchJson(url, timeout = 10000) {

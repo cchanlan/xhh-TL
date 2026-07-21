@@ -7,15 +7,10 @@ import fs from 'fs'
 import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
-import { getRenderScaleStyle, pickHelpBgImage, readPluginConfig } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickHelpBgImage, config, pluginDir } from '../utils/pluginConfig.js'
 
-const pluginDir = path.join(process.cwd(), 'plugins/xhh-TL')
 /** 帮助图标目录（相对插件 resources，渲染时拼到 ppath） */
 const HELP_ICON_DIR = 'help/icons'
-
-function config() {
-  return readPluginConfig()
-}
 
 function readVersion() {
   try {

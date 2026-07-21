@@ -1,10 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { allAbyss } from './allAbyssModule.js'
-import { readPluginConfig } from '../utils/pluginConfig.js'
-
-function config() {
-  return readPluginConfig()
-}
+import { config } from '../utils/pluginConfig.js'
 
 export class Abyss extends plugin {
   constructor(e) {

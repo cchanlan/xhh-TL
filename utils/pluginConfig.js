@@ -90,6 +90,7 @@ export function mergeMissingDefaults() {
 /** 读合并后的完整配置（default + user，user 优先） */
 export function readPluginConfig() {
   ensureUserConfig()
+  // mtime 作缓存键：锅巴/手改 yaml 后无需 fs.watch，下次读取自动失效
   const key = `${fileMtime(defaultConfigPath)}|${fileMtime(userConfigPath)}`
   if (_cache && _cacheKey === key) return _cache
 
@@ -98,6 +99,14 @@ export function readPluginConfig() {
   _cache = { ...defaults, ...user }
   _cacheKey = key
   return _cache
+}
+
+/**
+ * 业务侧统一入口（与 readPluginConfig 相同，语义更短）
+ * 各 app 请 import { config }，勿再本地包装 / fs.watch
+ */
+export function config() {
+  return readPluginConfig()
 }
 
 /** Resolve the global render multiplier. */

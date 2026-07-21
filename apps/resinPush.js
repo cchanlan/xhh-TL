@@ -23,9 +23,8 @@ import path from 'path'
 import plugin from '../../../lib/plugins/plugin.js'
 import Runtime from '../../../lib/plugins/runtime.js'
 import { TL } from './TL.js'
-import { readPluginConfig, getRenderScaleStyle } from '../utils/pluginConfig.js'
+import { config, getRenderScaleStyle, pluginDir } from '../utils/pluginConfig.js'
 
-const pluginDir = process.cwd() + '/plugins/xhh-TL'
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'resin_push.json')
 
@@ -75,7 +74,7 @@ function saveSubs(subs) {
 // ============ 插件 ============
 export class resinPush extends plugin {
   constructor() {
-    const cfg = readPluginConfig()
+    const cfg = config()
     const cron = cfg.resin_push_cron || DEFAULT_CRON
 
     super({
@@ -116,7 +115,7 @@ export class resinPush extends plugin {
 
   /** 功能总开关：锅巴里关闭 resin_push_enable 时，所有指令一并停用 */
   _pushDisabled(e) {
-    if (readPluginConfig().resin_push_enable === false) {
+    if (config().resin_push_enable === false) {
       e.reply('体力推送功能已被管理员关闭~', true)
       return true
     }
@@ -241,7 +240,7 @@ export class resinPush extends plugin {
 
   // ============ 定时检查 ============
   async checkAll() {
-    const cfg = readPluginConfig()
+    const cfg = config()
     if (cfg.resin_push_enable === false) return
     const subs = loadSubs()
 

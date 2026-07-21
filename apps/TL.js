@@ -1,42 +1,15 @@
 import { exec } from 'child_process';
 import fetch from 'node-fetch';
 import moment from 'moment';
-import fs from 'fs';
 import md5 from 'md5';
 import lodash from 'lodash';
 import plugin from '../../../lib/plugins/plugin.js';
 import { createUser } from '../utils/userBind.js';
 import { getstoken } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
-import { getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
+import { getRenderScaleStyle, config, pluginDir, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
 import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
-import path from 'path';
-
-// ============ 本地配置 ============
-const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = pluginDir + '/config/config.yaml';
-
-let _configCache = null;
-
-function readConfig() {
-  return readPluginConfig();
-}
-
-function config() {
-  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
-  return readConfig();
-}
-
-// 监听配置文件变化，自动热重载
-try {
-  if (fs.existsSync(configPath)) {
-    fs.watch(configPath, () => {
-      _configCache = readConfig();
-      logger.info('[xhh-TL] 配置文件已更新，已重新加载');
-    });
-  }
-} catch (_) {}
 
 // ============ 用户 UID 显示设置 ============
 async function getShowUid(qq) {

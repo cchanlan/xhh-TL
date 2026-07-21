@@ -1,12 +1,11 @@
 import fetch from 'node-fetch';
 import moment from 'moment';
-import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js';
 import { createUser } from '../utils/userBind.js';
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { getRenderScaleStyle, pickRoleCombatBgImage, readPluginConfig, toFileUrl } from '../utils/pluginConfig.js'
+import { getRenderScaleStyle, pickRoleCombatBgImage, config, pluginDir, toFileUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 
@@ -18,28 +17,6 @@ const ELEMENT_MAP = {
 const ELEMENT_CN = { pyro: '火', hydro: '水', dendro: '草', electro: '雷', cryo: '冰', anemo: '风', geo: '岩' };
 const ELEMENT_CLASS = { pyro: 'pyro', hydro: 'hydro', dendro: 'dendro', electro: 'electro', cryo: 'cryo', anemo: 'anemo', geo: 'geo' };
 const START_MONTH = { year: 2024, month: 7 };
-
-// 配置读取
-const pluginDir = process.cwd() + '/plugins/xhh-TL';
-const configPath = path.join(pluginDir, 'config', 'config.yaml') /* user config */;
-let _configCache = null;
-
-function readConfig() {
-  return readPluginConfig();
-}
-
-function config() {
-  // 直接走 mtime 缓存，避免 Windows 上 fs.watch 不触发导致锅巴改完不生效
-  return readConfig();
-}
-
-try {
-  if (fs.existsSync(configPath)) {
-    fs.watch(configPath, () => {
-      _configCache = readConfig();
-    });
-  }
-} catch (_) {}
 
 function monthToIndex(yyyymm) {
   const y = Math.floor(Number(yyyymm) / 100);
