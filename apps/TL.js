@@ -160,16 +160,22 @@ async function getstoken(qq, uid) {
     return true;
   };
 
-  // 判断某 stoken 条目对应的米游社账号是否仍存活
-  const aliveEntry = (entry) => {
-    if (!entry || !(entry.ck_stoken || entry.stoken)) return false;
-    const sid = String(
+  // 提取条目/ cookie 对应的米游社账号 id（stuid / ltuid）
+  const entrySid = (entry) => {
+    if (!entry) return '';
+    return String(
       entry.stuid ||
       cookiePart(entry.ck_stoken || '', 'stuid') ||
       cookiePart(entry.ck_stoken || '', 'ltuid') ||
       entry.ltuid ||
       ''
     );
+  };
+
+  // 判断某 stoken 条目对应的米游社账号是否仍存活
+  const aliveEntry = (entry) => {
+    if (!entry || !(entry.ck_stoken || entry.stoken)) return false;
+    const sid = entrySid(entry);
     // 被用户主动 #删除ck 过的号：无论有没有 genshin 绑定行，一律判死（除非已重新登录自愈）
     if (sid && isStillDeleted(sid, entry.stoken || entry.ck_stoken)) return false;
     if (!bind.hasRow) return true; // 无 genshin 绑定行：不误伤纯 stoken 用户
@@ -178,18 +184,33 @@ async function getstoken(qq, uid) {
   };
 
   // 从一份 yaml 数据里挑选可用条目：
-  // - 有 genshin 绑定行(hasRow=true)：只认「请求的 uid 自己那条」，且其属主账号必须存活。
-  //   绝不跨账号顶替——widget 接口只认 stoken、URL 不带 uid，拿别的账号 stoken 会串号，
-  //   且已删账号会被存活账号顶包而“复活”。查不到就应停查。
-  // - 纯 stoken 用户(hasRow=false)：无删除语义，保持宽松：先精确 uid，再退回任意条目。
+  // 1) 精确 UID 优先
+  // 2) 同账号跨游戏回退：扫码后 xiaoyao yaml 经常「只有原神 UID 键」，
+  //    但原神/星铁共用同一 stoken；widget 接口只认 stoken、URL 不带 uid，
+  //    因此允许「同 stuid 的其它条目」。多账号时绝不跨 stuid 顶替（会串号）。
+  // 3) 纯 stoken 用户(hasRow=false)：保持宽松，任意存活条目。
   const findInData = (data) => {
     if (!data) return false;
     const exact = data[uid] || data[String(uid)];
     if (aliveEntry(exact)) return exact;
-    if (bind.hasRow) return false; // 有绑定体系：精确匹配失败即判死，不回退
+
+    const candidates = [];
     for (const key of Object.keys(data)) {
-      if (aliveEntry(data[key])) return data[key];
+      const entry = data[key];
+      if (aliveEntry(entry)) candidates.push(entry);
     }
+    if (!candidates.length) return false;
+
+    // 纯 stoken 用户：无删除语义，任意一条即可
+    if (!bind.hasRow) return candidates[0];
+
+    // 有绑定体系：只允许「唯一存活 stuid」或「能从 yaml 其它键认出的同 stuid」回退
+    // - 单账号：yaml 只有原神、查询星铁 → 用该账号 stoken（正确且常见）
+    // - 多账号：无法判断当前 uid 属于哪个 stuid 时不猜，交给 SQLite 兜底
+    const sids = [...new Set(candidates.map(entrySid).filter(Boolean))];
+    if (sids.length === 1) return candidates[0];
+
+    // 多账号时：若精确 uid 条目存在但被判死，禁止用别号顶包；否则不在这里猜
     return false;
   };
 
@@ -203,24 +224,39 @@ async function getstoken(qq, uid) {
 
   // 兜底：stoken yaml 没有时，从 SQLite/redis 绑定（createUser）里取完整 CK。
   // 深渊用的就是这把 CK；widget 体力接口在带 cookie_token 时通常也能查。
-  // 规则与上面 yaml 部分一致，避免绕过 gating / 串号：
-  // - hasRow=true：只用「该账号存活」且「该账号名下确实包含当前 uid」的 CK，绝不跨账号顶替；
-  //   （createUser 会合并 yaml 的 mysUsers，被 #删除ck 清掉的账号必须靠存活集合挡掉）
-  // - hasRow=false（纯 stoken 用户）：保持宽松，任意可用 CK 兜底。
+  // 规则：
+  // - 被 #删除ck 的账号一律挡掉
+  // - hasRow=true：优先「名下包含当前 uid」的存活 CK；
+  //   扫码后 MysUsers.uids 常只有原神，星铁 UID 不在列表里——
+  //   若该 QQ 仅剩 1 个存活米游社账号，允许用该账号 CK（同账号跨游戏，不串号）；
+  //   多账号且无法归属时不猜。
+  // - hasRow=false（纯 stoken 用户）：保持宽松。
   try {
     const nu = await createUser(qq);
     const entries = Object.entries(nu?.mysUsers || {});
-    const usable = entries.filter(([ltuid, m]) => {
+    const aliveMys = entries.filter(([ltuid, m]) => {
       if (!m?.ck) return false;
-      if (isStillDeleted(String(ltuid), cookiePart(m.ck, 'stoken'))) return false; // 被 #删除ck 过的号，一律判死（除非已重新登录自愈）
-      if (!bind.hasRow) return true; // 纯 stoken 用户不收窄
-      if (!bind.ids.has(String(ltuid))) return false; // 账号已被删除
-      // 该账号名下必须包含当前查询的 uid，防止用存活账号顶替已删 uid
+      if (isStillDeleted(String(ltuid), cookiePart(m.ck, 'stoken'))) return false;
+      if (!bind.hasRow) return true;
+      return bind.ids.has(String(ltuid));
+    });
+
+    const ownedMatch = aliveMys.filter(([, m]) => {
       const owned = [].concat(
-        m.uids?.gs || [], m.uids?.sr || [],
+        m.uids?.gs || [], m.uids?.sr || [], m.uids?.zzz || [],
       ).map(String);
+      // owned 为空：旧数据/仅 stoken 合并进来的，不挡
       return owned.length === 0 || owned.includes(String(uid));
     });
+
+    let usable = ownedMatch;
+    // 同账号跨游戏：yaml/MysUsers 只记了原神 UID，查星铁时 owned 对不上
+    if (!usable.length && bind.hasRow && aliveMys.length === 1) {
+      usable = aliveMys;
+    } else if (!usable.length && !bind.hasRow) {
+      usable = aliveMys;
+    }
+
     const cks = usable.map(([, m]) => m.ck).filter(Boolean);
     if (cks.length) {
       return (
