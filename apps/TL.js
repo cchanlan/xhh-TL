@@ -4,12 +4,11 @@ import moment from 'moment';
 import fs from 'fs';
 import md5 from 'md5';
 import lodash from 'lodash';
-import YAML from 'yaml';
 import plugin from '../../../lib/plugins/plugin.js';
-import { createUser, getAliveMysIds } from '../utils/userBind.js';
-import { getDeletedMap, getFingerprint, fingerprintStoken, removeDeleted } from '../utils/deletedCk.js';
+import { createUser } from '../utils/userBind.js';
+import { getstoken } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
-import { getStokenCandidateFiles, getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
+import { getRenderScaleStyle, readPluginConfig, pickCharacterPortrait, pickPortraitBg } from '../utils/pluginConfig.js';
 import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import path from 'path';
@@ -124,161 +123,6 @@ function getHeaders(e, ck, Ds_ = true, info) {
   };
 }
 
-// 读取 stoken 文件
-function readYaml(filePath) {
-  try {
-    if (fs.existsSync(filePath)) {
-      return YAML.parse(fs.readFileSync(filePath, 'utf-8')) || {};
-    }
-  } catch (_) {}
-  return {};
-}
-
-async function getstoken(qq, uid) {
-  // 存活账号判定：#删除ck 会把对应米游社账号(ltuid)从 Yunzai 绑定库 Users.ltuids 移除。
-  // - bind.hasRow=false：该 QQ 没走 genshin 绑定体系（纯扫码 stoken 用户）→ 无从比对，保持旧行为，全部放行。
-  // - bind.hasRow=true：只使用「属主账号(stuid/ltuid)仍在存活集合里」的 stoken；被删账号的 stoken 判死。
-  let bind = { hasRow: false, ids: new Set() };
-  try {
-    bind = await getAliveMysIds(qq);
-  } catch (_) {}
-
-  // 已删名单：#删除ck 时由钩子(delCkHook)记录的被删 stuid → 删除当时的 stoken 指纹。
-  // 这是区分「用户主动删过的号」与「从没绑过 ck 的纯扫码号」的唯一可靠依据——
-  // 二者在绑定库里长得一样，只能靠删除那一刻的记录来判定。属主在名单里 → 判死。
-  const deletedMap = getDeletedMap(qq); // { stuid: fingerprint }
-
-  // 判定某 stuid 是否仍处于「已删」状态；顺带做自愈：
-  // 若名单里记了指纹，而当前这把 stoken 的指纹已变（说明用户重新扫码登录、xiaoyao 覆写了 yaml），
-  // 则视为已重新绑定 → 移出名单并放行。无指纹（旧格式/兜底 CK）时无法比对，保持判死。
-  const isStillDeleted = (sid, curStoken) => {
-    if (!sid || !(sid in deletedMap)) return false;
-    const oldFp = deletedMap[sid];
-    if (oldFp && curStoken) {
-      const curFp = fingerprintStoken(curStoken);
-      if (curFp !== oldFp) {
-        // 重新登录后的新 stoken → 自愈
-        removeDeleted(qq, [sid]);
-        delete deletedMap[sid];
-        logger?.info?.(`[xhh-TL][getstoken] QQ ${qq} 账号 ${sid} 检测到重新登录，已恢复体力查询`);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  // 提取条目/ cookie 对应的米游社账号 id（stuid / ltuid）
-  const entrySid = (entry) => {
-    if (!entry) return '';
-    return String(
-      entry.stuid ||
-      cookiePart(entry.ck_stoken || '', 'stuid') ||
-      cookiePart(entry.ck_stoken || '', 'ltuid') ||
-      entry.ltuid ||
-      ''
-    );
-  };
-
-  // 判断某 stoken 条目对应的米游社账号是否仍存活
-  const aliveEntry = (entry) => {
-    if (!entry || !(entry.ck_stoken || entry.stoken)) return false;
-    const sid = entrySid(entry);
-    // 被用户主动 #删除ck 过的号：无论有没有 genshin 绑定行，一律判死（除非已重新登录自愈）
-    if (sid && isStillDeleted(sid, entry.stoken || entry.ck_stoken)) return false;
-    if (!bind.hasRow) return true; // 无 genshin 绑定行：不误伤纯 stoken 用户
-    if (!sid) return true; // 无法判定属主时保守放行，避免误杀正常绑定
-    return bind.ids.has(sid);
-  };
-
-  // 从一份 yaml 数据里挑选可用条目：
-  // 1) 精确 UID 优先
-  // 2) 同账号跨游戏回退：扫码后 xiaoyao yaml 经常「只有原神 UID 键」，
-  //    但原神/星铁共用同一 stoken；widget 接口只认 stoken、URL 不带 uid，
-  //    因此允许「同 stuid 的其它条目」。多账号时绝不跨 stuid 顶替（会串号）。
-  // 3) 纯 stoken 用户(hasRow=false)：保持宽松，任意存活条目。
-  const findInData = (data) => {
-    if (!data) return false;
-    const exact = data[uid] || data[String(uid)];
-    if (aliveEntry(exact)) return exact;
-
-    const candidates = [];
-    for (const key of Object.keys(data)) {
-      const entry = data[key];
-      if (aliveEntry(entry)) candidates.push(entry);
-    }
-    if (!candidates.length) return false;
-
-    // 纯 stoken 用户：无删除语义，任意一条即可
-    if (!bind.hasRow) return candidates[0];
-
-    // 有绑定体系：只允许「唯一存活 stuid」或「能从 yaml 其它键认出的同 stuid」回退
-    // - 单账号：yaml 只有原神、查询星铁 → 用该账号 stoken（正确且常见）
-    // - 多账号：无法判断当前 uid 属于哪个 stuid 时不猜，交给 SQLite 兜底
-    const sids = [...new Set(candidates.map(entrySid).filter(Boolean))];
-    if (sids.length === 1) return candidates[0];
-
-    // 多账号时：若精确 uid 条目存在但被判死，禁止用别号顶包；否则不在这里猜
-    return false;
-  };
-
-  for (const file of getStokenCandidateFiles(qq)) {
-    if (!fs.existsSync(file)) continue;
-    const data = readYaml(file);
-    const entry = findInData(data);
-    if (!entry) continue;
-    return entry.ck_stoken || `stuid=${entry.stuid};stoken=${entry.stoken};mid=${entry.mid};`;
-  }
-
-  // 兜底：stoken yaml 没有时，从 SQLite/redis 绑定（createUser）里取完整 CK。
-  // 深渊用的就是这把 CK；widget 体力接口在带 cookie_token 时通常也能查。
-  // 规则：
-  // - 被 #删除ck 的账号一律挡掉
-  // - hasRow=true：优先「名下包含当前 uid」的存活 CK；
-  //   扫码后 MysUsers.uids 常只有原神，星铁 UID 不在列表里——
-  //   若该 QQ 仅剩 1 个存活米游社账号，允许用该账号 CK（同账号跨游戏，不串号）；
-  //   多账号且无法归属时不猜。
-  // - hasRow=false（纯 stoken 用户）：保持宽松。
-  try {
-    const nu = await createUser(qq);
-    const entries = Object.entries(nu?.mysUsers || {});
-    const aliveMys = entries.filter(([ltuid, m]) => {
-      if (!m?.ck) return false;
-      if (isStillDeleted(String(ltuid), cookiePart(m.ck, 'stoken'))) return false;
-      if (!bind.hasRow) return true;
-      return bind.ids.has(String(ltuid));
-    });
-
-    const ownedMatch = aliveMys.filter(([, m]) => {
-      const owned = [].concat(
-        m.uids?.gs || [], m.uids?.sr || [], m.uids?.zzz || [],
-      ).map(String);
-      // owned 为空：旧数据/仅 stoken 合并进来的，不挡
-      return owned.length === 0 || owned.includes(String(uid));
-    });
-
-    let usable = ownedMatch;
-    // 同账号跨游戏：yaml/MysUsers 只记了原神 UID，查星铁时 owned 对不上
-    if (!usable.length && bind.hasRow && aliveMys.length === 1) {
-      usable = aliveMys;
-    } else if (!usable.length && !bind.hasRow) {
-      usable = aliveMys;
-    }
-
-    const cks = usable.map(([, m]) => m.ck).filter(Boolean);
-    if (cks.length) {
-      return (
-        cks.find((ck) => /cookie_token=/.test(ck)) ||
-        cks.find((ck) => /ltoken=/.test(ck)) ||
-        cks[0]
-      );
-    }
-  } catch (err) {
-    logger?.debug?.(`[xhh-TL][getstoken] SQLite 兜底失败: ${err?.message}`);
-  }
-
-  return false;
-}
-
 // ============ API 函数 (简化自 xhh/system/api.js) ============
 async function callApi(e, type, game, uid, server, headers, silent = false) {
   const signActId = {
@@ -354,11 +198,6 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
 }
 
 // ============ 工具函数 ============
-function cookiePart(ck = '', key) {
-  const m = String(ck).match(new RegExp(`(?:^|;\\s*)${key}=([^;]+)`));
-  return m ? m[1] : '';
-}
-
 function getTime(time) {
   const now = new Date().getTime();
   const date = new Date(time * 1000 + now);
@@ -546,8 +385,92 @@ export class TL extends plugin {
       if (handled) return true;
     }
 
-    // 多UID模式：一个游戏的所有ID渲染进一张图
-    if (config().show_all_bindings) {
+    // 经典模板出图（多 UID / 单图）
+    return this.replyClassicTl(e, {
+      displayQq,
+      displayName,
+      renderData,
+      resultData: _data_,
+      isQueryAll,
+      isStarRail,
+      isZZZ,
+      isGenshin,
+      showZzz,
+      targetQq,
+    });
+  }
+
+  /** 经典 Tl.html 渲染一张图 → Buffer */
+  async renderTlImage(e, data, renderScale) {
+    const ppath = '../../../../../plugins/xhh-TL/resources/';
+    const tplFile = pluginDir + '/resources/Tl/Tl.html';
+    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', data, {
+      retType: 'base64',
+      imgType: 'png',
+      beforeRender() {
+        return {
+          imgType: 'png',
+          sys: { scale: renderScale },
+          ...data,
+          ppath,
+          tplFile,
+          saveId: 'Tl',
+        };
+      },
+    });
+    return extractRenderBuffer(renderResult);
+  }
+
+  /** 按游戏列表出多张图（每张图可含 1 个或多个 UID） */
+  async renderTlSegmentsByGames(e, allGameData, displayQq, displayName, renderScale, perGameChunkSize = 0) {
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
+    const segments = [];
+    const timeStr = `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`;
+    for (const [game, dataList] of Object.entries(allGameData)) {
+      const size = perGameChunkSize > 0 ? perGameChunkSize : dataList.length;
+      for (let i = 0; i < dataList.length; i += size) {
+        const chunk = dataList.slice(i, i + size);
+        const chunkData = {
+          bg: 'bg1',
+          qq: displayQq,
+          qqname: displayName,
+          time: timeStr,
+        };
+        chunkData[keyMap[game]] = chunk;
+        await this.hideUidIfNeeded(chunkData, displayQq);
+        const image = await this.renderTlImage(e, chunkData, renderScale);
+        if (image) segments.push(segment.image(image));
+      }
+    }
+    return segments;
+  }
+
+  /** 单图引用 / 少量多图引用 / 超过阈值合并转发 */
+  async replyTlSegments(e, segments, cardsPerMsg) {
+    if (!segments?.length) return replyQuote(e, '图片渲染失败，请稍后重试');
+    if (segments.length === 1) return replyQuote(e, segments[0]);
+    if (segments.length > cardsPerMsg) {
+      const forwardMsg = await common.makeForwardMsg(e, segments);
+      return replyForward(e, forwardMsg);
+    }
+    return replyQuote(e, segments);
+  }
+
+  /**
+   * 经典体力模板回复：show_all_bindings 多 UID 或单账号一张图
+   * 行为与原先 note_ 分支一致，仅抽公共渲染。
+   */
+  async replyClassicTl(e, opts) {
+    const {
+      displayQq, displayName, renderData, resultData: _data_,
+      isQueryAll, isStarRail, isZZZ, isGenshin, showZzz, targetQq,
+    } = opts;
+    const cfg = config();
+    const renderScale = getRenderScaleStyle(cfg, 2.0);
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
+    const cardsPerMsg = cfg.tl_cards_per_msg || 3;
+
+    if (cfg.show_all_bindings) {
       const games = (isQueryAll ? ['gs', 'sr', 'zzz']
         : isStarRail ? ['sr']
         : isZZZ ? ['zzz']
@@ -557,117 +480,45 @@ export class TL extends plugin {
       const allGameData = {};
       let totalUids = 0;
       let gameCount = 0;
-
       for (const game of games) {
         const dataList = await this.fetchGameDataList(e, game, true, targetQq || e.user_id);
-        if (dataList.length === 0) continue;
+        if (!dataList.length) continue;
         allGameData[game] = dataList;
         totalUids += dataList.length;
         gameCount++;
       }
-
-      if (gameCount === 0) {
+      if (!gameCount) {
         e.reply('没有找到有效绑定的账号', true);
         return true;
       }
 
-      const renderScale = getRenderScaleStyle(config(), 2.0);
-      const ppath = '../../../../../plugins/xhh-TL/resources/';
-      const tplFile = pluginDir + '/resources/Tl/Tl.html';
-      const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
-      const tlRenderMode = config().tl_render_mode || 'merge';
-      const uidsPerImage = config().tl_uids_per_image || 2;
-      const cardsPerMsg = config().tl_cards_per_msg || 3;
+      const tlRenderMode = cfg.tl_render_mode || 'merge';
+      const uidsPerImage = cfg.tl_uids_per_image || 2;
 
-      // 独立模式：按配置分组渲染
+      // 独立模式：按 uids_per_image 分组
       if (tlRenderMode === 'single') {
-        const allGameSegments = [];
-        for (const [game, dataList] of Object.entries(allGameData)) {
-          // 按 uidsPerImage 分组
-          for (let i = 0; i < dataList.length; i += uidsPerImage) {
-            const chunk = dataList.slice(i, i + uidsPerImage);
-            const chunkData = {
-              bg: 'bg1',
-              qq: displayQq,
-              qqname: displayName,
-              time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
-            };
-            chunkData[keyMap[game]] = chunk;
-            await this.hideUidIfNeeded(chunkData, displayQq);
-
-            const renderResult = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
-              retType: 'base64',
-              imgType: 'png',
-              beforeRender({ data }) {
-                return {
-                  imgType: 'png',
-                  sys: { scale: renderScale },
-                  ...chunkData,
-                  ppath: ppath,
-                  tplFile: tplFile,
-                  saveId: 'Tl',
-                };
-              },
-            });
-            const image = extractRenderBuffer(renderResult);
-            if (image) allGameSegments.push(segment.image(image));
-          }
-        }
-
-        // 总卡片数超过阈值 → 全部合并转发（不引用触发消息）
-        if (allGameSegments.length > cardsPerMsg) {
-          const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
-          return replyForward(e, forwardMsg);
-        }
-        // 单图 / 少量多图：引用触发消息
-        if (allGameSegments.length === 1) return replyQuote(e, allGameSegments[0]);
-        return replyQuote(e, allGameSegments);
+        const segs = await this.renderTlSegmentsByGames(
+          e, allGameData, displayQq, displayName, renderScale, uidsPerImage,
+        );
+        return this.replyTlSegments(e, segs, cardsPerMsg);
       }
 
-      // 默认合并模式：每个游戏的所有UID合并进一张图
-      const mergeUidsPerImage = config().tl_merge_uids_per_image || 0;
-
-      // 检查是否需要分组（mergeUidsPerImage > 0 时才分组）
+      // 合并模式：可选按 merge_uids_per_image 切图
+      const mergeUidsPerImage = cfg.tl_merge_uids_per_image || 0;
       if (mergeUidsPerImage > 0) {
         const needSplit = Object.values(allGameData).some(list => list.length > mergeUidsPerImage);
         if (needSplit) {
-          const allGameSegments = [];
-          for (const [game, dataList] of Object.entries(allGameData)) {
-            for (let i = 0; i < dataList.length; i += mergeUidsPerImage) {
-              const chunk = dataList.slice(i, i + mergeUidsPerImage);
-              const chunkData = {
-                bg: 'bg1',
-                qq: displayQq,
-                qqname: displayName,
-                time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
-              };
-              chunkData[keyMap[game]] = chunk;
-              await this.hideUidIfNeeded(chunkData, displayQq);
-
-              const renderResult = await e.runtime.render('小花火', 'Tl/Tl', chunkData, {
-                retType: 'base64',
-                imgType: 'png',
-                beforeRender({ data }) {
-                  return {
-                    imgType: 'png',
-                    sys: { scale: renderScale },
-                    ...chunkData,
-                    ppath: ppath,
-                    tplFile: tplFile,
-                    saveId: 'Tl',
-                  };
-                },
-              });
-              const image = extractRenderBuffer(renderResult);
-              if (image) allGameSegments.push(segment.image(image));
-            }
-          }
-          if (allGameSegments.length === 1) return replyQuote(e, allGameSegments[0]);
-          const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
+          const segs = await this.renderTlSegmentsByGames(
+            e, allGameData, displayQq, displayName, renderScale, mergeUidsPerImage,
+          );
+          // 原逻辑：1 张引用，多张一律转发（不走 cardsPerMsg 引用）
+          if (segs.length === 1) return replyQuote(e, segs[0]);
+          const forwardMsg = await common.makeForwardMsg(e, segs);
           return replyForward(e, forwardMsg);
         }
       }
 
+      // 每游戏恰好 1 个 UID → 合成一张图
       if (totalUids === gameCount) {
         const combinedData = {
           bg: gameCount > 1 ? 'bg' : 'bg1',
@@ -679,91 +530,29 @@ export class TL extends plugin {
           combinedData[keyMap[game]] = dataList;
         }
         await this.hideUidIfNeeded(combinedData, displayQq);
-
-        const renderResult = await e.runtime.render('小花火', 'Tl/Tl', combinedData, {
-          retType: 'base64',
-          imgType: 'png',
-          beforeRender({ data }) {
-            return {
-              imgType: 'png',
-              sys: { scale: renderScale },
-              ...combinedData,
-              ppath: ppath,
-              tplFile: tplFile,
-              saveId: 'Tl',
-            };
-          },
-        });
-        const image = extractRenderBuffer(renderResult);
+        const image = await this.renderTlImage(e, combinedData, renderScale);
         if (image) return replyQuote(e, segment.image(image));
         return replyQuote(e, '图片渲染失败，请稍后重试');
       }
 
-      // 有游戏存在多个UID → 每个游戏一张图，合并转发
-      const allGameSegments = [];
-      for (const [game, dataList] of Object.entries(allGameData)) {
-        const gameRenderData = {
-          bg: 'bg1',
-          qq: displayQq,
-          qqname: displayName,
-          time: `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`,
-        };
-        gameRenderData[keyMap[game]] = dataList;
-        await this.hideUidIfNeeded(gameRenderData, displayQq);
-
-        const renderResult = await e.runtime.render('小花火', 'Tl/Tl', gameRenderData, {
-          retType: 'base64',
-          imgType: 'png',
-          beforeRender({ data }) {
-            return {
-              imgType: 'png',
-              sys: { scale: renderScale },
-              ...gameRenderData,
-              ppath: ppath,
-              tplFile: tplFile,
-              saveId: 'Tl',
-            };
-          },
-        });
-        const image = extractRenderBuffer(renderResult);
-        if (image) allGameSegments.push(segment.image(image));
-      }
-
-      if (allGameSegments.length > 1) {
-        const forwardMsg = await common.makeForwardMsg(e, allGameSegments);
+      // 有游戏多 UID → 每游戏一张，多图转发
+      const segs = await this.renderTlSegmentsByGames(
+        e, allGameData, displayQq, displayName, renderScale, 0,
+      );
+      if (segs.length > 1) {
+        const forwardMsg = await common.makeForwardMsg(e, segs);
         return replyForward(e, forwardMsg);
       }
-      return replyQuote(e, allGameSegments[0]);
+      return replyQuote(e, segs[0]);
     }
 
-    // 原始单图模式：数据转 _list 格式
+    // 原始单图模式
     const listData = { ...renderData };
     if (_data_.gs_data) listData.gs_list = [_data_.gs_data];
     if (_data_.sr_data) listData.sr_list = [_data_.sr_data];
     if (_data_.zzz_data) listData.zzz_list = [_data_.zzz_data];
-
-    const tplFile = pluginDir + '/resources/Tl/Tl.html';
-    const ppath = '../../../../../plugins/xhh-TL/resources/';
-    const renderScale = getRenderScaleStyle(config(), 2.0);
     await this.hideUidIfNeeded(listData, displayQq);
-
-    const renderResult = await e.runtime.render('小花火', 'Tl/Tl', listData, {
-      retType: 'base64',
-      imgType: 'png',
-      beforeRender({ data }) {
-        return {
-          imgType: 'png',
-          sys: {
-            scale: renderScale,
-          },
-          ...listData,
-          ppath: ppath,
-          tplFile: tplFile,
-          saveId: 'Tl',
-        };
-      },
-    });
-    const image = extractRenderBuffer(renderResult);
+    const image = await this.renderTlImage(e, listData, renderScale);
     if (image) return replyQuote(e, segment.image(image));
     return replyQuote(e, '图片渲染失败，请稍后重试');
   }

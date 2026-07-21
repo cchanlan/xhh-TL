@@ -6,12 +6,9 @@
  * 无 genshin 时：注入 getMysInfo / getUid / getMysApi + e.user。
  */
 
-import crypto from 'crypto'
-import md5 from 'md5'
-import fetch from 'node-fetch'
 import { createUser } from './userBind.js'
 import LiteMysApi, { getServer, gameKey as resolveGame } from './mysClient.js'
-import { getStokenCandidateFiles } from './pluginConfig.js'
+import { cookiePart, stokenToCookie, findStokenEntry } from './auth.js'
 
 const COOKIE_AUTH_APIS = new Set([
   'cookie',
@@ -40,91 +37,6 @@ function detectGame(e, optionGame) {
   const msg = String(e?.msg || e?.original_msg || '')
   if (/^\*/.test(msg) || /星铁|崩坏：星穹|星穹铁道/.test(msg)) return 'sr'
   return e?.game || 'gs'
-}
-
-function cookiePart(ck = '', key) {
-  const m = String(ck).match(new RegExp(`(?:^|;\\s*)${key}=([^;]+)`))
-  return m ? m[1] : ''
-}
-
-function makeAppDs() {
-  const salt = 'rtvTthKxEyreVXQCnhluFgLXPOFKPHlA'
-  const t = Math.floor(Date.now() / 1000)
-  const r = Math.random().toString(36).slice(2, 8)
-  const Ds = md5(`salt=${salt}&t=${t}&r=${r}`)
-  return `${t},${r},${Ds}`
-}
-
-/**
- * 从 stoken 条目刷新 cookie_token / ltoken，得到可用 cookie
- */
-async function stokenToCookie(entry) {
-  if (!entry) return ''
-  // 已有完整 cookie_token 的 ck 直接用
-  if (entry.ck && /cookie_token/.test(entry.ck)) return entry.ck
-  if (entry.cookie && /cookie_token/.test(entry.cookie)) return entry.cookie
-
-  const stuid = entry.stuid || cookiePart(entry.ck_stoken || '', 'stuid') || cookiePart(entry.ck_stoken || '', 'ltuid')
-  const stoken = entry.stoken || cookiePart(entry.ck_stoken || '', 'stoken')
-  const mid = entry.mid || cookiePart(entry.ck_stoken || '', 'mid')
-  if (!stuid || !stoken) {
-    if (entry.ltoken && entry.cookie_token) {
-      return `ltoken=${entry.ltoken};ltuid=${stuid || ''};cookie_token=${entry.cookie_token};account_id=${stuid || ''};`
-    }
-    return entry.ck || entry.ck_stoken || ''
-  }
-
-  const baseCk = mid
-    ? `stuid=${stuid};stoken=${stoken};mid=${mid};`
-    : `stuid=${stuid};stoken=${stoken};`
-
-  try {
-    const headers = {
-      Cookie: baseCk,
-      'User-Agent':
-        'Mozilla/5.0 (Linux; Android 13; Mi 10 Build/UKQ1.230804.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.186 Mobile Safari/537.36 miHoYoBBS/2.71.1',
-      'x-rpc-app_version': '2.71.1',
-      'x-rpc-client_type': '2',
-      'x-rpc-sys_version': '13',
-      'x-rpc-channel': 'miyousheluodi',
-      'x-rpc-device_id': crypto.randomUUID(),
-      DS: makeAppDs(),
-    }
-    const cookieRes = await fetch(
-      `https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoBySToken?stoken=${encodeURIComponent(stoken)}&uid=${encodeURIComponent(stuid)}`,
-      { method: 'GET', headers },
-    ).then((r) => r.json())
-    const ltokenRes = await fetch(
-      'https://passport-api.mihoyo.com/account/auth/api/getLTokenBySToken',
-      { method: 'GET', headers: { ...headers, DS: makeAppDs() } },
-    ).then((r) => r.json())
-
-    const cookieToken = cookieRes?.data?.cookie_token
-    const ltoken = ltokenRes?.data?.ltoken || entry.ltoken
-    if (cookieToken && ltoken) {
-      return `ltoken=${ltoken};ltuid=${stuid};cookie_token=${cookieToken};account_id=${stuid};`
-    }
-    if (cookieToken) {
-      return `stuid=${stuid};stoken=${stoken};cookie_token=${cookieToken};account_id=${stuid};`
-    }
-    if (typeof logger !== 'undefined') {
-      logger.debug?.(
-        `[xhh-TL][runtime] stoken→ck ret cookie=${cookieRes?.retcode} ltoken=${ltokenRes?.retcode}`,
-      )
-    }
-  } catch (err) {
-    if (typeof logger !== 'undefined') {
-      logger.debug?.(`[xhh-TL][runtime] stoken→ck failed: ${err.message}`)
-    }
-  }
-  // 回退：已有 ltoken + cookie_token
-  if (entry.ltoken && entry.cookie_token) {
-    return `ltoken=${entry.ltoken};ltuid=${stuid};cookie_token=${entry.cookie_token};account_id=${stuid};`
-  }
-  if (entry.ltoken) {
-    return `ltoken=${entry.ltoken};ltuid=${stuid};account_id=${stuid};`
-  }
-  return entry.ck || entry.ck_stoken || baseCk
 }
 
 /**
@@ -192,32 +104,12 @@ async function resolveAuth(e, { needCookie = true, game = 'gs' } = {}) {
   // 2) 有 ltoken 但无 cookie_token 时，仍尝试用 stoken 换完整 ck
   if (!ck || (needCookie && !/cookie_token/.test(ck))) {
     try {
-      const { default: YAML } = await import('yaml')
-      const fs = await import('fs')
-      const path = await import('path')
-      const id = targetQq
-      const paths = getStokenCandidateFiles(id)
-      for (const p of paths) {
-        if (!fs.existsSync(p)) continue
-        const data = YAML.parse(fs.readFileSync(p, 'utf-8')) || {}
-        // 精确 uid
-        let entry = data[uid] || data[String(uid)]
-        if (!entry) {
-          // 任意一条同账号 stoken
-          for (const v of Object.values(data)) {
-            if (v?.stoken || v?.ck_stoken) {
-              entry = v
-              break
-            }
-          }
-        }
-        if (entry) {
-          const converted = await stokenToCookie(entry)
-          if (converted) {
-            ck = converted
-            ltuid = entry.stuid || ltuid
-            break
-          }
+      const entry = findStokenEntry(targetQq, uid)
+      if (entry) {
+        const converted = await stokenToCookie(entry)
+        if (converted) {
+          ck = converted
+          ltuid = entry.stuid || ltuid
         }
       }
     } catch (err) {
