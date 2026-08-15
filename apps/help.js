@@ -42,24 +42,48 @@ function withIconSrc(groups) {
 }
 
 /**
+ * 图标唯一性自检：要求每个条目的图标都不重复（新增指令时容易撞图）
+ * 只告警不阻断出图，重复项会在日志里点名
+ */
+function checkIconUnique(groups) {
+  const seen = new Map()
+  const dup = []
+  for (const g of groups) {
+    for (const item of g.list || []) {
+      for (const icon of [item.icon, item.icon2].filter(Boolean)) {
+        const prev = seen.get(icon)
+        if (prev) dup.push(`${icon} 同时用于「${prev}」与「${item.title}」`)
+        else seen.set(icon, item.title)
+      }
+    }
+  }
+  if (dup.length) {
+    logger?.warn?.(`[xhh-TL][help] 图标重复 ${dup.length} 处：\n  ${dup.join('\n  ')}`)
+  }
+  return dup
+}
+
+/**
  * 按功能分组的指令表（对应 apps 内全部 reg）
- * icon 为本插件 resources/help/icons 下文件名，全部互不重复：
+ * icon 为本插件 resources/help/icons 下文件名，**全部互不重复**（新增条目请先跑 checkIconUnique）：
  * - 原神相关 → gs-* 原神角色
  * - 星铁相关 → sr-* 星铁角色
- * - 多游戏/管理 → multi / zzz / spark 等
+ * - 绝区零 → zzz-*（zzz.webp 游戏图标 / zzz-battery 电量 / zzz-01~05 角色圆头像）
+ * - 鸣潮 → ww-01~03 角色头像
+ * - 多游戏 / 管理 → multi / signin / mask / plugin / active / spark
  */
 export function buildHelpGroups() {
   return [
     {
       group: '体力查询',
-      desc: 'TL · 三游戏实时体力',
+      desc: 'TL · 四游戏实时体力',
       color: 'blue',
       list: [
         {
           icon: 'gs-logo.webp',
           icon2: 'sr-logo.webp',
           title: '#体力 #tl #体力总览',
-          desc: '一次查原神 / 星铁 / 绝区零',
+          desc: '一次查原神 / 星铁 / 绝区零（鸣潮需先自行开启）',
         },
         {
           icon: 'gs-纳西妲.webp',
@@ -77,13 +101,13 @@ export function buildHelpGroups() {
           desc: '仅查绝区零电量',
         },
         {
-          icon: 'multi.webp',
+          icon: 'ww-01.webp',
           title: '#鸣潮体力 #mctl',
           desc: '库街区数据 + 本插件模板出图；凭证借 gsuid_core 鸣潮插件，需锅巴先开「启用鸣潮体力」',
         },
         {
-          icon: 'zzz.webp',
-          title: '#开启/关闭原神体力 · 星铁体力 · 绝区零体力 · 鸣潮体力',
+          icon: 'multi.webp',
+          title: '#开启/关闭 原神 / 星铁 / 绝区零 / 鸣潮 体力',
           desc: '控制「体力总览」是否包含对应游戏（前三个默认显示、鸣潮默认关，单独查询不受影响）',
         },
         {
@@ -97,12 +121,12 @@ export function buildHelpGroups() {
           desc: '开拓力达阈值时在群@你发图；关闭：#星铁体力推送关闭',
         },
         {
-          icon: 'zzz-battery.webp',
+          icon: 'zzz-01.webp',
           title: '#绝区零体力推送 220',
           desc: '电量达阈值时在群@你发图；关闭：#绝区零体力推送关闭',
         },
         {
-          icon: 'multi.webp',
+          icon: 'gs-枫原万叶.webp',
           title: '#原神/星铁/绝区零体力全推送 130',
           desc: '监控名下所有UID，各自达标各自@发图；关闭：加「关闭」',
         },
@@ -129,22 +153,22 @@ export function buildHelpGroups() {
       color: 'orange',
       list: [
         {
-          icon: 'gs-纳西妲.webp',
+          icon: 'gs-迪卢克.webp',
           title: '#原神签到',
           desc: '立即签到原神；星铁 #星铁签到、绝区零 #zzz签到',
         },
         {
-          icon: 'signin.webp',
+          icon: 'gs-温迪.webp',
           title: '#原神自动签到',
           desc: '开启每日自动签；星铁/绝区零同理，加「关闭」停用',
         },
         {
-          icon: 'mask.webp',
+          icon: 'gs-丽莎.webp',
           title: '#米游社验证 #过码',
           desc: '主动过码清风险；可带游戏名，默认原神。撞码时也会自动触发',
         },
         {
-          icon: 'multi.webp',
+          icon: 'gs-七七.webp',
           title: '#签到列表',
           desc: '查看自己已开启的自动签到订阅',
         },
@@ -156,22 +180,22 @@ export function buildHelpGroups() {
       color: 'gold',
       list: [
         {
-          icon: 'signin.webp',
+          icon: 'active.webp',
           title: '#开启自动米游币',
           desc: '开启每日自动做任务；停用发 #关闭自动米游币',
         },
         {
-          icon: 'active.webp',
+          icon: 'gs-艾尔海森.webp',
           title: '#米游币签到',
           desc: '立即跑一次：版块签到+看帖+点赞+分享',
         },
         {
-          icon: 'multi.webp',
+          icon: 'gs-流浪者.webp',
           title: '#米游币余额',
           desc: '只查米游币余额与今日剩余可获取',
         },
         {
-          icon: 'mask.webp',
+          icon: 'sr-大黑塔.webp',
           title: '#自动米游币列表',
           desc: '查看自己是否已开启每日自动米游币',
         },
@@ -262,7 +286,7 @@ export function buildHelpGroups() {
           desc: '深境螺旋祝福与楼层（正式服）',
         },
         {
-          icon: 'gs-胡桃.webp',
+          icon: 'gs-可莉.webp',
           title: '#下期深渊 #下期螺旋',
           desc: '测试包最新深渊配置',
         },
@@ -277,12 +301,12 @@ export function buildHelpGroups() {
           desc: '幽境危战强敌；#下期危战 看下期',
         },
         {
-          icon: 'gs-可莉.webp',
+          icon: 'sr-符玄.webp',
           title: '#版本深渊列表 #版本危战列表',
           desc: '最近期数一览（剧诗同理）',
         },
         {
-          icon: 'gs-刻晴.webp',
+          icon: 'sr-丹恒.webp',
           title: '上期 / 第N期',
           desc: '接在版本指令后：#版本深渊上期',
         },
@@ -331,12 +355,12 @@ export function buildHelpGroups() {
           desc: '显示本指令总览图',
         },
         {
-          icon: 'active.webp',
+          icon: 'sr-藿藿.webp',
           title: '#清理临时文件 #小火花清理tmp',
           desc: '主人：清理 data/tmp（加「全部」清空）',
         },
         {
-          icon: 'mask.webp',
+          icon: 'sr-镜流.webp',
           title: '#删除ck #原神删除ck',
           desc: '配合 genshin 删号：清理残留 stoken，避免被删账号复活查询',
         },
@@ -368,19 +392,22 @@ export class help extends plugin {
         return e.reply('渲染引擎不可用（e.runtime.render）', true)
       }
 
-      const groups = withIconSrc(buildHelpGroups())
+      const rawGroups = buildHelpGroups()
+      checkIconUnique(rawGroups)
+      const groups = withIconSrc(rawGroups)
       const cmdCount = groups.reduce((n, g) => n + (g.list?.length || 0), 0)
       const version = readVersion()
       const note =
         '<b>提示</b>：指令大多可省略 #；星铁相关请带 <b>*</b> 或「星铁」前缀，避免与原神冲突。' +
         'Nanoka 版本指令支持 <b>列表 / 上期 / 第N期</b>；个人成绩类需绑定 Cookie / stoken。' +
+        '鸣潮体力需锅巴开启「启用鸣潮体力」，并已在 gsuid_core 鸣潮插件登录过。' +
         '支持 @他人查询（对方需已绑定）。'
 
       const bgImage = pickHelpBgImage({ logTag: 'xhh-TL[help]' })
 
       const data = {
         title: '小火花帮助',
-        subTitle: '体力 · 全部深渊 · 幻想剧诗 · Nanoka 版本配置',
+        subTitle: '四游戏体力 · 全部深渊 · 幻想剧诗 · Nanoka 版本配置',
         version,
         cmdCount,
         generatedAt: moment().format('YYYY-MM-DD HH:mm'),
