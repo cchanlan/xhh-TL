@@ -917,7 +917,7 @@ export class TL extends plugin {
       status = [
         { ok: !!item.has_signed, text: item.has_signed ? '库街区已签到！' : '库街区未签到' },
         { ok: done(live, liveMax), text: done(live, liveMax) ? '今日活跃度已满！' : '今日活跃度未满' },
-        { ok: item.boss_left <= 0, text: item.boss_left > 0 ? `战歌重奏剩 ${item.boss_left} 次` : '战歌重奏已用完' },
+        { ok: item.boss_left <= 0, text: item.boss_left > 0 ? `战歌重奏剩 ${item.boss_left} 次可收取` : '战歌重奏已收完' },
       ];
       // 周期挑战（深塔/海墟）没做完就提示一下，和 xw 的催促口径一致
       for (const [label, blk] of [['逆境深塔', item.tower], ['冥歌海墟', item.slash]]) {

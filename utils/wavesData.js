@@ -286,8 +286,11 @@ export function normalizeWavesItem(acc, d, base) {
   const frame = d.weeklyFrameData || {}
   const act = d.activityData || {}
 
+  // 战歌重奏：库街区两处给的都是「剩余可收取次数」（baseData 字段名就叫
+  // weeklyInstTitle=战歌重奏收取次数，与游戏内「本周剩余可收取次数 3/3」同一口径），
+  // 不能再拿 total 去减，否则一次没打时会被算成「已用完」
   const bossTotal = Number(base?.weeklyInstCountLimit ?? weekly.total) || 0
-  const bossUsed = Number(base?.weeklyInstCount ?? weekly.cur) || 0
+  const bossLeft = Number(base?.weeklyInstCount ?? weekly.cur) || 0
 
   return {
     uid: String(acc.uid),
@@ -317,8 +320,8 @@ export function normalizeWavesItem(acc, d, base) {
     bp_week_cur: Number(bp[1]?.cur) || 0,
     bp_week_total: Number(bp[1]?.total) || 0,
 
-    // 战歌重奏（周本）：库街区给的是已用次数，卡上显示剩余
-    boss_left: Math.max(0, bossTotal - bossUsed),
+    // 战歌重奏（周本）：剩余可收取次数
+    boss_left: bossTotal ? Math.min(bossLeft, bossTotal) : bossLeft,
     boss_total: bossTotal,
 
     // 周度游历 / 千道门扉的异想
