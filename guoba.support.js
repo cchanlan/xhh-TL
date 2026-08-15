@@ -83,6 +83,16 @@ export function supportGuoba() {
           }
         },
         {
+          field: 'tl_ww_portrait_folder',
+          label: '鸣潮立绘目录',
+          bottomHelpMessage:
+            '鸣潮立绘卡角色图来源。默认插件内置 resources/ww_role_pile（子文件夹=角色ID，内含立绘随机抽取）。也可填自己的图库或绝对路径',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/ww_role_pile'
+          }
+        },
+        {
           field: 'tl_portrait_bg',
           label: '立绘卡底图',
           bottomHelpMessage:
@@ -170,6 +180,40 @@ export function supportGuoba() {
             min: 1,
             max: 20,
             placeholder: '默认 3'
+          }
+        },
+        {
+          component: 'Divider',
+          label: '鸣潮体力'
+        },
+        {
+          field: 'waves_tl_enable',
+          label: '启用鸣潮体力',
+          bottomHelpMessage:
+            '鸣潮体力由本插件自己请求库街区并出图（与三游戏同款模板），只从 gsuid_core 的鸣潮插件数据库里只读借用该 QQ 的登录凭证，不写库、不影响 core。开了之后用户还要自己发 #开启鸣潮体力（默认关），#体力 总览才会附带鸣潮；单独 #鸣潮体力 只看本开关。前提：该 QQ 已在鸣潮插件那边登录过',
+          component: 'Switch'
+        },
+        {
+          field: 'waves_tl_gsuid_db',
+          label: 'gsuid_core 数据库路径',
+          bottomHelpMessage:
+            'core 的 GsData.db 位置（只读打开，取鸣潮绑定与凭证）。留空自动探测 /opt/gsuid_core/data/GsData.db、/root/gsuid_core/data/GsData.db；多个路径用换行分隔，取第一个存在的',
+          component: 'Input',
+          componentProps: {
+            type: 'textarea',
+            rows: 2,
+            placeholder: '/root/gsuid_core/data/GsData.db',
+          },
+        },
+        {
+          field: 'waves_tl_timeout',
+          label: '库街区超时（秒）',
+          bottomHelpMessage: '请求库街区接口的等待上限，超时该 UID 不出图。默认 15 秒',
+          component: 'InputNumber',
+          componentProps: {
+            min: 5,
+            max: 120,
+            placeholder: '15'
           }
         },
         {

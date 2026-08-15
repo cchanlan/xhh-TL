@@ -77,9 +77,14 @@ export function buildHelpGroups() {
           desc: '仅查绝区零电量',
         },
         {
+          icon: 'multi.webp',
+          title: '#鸣潮体力 #mctl',
+          desc: '库街区数据 + 本插件模板出图；凭证借 gsuid_core 鸣潮插件，需锅巴先开「启用鸣潮体力」',
+        },
+        {
           icon: 'zzz.webp',
-          title: '#开启/关闭原神体力 · 星铁体力 · 绝区零体力',
-          desc: '控制「体力总览」是否包含对应游戏（默认全显示，单独查询不受影响）',
+          title: '#开启/关闭原神体力 · 星铁体力 · 绝区零体力 · 鸣潮体力',
+          desc: '控制「体力总览」是否包含对应游戏（前三个默认显示、鸣潮默认关，单独查询不受影响）',
         },
         {
           icon: 'gs-resin.webp',

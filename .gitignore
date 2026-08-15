@@ -7,3 +7,6 @@ data/
 # 用户本地配置：勿入库，避免更新冲突
 config/config.yaml
 config/config.yaml.bak
+
+# 鸣潮角色立绘图库：体积过大（数百 MB），不入库，用户自备
+resources/ww_role_pile/

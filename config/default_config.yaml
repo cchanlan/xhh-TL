@@ -17,6 +17,9 @@ tl_portrait_folder: plugins/miao-plugin/resources/profile/normal-character
 # 绝区零立绘目录（tl_card_style=portrait/widget 时生效）
 # 默认插件内置 resources/zzzrole（平铺 IconRole*.png/webp）；可改成自己的图库或绝对路径
 tl_zzz_portrait_folder: plugins/xhh-TL/resources/zzzrole
+# 鸣潮立绘目录（tl_card_style=portrait/widget 时生效）
+# 默认插件内置 resources/ww_role_pile（子文件夹=角色ID，内含立绘随机抽取）
+tl_ww_portrait_folder: plugins/xhh-TL/resources/ww_role_pile
 # 立绘卡的底图（tl_card_style=portrait 时生效；widget 竖卡不使用底图）
 # 支持：单张图片文件 / 目录（目录则随机抽一张）；相对 Yunzai 根或绝对路径
 tl_portrait_bg: plugins/xhh-TL/resources/stat/imgs/bg1.png
@@ -32,6 +35,17 @@ tl_render_mode: merge
 tl_merge_uids_per_image: 0
 tl_uids_per_image: 2
 tl_cards_per_msg: 3
+
+# ===== 鸣潮体力（自己请求库街区，凭证借 gsuid_core 的鸣潮插件）=====
+# 总开关：开了以后 #体力 总览可附带鸣潮体力，另外还要用户自己 #开启鸣潮体力（默认关）
+# 单独 #鸣潮体力 只受本开关约束。出图用本插件模板，与三游戏同款
+waves_tl_enable: false
+# gsuid_core 的 GsData.db 路径（只读打开，取鸣潮绑定 wavesbind 与凭证 wavesuser）
+# 留空自动探测 /opt/gsuid_core/data/GsData.db、/root/gsuid_core/data/GsData.db
+# 多个路径用换行或逗号分隔，取第一个存在的
+waves_tl_gsuid_db: ""
+# 请求库街区接口的超时（秒）
+waves_tl_timeout: 15
 abyss_priority: -98
 all_abyss: true
 all_abyss_render_mode: desktop

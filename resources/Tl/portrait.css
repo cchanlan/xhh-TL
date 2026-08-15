@@ -28,6 +28,12 @@ body {
   --accent2: #7cf5ff;
   background: linear-gradient(135deg, #2a1424 0%, #14101c 55%, #0a0810 100%);
 }
+/* 鸣潮：库街区界面的琥珀金 + 潮汐青 */
+.pt-ww {
+  --accent: #ffcf5c;
+  --accent2: #8ee6d2;
+  background: linear-gradient(135deg, #1b2426 0%, #101617 55%, #080c0d 100%);
+}
 
 /* 最底层背景图（bg1.png 铺满） */
 .pt-base {
@@ -94,7 +100,9 @@ body {
 .pt-main {
   position: relative;
   z-index: 2;
-  padding: 30px 0 0 40px;
+  /* 底部留出信息条（.pt-footer 绝对定位，高约 94px）的空间，
+     否则状态条目多的游戏（鸣潮 5 条、绝区零 note_list）最后一条进度会被压在 footer 下 */
+  padding: 30px 0 110px 40px;
   width: 500px;
 }
 .pt-recover {

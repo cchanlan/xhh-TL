@@ -25,6 +25,8 @@
                 <p>崩坏星穹铁道</p>
                 {{/if}} {{if zzz_list}}
                 <p>绝区零</p>
+                {{/if}} {{if ww_list}}
+                <p>鸣潮</p>
                 {{/if}}
               </div>
             </div>
@@ -263,6 +265,85 @@
                 {{if $value.weekly_task}}
                 <span class="{{$value.weekly_task.cur_point<800 ? 'red' : 'blue' }}">{{$value.weekly_task.cur_point}}/{{$value.weekly_task.max_point}}</span>
                 {{else}}未解锁{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+      {{/if}}
+
+      {{if ww_list}}
+      {{each ww_list}}
+      <div class="__box">
+        <div class="game">
+          <img src="{{ppath}}Tl/imgs/ww/鸣潮.png" />
+          <p>UID：{{$value.uid}}</p>
+          <p>{{$value.level}}级</p>
+          <p class="game-nick">昵称：{{$value.name}}</p>
+          <div class="sign">
+            <img src="{{ppath}}Tl/imgs/签到.png" />
+            <span class="{{$value.has_signed  ?  '' :  'red'}}">{{$value.has_signed ? '今日已签' : '尚未签到'}}</span>
+          </div>
+        </div>
+        <div class="_box">
+          <div class="left_box">
+            <div class="top_box">
+              <img class="tl" src="{{ppath}}Tl/imgs/ww/结晶波片.png" />
+              <div class="k">
+                <p>结晶波片</p>
+                <div class="k_">
+                  <span
+                    class="{{$value.current_stamina>=$value.max_stamina ? 'red' : 'blue'}}">{{$value.current_stamina}}</span><span>/{{$value.max_stamina}}</span>
+                </div>
+              </div>
+            </div>
+
+            <strong class="huifu">预计恢复时间</strong>
+            <strong class="huifu_time">{{$value.time}}</strong>
+          </div>
+          <div class="right_box">
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/ww/结晶单质.png" />
+              <p>结晶单质</p>
+              <div class="right_">
+                <span class="{{$value.store_energy>=$value.max_store_energy ? 'red' : 'blue'}}">{{$value.store_energy}}/{{$value.max_store_energy}}</span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/ww/活跃度.png" />
+              <p>今日活跃度</p>
+              <div class="right_">
+                <span class="{{$value.liveness<$value.max_liveness ? 'red' : 'blue'}}">{{$value.liveness}}/{{$value.max_liveness}}</span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/ww/战歌重奏.png" />
+              <p>战歌重奏</p>
+              <div class="right_">
+                <span class="{{$value.boss_left>0 ? 'red' : 'blue'}}">剩{{$value.boss_left}}/{{$value.boss_total}}</span>
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/ww/逆境深塔.png" />
+              <p>逆境深塔</p>
+              <div class="right_">
+                {{if $value.tower}}
+                <span class="{{$value.tower.done ? 'blue' : 'red'}}">{{$value.tower.cur}}/{{$value.tower.total}}</span>
+                {{else}}未开启{{/if}}
+              </div>
+            </div>
+
+            <div class="_box_">
+              <img src="{{ppath}}Tl/imgs/ww/冥歌海墟.png" />
+              <p>冥歌海墟</p>
+              <div class="right_">
+                {{if $value.slash}}
+                <span class="{{$value.slash.done ? 'blue' : 'red'}}">{{$value.slash.cur}}/{{$value.slash.total}}</span>
+                {{else}}未开启{{/if}}
               </div>
             </div>
           </div>

@@ -529,6 +529,9 @@ export const DEFAULT_TL_PORTRAIT_FOLDER =
 /** 绝区零立绘卡默认角色图目录（插件内置 zzzrole，平铺 IconRole*.png） */
 export const DEFAULT_TL_ZZZ_PORTRAIT_FOLDER = 'plugins/xhh-TL/resources/zzzrole'
 
+/** 鸣潮立绘卡默认角色图目录（插件内置 ww_role_pile，子目录=角色ID） */
+export const DEFAULT_TL_WW_PORTRAIT_FOLDER = 'plugins/xhh-TL/resources/ww_role_pile'
+
 /** 原神/星铁角色名清单缓存（用于按游戏过滤立绘目录） */
 const _charNameCache = { gs: null, sr: null }
 
@@ -561,8 +564,9 @@ function getMiaoCharNames(game) {
  * 按游戏挑一张角色立绘，返回 file URL（失败返回 ''）
  * - gs/sr：从 tl_portrait_folder 随机抽图，用 meta-gs / meta-sr 角色名过滤子目录
  * - zzz：从 tl_zzz_portrait_folder（默认 resources/zzzrole）随机抽图；支持平铺图片
+ * - ww：从 tl_ww_portrait_folder（默认 resources/ww_role_pile）随机抽图；子目录名是角色ID，不过滤
  * - 清单缺失时不过滤，退化为整目录随机
- * @param {'gs'|'sr'|'zzz'} game
+ * @param {'gs'|'sr'|'zzz'|'ww'} game
  * @param {object} [opts]
  */
 export function pickCharacterPortrait(game, opts = {}) {
@@ -574,6 +578,15 @@ export function pickCharacterPortrait(game, opts = {}) {
     return pickRoleCombatBgImage({
       folder,
       logTag: opts.logTag || 'xhh-TL:portrait-zzz',
+    })
+  }
+  if (game === 'ww') {
+    const folder =
+      (cfg.tl_ww_portrait_folder && String(cfg.tl_ww_portrait_folder).trim()) ||
+      DEFAULT_TL_WW_PORTRAIT_FOLDER
+    return pickRoleCombatBgImage({
+      folder,
+      logTag: opts.logTag || 'xhh-TL:portrait-ww',
     })
   }
 

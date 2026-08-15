@@ -1,16 +1,31 @@
 # Xhh-TL (小火花多功能小插件)
 
-> Yunzai Bot 插件 —— 米游社实时体力（原神 / 星铁 / 绝区零）、全部深渊汇总、深渊 / 危战配队、幻想剧诗等。
+> Yunzai Bot 插件 —— 实时体力（原神 / 星铁 / 绝区零 / 鸣潮）、全部深渊汇总、深渊 / 危战配队、幻想剧诗等。
 
 基于 [xhh](https://github.com/YUYUYUYU2147/xhh/tree/v2) 体力模块改造。
 
 ## 功能
 
 ### 体力查询
-- `#体力` / `#tl` 同时查原神 / 星铁 / 绝区零；单独查：`#原神体力` `#星铁体力` `#绝区零体力`
+- `#体力` / `#tl` 同时查原神 / 星铁 / 绝区零（鸣潮默认不含，见下）；单独查：`#原神体力` `#星铁体力` `#绝区零体力` `#鸣潮体力`
 - 支持 @他人、多账号（同 QQ 多 UID 合并出图）
-- 两种卡片样式（`tl_card_style`）：`portrait` 立绘卡 / `widget` 桌面小组件卡（含限时活动区块）
-- 用户级开关：`#开启/关闭体力uid`、`#开启/关闭绝区零体力`
+- 三种卡片样式（`tl_card_style`）：`classic` 经典多合一 / `portrait` 立绘卡 / `widget` 桌面小组件卡（含限时活动区块）
+- 用户级开关：`#开启/关闭体力uid`、`#开启/关闭原神体力`（星铁 / 绝区零 / 鸣潮同理，控制总览是否包含该游戏）
+
+### 鸣潮体力
+自己请求库街区出图，与另外三个游戏同款模板（经典 / 立绘 / 小组件三种样式都支持）。
+
+- `#鸣潮体力` / `#mctl`；纳入 `#体力` 总览需用户自己发 `#开启鸣潮体力`（默认关）
+- 卡片内容：结晶波片 + 预计恢复时间、结晶单质、今日活跃度、战歌重奏、逆境深塔、冥歌海墟、终焉矩阵、周度游历、先约电台等级、限时活动
+- **凭证不自己管**：只从 gsuid_core 的鸣潮插件（[XutheringWavesUID](https://github.com/Loping151/XutheringWavesUID)）数据库里**只读**借用该 QQ 的登录凭证与 UID 绑定，不写库、不锁库、不影响 core 运行
+- 前置条件：① 同机跑着 gsuid_core 且装了鸣潮插件；② 该 QQ 已在鸣潮插件那边登录过（如 `w登录`）；③ 锅巴里打开「启用鸣潮体力」（`waves_tl_enable`，默认关）
+- 立绘目录 `tl_ww_portrait_folder`：默认 `plugins/xhh-TL/resources/ww_role_pile`（子目录 = 角色 ID，内含图片随机抽取）。**该图库体积过大未随仓库分发**，可自备图库，或直接指向鸣潮插件下载好的官方立绘（平铺目录同样支持）：
+
+```yaml
+tl_ww_portrait_folder: /root/gsuid_core/data/XutheringWavesUID/resource/role_pile
+```
+
+  目录不存在时立绘位自动回退为插件自带背景图，经典卡样式不受影响。
 
 ### 体力阈值推送
 - 群内各自设阈值，恢复到阈值以上时 @你 发卡片；原神 / 星铁 / 绝区零分开
@@ -68,6 +83,7 @@ cd xhh-TL && npm install --no-save
 - **绑定数据**：云崽 Cookie/UID 绑定，或 `xiaoyao-cvs-plugin` / `xhh` 扫码 stoken
 - **鉴权规则**：检测到云崽 Runtime 时由 Runtime 决定账号是否存活；stoken 文件只能为仍在 Runtime 的账号补全 UID/SToken，不能恢复已删账号。无完整 Runtime 时仍使用 SQLite / stoken 兼容层
 - **genshin 插件可选**：无 genshin 时自动启用兼容层，体力 / 深渊 / 剧诗均可独立工作
+- **鸣潮体力可选**：需同机的 gsuid_core + 鸣潮插件（只读借凭证）；不装则该功能保持关闭，其余功能不受影响
 
 ## 更新
 
@@ -85,7 +101,12 @@ cd xhh-TL && npm install --no-save
 Tl: true                 # 启用体力查询
 render_scale: 1.0        # 全局清晰度倍率
 show_all_bindings: true  # 多账号合并出图
-tl_card_style: portrait  # 卡片样式 portrait / widget
+tl_card_style: portrait  # 卡片样式 classic / portrait / widget
+
+waves_tl_enable: false   # 鸣潮体力总开关（用户还需 #开启鸣潮体力 才进总览）
+waves_tl_gsuid_db: ""    # gsuid_core 的 GsData.db 路径，留空自动探测
+waves_tl_timeout: 15     # 请求库街区的超时（秒）
+tl_ww_portrait_folder: plugins/xhh-TL/resources/ww_role_pile  # 鸣潮立绘目录（需自备）
 
 resin_push_enable: true          # 体力阈值推送总开关
 resin_push_cron: "*/10 * * * *"  # 检查频率
@@ -123,12 +144,26 @@ tmp_clean_max_age_hours: 24   # 0 = 每次清空
 
 ## 致谢
 
-- 原项目：[xhh](https://github.com/YUYUYUYU2147/xhh/tree/v2) by YUYUYUYU2147
+本插件站在这些项目肩膀上，若有遗漏欢迎提 issue 补上。
+
+**代码 / 模板 / 资源来源**
+- [xhh](https://github.com/YUYUYUYU2147/xhh/tree/v2) by YUYUYUYU2147 —— 原项目，体力模块与经典卡片模板、体力图标
+- [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin) —— 角色数据、渲染框架，立绘卡默认角色图库
 - [StarRail-plugin](https://github.com/TsukinaKasumi/StarRail-plugin) —— 星铁深渊 API 参考
-- [miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin) —— 角色数据与渲染框架
-- [Nanoka](https://nanoka.cc/) —— 版本深渊 / 剧诗数据
-- 提瓦特小助手 —— 深渊 / 危战配队与持有率数据
-- 立绘体力模板 [WutheringWavesUID](https://github.com/Loping151/XutheringWavesUID)
+- [XutheringWavesUID](https://github.com/Loping151/XutheringWavesUID)（[WutheringWavesUID](https://github.com/tyql688/WutheringWavesUID) 的构建版）—— 鸣潮体力接口字段口径与请求头写法参考；结晶波片 / 结晶单质 / 活跃度图标与鸣潮标识取自其资源目录；鸣潮登录凭证也来自它的数据库（只读借用）。其体力卡设计出自 [Wuyi无疑](https://github.com/KimigaiiWuyi)，本插件的鸣潮卡片布局亦受启发
+- [gsuid_core](https://github.com/Genshin-bots/gsuid_core)（早柚核心）—— 鸣潮凭证与米游币所需 stoken 的来源库 `GsData.db`（只读打开，不写入）
+- [ZZZeroUID](https://github.com/ZZZure/ZZZeroUID) —— 绝区零立绘卡默认角色图
+- GT-Manual —— 米游社验证码过码流程参考（已内置等价实现，无需另装）；默认沿用其公益打码服务地址
+- [xiaoyao-cvs-plugin](https://github.com/Ctrlcvs/xiaoyao-cvs-plugin) —— CK / stoken 存储路径兼容
+- [Yunzai-Bot](https://github.com/yoimiya-kokomi/Yunzai-Bot) / [TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai) —— 宿主框架与渲染链路
+
+**数据接口**
+- 米游社 / HoYoLAB 官方接口 —— 实时便笺（体力 widget）、每日签到、米游社社区任务
+- [库街区](https://www.kurobbs.com/) 官方接口 —— 鸣潮体力小组件（`widget/game3/getData`）与角色基础数据（`akiBox/baseData`）
+- [Nanoka](https://nanoka.cc/) —— 原神 / 星铁版本深渊、剧诗、危战配置
+- 提瓦特小助手（`api.yshelper.com`）—— 深渊 / 危战配队与角色持有率统计
+
+以上第三方接口均为其运营方所有，本插件仅做查询与展示；接口变更或下线可能导致对应功能失效。
 
 ## License
 

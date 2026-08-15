@@ -12,6 +12,7 @@ import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import { prepareMysContext, resolveAuth } from '../utils/runtimePatch.js';
 import LiteMysApi from '../utils/mysClient.js';
+import { getWavesStaminaList, isWavesTlEnabled } from '../utils/wavesData.js';
 
 // ============ 用户 UID 显示设置 ============
 async function getShowUid(qq) {
@@ -37,6 +38,14 @@ async function getShowSr(qq) {
 
 async function getShowZzz(qq) {
   return getShowGame(qq, 'zzz');
+}
+
+// 鸣潮体力（只借 gsuid_core 的鸣潮插件凭证，出图用本插件模板）默认关闭，需 #开启鸣潮体力
+// 返回 null=从没设置过 / true=开 / false=显式关，用于区分「默认关」和「本人关掉了」
+async function getWavesPref(qq) {
+  const val = await redis.get(`xhh:show_waves:${qq}`);
+  if (val === null || val === undefined || val === '') return null;
+  return val === 'true';
 }
 
 // ============ MHY 工具函数 (内联自 xhh/system/mhy.js) ============
@@ -212,7 +221,8 @@ export class TL extends plugin {
         {
           // 可选 #/*/%；关键词必须完整结束，尾部多余字不触发
           // 「四游戏体力」保留作兼容别名（历史指令，现为三游戏）
-          reg: '^\\s*(?:#|\\*|%)*(?:全体力|三游戏体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl))\\s*$',
+          // 鸣潮体力走 gsuid_core，别名 鸣潮/mc（不收 w，避免和 core 自己的 w体力 撞车）
+          reg: '^\\s*(?:#|\\*|%)*(?:全体力|三游戏体力|四游戏体力|米游社体力|体力总览|体力|tl|(?:原神|ys)(?:体力|tl)|(?:星铁|xt|\\*)(?:体力|tl)|(?:绝区零|zzz)(?:体力|tl)|(?:鸣潮|mc)(?:体力|tl))\\s*$',
           fnc: 'note_',
         },
         {
@@ -239,6 +249,10 @@ export class TL extends plugin {
         {
           reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:绝区零|zzz)体力\\s*$',
           fnc: 'toggleZzzDisplay',
+        },
+        {
+          reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:鸣潮|mc)体力\\s*$',
+          fnc: 'toggleWavesDisplay',
         },
       ],
     });
@@ -275,6 +289,22 @@ export class TL extends plugin {
     const isStarRail = /星铁|xt|^\*/.test(rawMsg) || e.msg.includes('*体力') || e.msg.includes('*tl');
     const isZZZ = /绝区零|zzz/i.test(rawMsg);
     const isGenshin = /原神|ys/i.test(rawMsg);
+    // 单独 #鸣潮体力：只查鸣潮，出图仍走本插件模板（经典/立绘/小组件三种样式）
+    // 直接判原始消息，免受上面 rawMsg 只剥 # 的影响（*鸣潮体力 也能进来）
+    const isWaves = /^\s*(?:#|\*|%)*(?:鸣潮|mc)(?:体力|tl)\s*$/i.test(e.msg || '');
+    if (isWaves) {
+      if (!isWavesTlEnabled()) {
+        await replyQuote(e, '鸣潮体力未启用，请在锅巴「小火花体力小组件」里打开「启用鸣潮体力」');
+        return true;
+      }
+      const res = await this.getWavesList(e, targetQq || e.user_id);
+      if (!res.items.length) {
+        await replyQuote(e, res.error === '没有'
+          ? '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）'
+          : `鸣潮体力查询失败：${res.error}`);
+        return true;
+      }
+    }
     const getZZZData = async () => {
       const data = await this.note(e, 'zzz', isQueryAll, targetQq);
       if (
@@ -297,18 +327,38 @@ export class TL extends plugin {
       ? await Promise.all([getShowGs(overviewQq), getShowSr(overviewQq), getShowZzz(overviewQq)])
       : [true, true, true];
 
+    // 鸣潮体力：需锅巴总开关 + 发起人 #开启鸣潮体力（默认关）。和三游戏不同，这里以
+    // 「发起人」为准——鸣潮默认关，若按被查者判定，艾特别人基本永远出不来；
+    // 但被艾特者自己 #关闭鸣潮体力 过就尊重他，不给别人查他的鸣潮。
+    let wavesOn = false;
+    if (isQueryAll && isWavesTlEnabled()) {
+      const [selfPref, targetPref] = await Promise.all([
+        getWavesPref(e.user_id),
+        targetQq ? getWavesPref(overviewQq) : Promise.resolve(null),
+      ]);
+      wavesOn = selfPref === true && targetPref !== false;
+    }
+    // 与米游社三游戏并行取数（同一 promise 会被后续渲染复用，不会重复请求库街区）
+    const wavesTask = wavesOn ? this.getWavesList(e, overviewQq) : null;
+
+
     if (isQueryAll) {
       hasAllData = true;
       logger.info('[xhh-TL][note_] 开始查询所有游戏体力');
-      const [gsData, srData, zzzData] = await Promise.all([
+      const [gsData, srData, zzzData, wavesRes] = await Promise.all([
         showGs ? this.note(e, 'gs', true, targetQq) : Promise.resolve('没有'),
         showSr ? this.note(e, 'sr', true, targetQq) : Promise.resolve('没有'),
         showZzz ? getZZZData() : Promise.resolve('没有'),
+        wavesTask || Promise.resolve(null),
       ]);
       resultData = {};
       if (showGs) resultData.gs_data = gsData;
       if (showSr) resultData.sr_data = srData;
       if (showZzz) resultData.zzz_data = zzzData;
+      if (wavesOn) resultData.ww_data = wavesRes?.items?.[0] || '没有';
+    } else if (isWaves) {
+      const res = await this.getWavesList(e, targetQq || e.user_id);
+      resultData = { ww_data: res.items[0] };
     } else if (isStarRail) {
       resultData = { sr_data: await this.note(e, 'sr', false, targetQq) };
     } else if (isZZZ) {
@@ -317,7 +367,7 @@ export class TL extends plugin {
       resultData = { gs_data: await this.note(e, 'gs', false, targetQq) };
     }
 
-    // 总览时三游戏均被关闭 → 无可展示项，给出明确提示
+    // 总览时四游戏均被关闭 → 无可展示项，给出明确提示
     if (isQueryAll && !Object.keys(resultData).length) {
       e.reply('你已关闭原神/星铁/绝区零体力显示，请先开启其中之一再查询总览~', true);
       return true;
@@ -379,11 +429,12 @@ export class TL extends plugin {
 
     const { ..._data_ } = { ...renderData, ...resultData };
 
-    // 立绘卡 / 桌面小组件卡：原神/星铁/绝区零均走 renderPortraitFlow（内部按样式分流）
+    // 立绘卡 / 桌面小组件卡：四游戏均走 renderPortraitFlow（内部按样式分流）
     if (['portrait', 'widget'].includes(config().tl_card_style)) {
       const displayInfo = { qq: displayQq, qqname: displayName };
       const handled = await this.renderPortraitFlow(e, {
-        isQueryAll, isStarRail, isZZZ, isGenshin, showGs, showSr, showZzz,
+        isQueryAll, isStarRail, isZZZ, isGenshin, isWaves,
+        showGs, showSr, showZzz, showWaves: wavesOn,
         resultData: _data_, displayInfo, targetQq,
       });
       if (handled) return true;
@@ -399,9 +450,27 @@ export class TL extends plugin {
       isStarRail,
       isZZZ,
       isGenshin,
+      isWaves,
       showZzz,
+      showWaves: wavesOn,
       targetQq,
     });
+  }
+
+  /**
+   * 本次事件内共享的鸣潮体力数据（库街区接口，凭证借自 gsuid_core 的鸣潮插件）
+   * 挂在 e 上做单次缓存：总览预取与后续渲染取列表复用同一个 promise，不重复请求
+   * @returns {Promise<{items: object[], error: string|null}>}
+   */
+  getWavesList(e, qq) {
+    const key = `_xhhWaves_${qq}`;
+    if (!e[key]) {
+      e[key] = getWavesStaminaList(qq).catch((err) => ({
+        items: [],
+        error: err?.message || String(err),
+      }));
+    }
+    return e[key];
   }
 
   /** 经典 Tl.html 渲染一张图 → Buffer */
@@ -427,7 +496,7 @@ export class TL extends plugin {
 
   /** 按游戏列表出多张图（每张图可含 1 个或多个 UID） */
   async renderTlSegmentsByGames(e, allGameData, displayQq, displayName, renderScale, perGameChunkSize = 0) {
-    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', ww: 'ww_list' };
     const segments = [];
     const timeStr = `${moment().format('MM-DD HH:mm')} ${this.week[moment().day()]}`;
     for (const [game, dataList] of Object.entries(allGameData)) {
@@ -467,18 +536,19 @@ export class TL extends plugin {
   async replyClassicTl(e, opts) {
     const {
       displayQq, displayName, renderData, resultData: _data_,
-      isQueryAll, isStarRail, isZZZ, isGenshin,
-      showGs = true, showSr = true, showZzz = true, targetQq,
+      isQueryAll, isStarRail, isZZZ, isGenshin, isWaves,
+      showGs = true, showSr = true, showZzz = true, showWaves = false, targetQq,
     } = opts;
     const cfg = config();
     const renderScale = getRenderScaleStyle(cfg, 2.0);
-    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list' };
+    const keyMap = { gs: 'gs_list', sr: 'sr_list', zzz: 'zzz_list', ww: 'ww_list' };
     const cardsPerMsg = cfg.tl_cards_per_msg || 3;
     // 总览时按被查者的各游戏开关过滤（单独查询不受影响）
-    const overviewShow = { gs: showGs, sr: showSr, zzz: showZzz };
+    const overviewShow = { gs: showGs, sr: showSr, zzz: showZzz, ww: showWaves };
 
     if (cfg.show_all_bindings) {
-      const games = (isQueryAll ? ['gs', 'sr', 'zzz']
+      const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'ww']
+        : isWaves ? ['ww']
         : isStarRail ? ['sr']
         : isZZZ ? ['zzz']
         : isGenshin ? ['gs']
@@ -558,6 +628,7 @@ export class TL extends plugin {
     if (_data_.gs_data) listData.gs_list = [_data_.gs_data];
     if (_data_.sr_data) listData.sr_list = [_data_.sr_data];
     if (_data_.zzz_data) listData.zzz_list = [_data_.zzz_data];
+    if (_data_.ww_data) listData.ww_list = [_data_.ww_data];
     await this.hideUidIfNeeded(listData, displayQq);
     const image = await this.renderTlImage(e, listData, renderScale);
     if (image) return replyQuote(e, segment.image(image));
@@ -566,6 +637,12 @@ export class TL extends plugin {
 
   // 获取当前QQ某游戏的所有绑定UID的体力数据
   async fetchGameDataList(e, game, san, qq) {
+    // 鸣潮不走米游社：账号与凭证来自 gsuid_core 鸣潮插件的库，一次拿全名下 UID
+    if (game === 'ww') {
+      const { items } = await this.getWavesList(e, qq);
+      return items;
+    }
+
     const results = [];
 
     // 通过兼容层枚举 UID（不依赖 genshin import）
@@ -676,17 +753,34 @@ export class TL extends plugin {
     return true;
   }
 
+  async toggleWavesDisplay(e) {
+    const enable = /开启|打开/.test(e.msg);
+    await redis.set(`xhh:show_waves:${e.user_id}`, String(enable));
+    if (enable && !isWavesTlEnabled()) {
+      e.reply('已记录，但锅巴里的「启用鸣潮体力」还没打开，总览暂时不会带鸣潮');
+      return true;
+    }
+    e.reply(enable
+      ? '已开启鸣潮体力显示，体力总览将附带鸣潮（数据取自 gsuid_core 鸣潮插件的登录凭证）'
+      : '已关闭鸣潮体力显示，体力总览将隐藏鸣潮');
+    return true;
+  }
+
   // ============ 立绘卡（原神/星铁大立绘） ============
 
-  // 立绘卡总流程：gs/sr/zzz 均渲染立绘卡，合并回复
+  // 立绘卡总流程：gs/sr/zzz/ww 均渲染立绘卡，合并回复
   async renderPortraitFlow(e, opts) {
-    const { isQueryAll, isStarRail, isZZZ, isGenshin, resultData, displayInfo, targetQq, showGs = true, showSr = true, showZzz = true } = opts;
-    const games = (isQueryAll ? ['gs', 'sr', 'zzz']
-      : isStarRail ? ['sr']
-        : isZZZ ? ['zzz']
-          : isGenshin ? ['gs']
-            : ['gs']).filter(g => !isQueryAll
-              || (g === 'gs' ? showGs : g === 'sr' ? showSr : showZzz));
+    const {
+      isQueryAll, isStarRail, isZZZ, isGenshin, isWaves, resultData, displayInfo, targetQq,
+      showGs = true, showSr = true, showZzz = true, showWaves = false,
+    } = opts;
+    const overviewShow = { gs: showGs, sr: showSr, zzz: showZzz, ww: showWaves };
+    const games = (isQueryAll ? ['gs', 'sr', 'zzz', 'ww']
+      : isWaves ? ['ww']
+        : isStarRail ? ['sr']
+          : isZZZ ? ['zzz']
+            : isGenshin ? ['gs']
+              : ['gs']).filter(g => !isQueryAll || overviewShow[g]);
 
     const cfg = config();
     const multi = cfg.show_all_bindings;
@@ -807,6 +901,34 @@ export class TL extends plugin {
         { val: `${Number(vitality.current) || 0}/${Number(vitality.max) || 0}`, key: '今日活跃' },
         { val: cur >= max && max > 0 ? '已满' : `${cur}/${max}`, key: '电量' },
       ];
+    } else if (game === 'ww') {
+      // 鸣潮：数据来自库街区小组件接口，字段已在 wavesData.normalizeWavesItem 归一化
+      const st = Number(item.current_stamina) || 0;
+      const stMax = Number(item.max_stamina) || 240;
+      const store = Number(item.store_energy) || 0;
+      const storeMax = Number(item.max_store_energy) || 480;
+      const live = Number(item.liveness) || 0;
+      const liveMax = Number(item.max_liveness) || 100;
+      bars = [
+        { icon: 'ww/结晶波片.png', name: '结晶波片', cur: st, max: stMax, pct: pct(st, stMax), warn: done(st, stMax) },
+        { icon: 'ww/结晶单质.png', name: '结晶单质', cur: store, max: storeMax, pct: pct(store, storeMax), warn: done(store, storeMax) },
+        { icon: 'ww/活跃度.png', name: '今日活跃度', cur: live, max: liveMax, pct: pct(live, liveMax), warn: false },
+      ];
+      status = [
+        { ok: !!item.has_signed, text: item.has_signed ? '库街区已签到！' : '库街区未签到' },
+        { ok: done(live, liveMax), text: done(live, liveMax) ? '今日活跃度已满！' : '今日活跃度未满' },
+        { ok: item.boss_left <= 0, text: item.boss_left > 0 ? `战歌重奏剩 ${item.boss_left} 次` : '战歌重奏已用完' },
+      ];
+      // 周期挑战（深塔/海墟）没做完就提示一下，和 xw 的催促口径一致
+      for (const [label, blk] of [['逆境深塔', item.tower], ['冥歌海墟', item.slash]]) {
+        if (!blk) continue;
+        status.push({ ok: blk.done, text: `${blk.name || label}：${blk.cur}/${blk.total}` });
+      }
+      stats = [
+        { val: item.level != null ? `Lv.${item.level}` : '—', key: '漂泊者等级' },
+        { val: `${item.boss_left}/${item.boss_total}`, key: '战歌重奏' },
+        { val: item.bp_level ? `Lv.${item.bp_level}` : '—', key: '先约电台' },
+      ];
     } else {
       const st = Number(item.current_stamina) || 0;
       bars = [
@@ -897,6 +1019,41 @@ export class TL extends plugin {
     // 原神：cookie 接口 act_calendar（widget 的 act_list 恒空，不用）
     if (game === 'gs') {
       return this.buildGsActivities(item.act_calendar);
+    }
+
+    // 鸣潮：当期活动 + 周期挑战（深塔/海墟/终焉矩阵/周度游历），字段已由 wavesData 归一化
+    if (game === 'ww') {
+      if (item.activity?.title) {
+        acts.push({
+          title: item.activity.title,
+          progress: (item.activity.rewards || []).slice(0, 2).join(' · '),
+          countdown: item.activity.time_text || '',
+          urgent: !!item.activity.urgent,
+        });
+      }
+      const blocks = [
+        [item.tower, '逆境深塔'],
+        [item.slash, '冥歌海墟'],
+        [item.new_tower, '终焉矩阵'],
+      ];
+      for (const [blk, label] of blocks) {
+        if (!blk) continue;
+        acts.push({
+          title: blk.name || label,
+          progress: blk.total > 0 ? `${blk.cur}/${blk.total}` : String(blk.cur),
+          countdown: blk.time_text || '',
+          urgent: !!blk.urgent,
+        });
+      }
+      if (item.frame_total > 0) {
+        acts.push({
+          title: '周度游历',
+          progress: `${item.frame_cur}/${item.frame_total}`,
+          countdown: '',
+          urgent: item.frame_cur < item.frame_total,
+        });
+      }
+      return acts;
     }
 
     // zzz 的任务清单走 note_list（官方小组件同款那几行），结构与 sr 不同，单独解析
@@ -1088,7 +1245,7 @@ export class TL extends plugin {
   async hideUidIfNeeded(data, qq) {
     const showUid = await getShowUid(qq);
     if (showUid) return;
-    const keyMap = ['gs_list', 'sr_list', 'zzz_list'];
+    const keyMap = ['gs_list', 'sr_list', 'zzz_list', 'ww_list'];
     for (const key of keyMap) {
       if (data[key]) {
         for (const item of data[key]) {

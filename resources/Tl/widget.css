@@ -47,6 +47,13 @@ body {
   --panel: #14140f;
   --list: rgba(255, 255, 255, 0.06);
 }
+.wg-ww {
+  --accent: #ffcf5c;
+  --accent2: #ffe6a8;
+  --banner: linear-gradient(180deg, #1f3a3c 0%, #16292b 100%);
+  --panel: #121b1c;
+  --list: rgba(255, 255, 255, 0.06);
+}
 
 /* 顶部立绘横幅 */
 .wg-banner {
