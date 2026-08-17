@@ -24,8 +24,9 @@ import fs from 'fs'
 import path from 'path'
 import YAML from 'yaml'
 import md5 from 'md5'
+import { pluginDir } from './pluginConfig.js'
 
-const dataDir = path.join(process.cwd(), 'plugins/xhh-TL/data')
+const dataDir = path.join(pluginDir, 'data')
 const listPath = path.join(dataDir, 'deleted_ck.yaml')
 
 function ensureDir() {

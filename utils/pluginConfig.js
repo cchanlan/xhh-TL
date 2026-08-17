@@ -12,7 +12,10 @@ import path from 'path'
 import { pathToFileURL, fileURLToPath } from 'url'
 import YAML from 'yaml'
 
-const pluginDir = path.join(process.cwd(), 'plugins/xhh-TL')
+// 插件根目录按本文件位置反推（utils/ 的上一级），不跟 process.cwd() 走：
+// 拿 cwd 拼的话，只要有脚本不是在 Yunzai 根目录下 import 本模块，
+// ensureUserConfig() 就会在那个 cwd 底下凭空造一份 plugins/xhh-TL/config/
+const pluginDir = path.resolve(fileURLToPath(import.meta.url), '../..')
 const configDir = path.join(pluginDir, 'config')
 const defaultConfigPath = path.join(configDir, 'default_config.yaml')
 const userConfigPath = path.join(configDir, 'config.yaml')
