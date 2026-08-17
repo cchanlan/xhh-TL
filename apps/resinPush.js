@@ -4,26 +4,31 @@
  * 每个用户在群里各自设定「体力阈值」，体力恢复到该值(含)以上时，
  * 机器人在该群 @用户 并发一张体力立绘卡片（复用 TL 的查询与出图）。
  *
- * - 原神 / 星铁 / 绝区零分开指令、分开阈值、分开推送
+ * - 原神 / 星铁 / 绝区零 / 鸣潮分开指令、分开阈值、分开推送
  *   · 原神看「原粹树脂」(current_resin)
  *   · 星铁看「开拓力」(current_stamina)
  *   · 绝区零看「电量」(energy.progress.current)
+ *   · 鸣潮看「结晶波片」(current_stamina)，数据走库街区（凭证借 gsuid_core 鸣潮插件），
+ *     需锅巴先打开「启用鸣潮体力」
  * - 仅在群里 @ 提醒
  * - 达到阈值只 @ 一次；体力回落到阈值以下后自动重新武装，下次满足再提醒
  * - 两种监控范围：
  *   · 主号推送（默认）：只盯当前主 UID
  *   · 全推送：盯该游戏下绑定的全部 UID，每个号各自独立提醒（「全id推送」为兼容别名）
  *
- * 指令（群聊内，谁发就绑定谁）：
+ * 指令（群聊内，谁发就绑定谁；「开启/打开」前缀可省，关闭词前置后置都认）：
  *   #原神体力推送 130      —— 主 UID 原粹树脂达到 130 时提醒
  *   #星铁体力推送 200      —— 主 UID 开拓力达到 200 时提醒
  *   #绝区零体力推送 220    —— 主 UID 电量达到 220 时提醒
+ *   #开启鸣潮体力推送 200  —— 主 UID 结晶波片达到 200 时提醒
  *   #原神体力全推送 130    —— 全部原神 UID 各自达到 130 时分别提醒
  *   #星铁体力全推送 200
  *   #绝区零体力全推送 220
+ *   #鸣潮体力全推送 200
  *   #原神体力推送关闭 / #原神体力全推送关闭
  *   #星铁体力推送关闭 / #星铁体力全推送关闭
  *   #绝区零体力推送关闭 / #绝区零体力全推送关闭
+ *   #关闭鸣潮体力推送 / #鸣潮体力全推送关闭
  *   #体力推送列表          —— 查看自己的订阅
  */
 
@@ -34,6 +39,7 @@ import Runtime from '../../../lib/plugins/runtime.js'
 import { TL } from './TL.js'
 import { createUser } from '../utils/userBind.js'
 import { config, getRenderScaleStyle, pluginDir } from '../utils/pluginConfig.js'
+import { listWavesAccounts, fetchWavesStamina, isWavesTlEnabled } from '../utils/wavesData.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'resin_push.json')
@@ -42,28 +48,44 @@ const DEFAULT_CRON = '*/10 * * * *' // 每 10 分钟检查一次
 
 // 各游戏元信息：名称、单位、阈值合法上限、当前值/上限取值函数
 // zzz 电量嵌套在 energy.progress 下，故统一用取值函数抹平差异
+// name: 指令里可用的游戏别名（正则片段）
 const GAME_META = {
   gs: {
-    label: '原神', unit: '原粹树脂', cap: 200, example: 130,
+    label: '原神', name: '原神', unit: '原粹树脂', cap: 200, example: 130,
     getCur: (item) => Number(item?.current_resin) || 0,
     getMax: (item) => Number(item?.max_resin) || 0,
     hasField: (item) => item?.current_resin !== undefined && item?.current_resin !== null,
   },
   sr: {
-    label: '星铁', unit: '开拓力', cap: 300, example: 200,
+    label: '星铁', name: '星铁', unit: '开拓力', cap: 300, example: 200,
     getCur: (item) => Number(item?.current_stamina) || 0,
     getMax: (item) => Number(item?.max_stamina) || 0,
     hasField: (item) => item?.current_stamina !== undefined && item?.current_stamina !== null,
   },
   zzz: {
-    label: '绝区零', unit: '电量', cap: 240, example: 220,
+    label: '绝区零', name: '绝区零|zzz', unit: '电量', cap: 240, example: 220,
     getCur: (item) => Number(item?.energy?.progress?.current) || 0,
     getMax: (item) => Number(item?.energy?.progress?.max) || 0,
     hasField: (item) => item?.energy?.progress?.current !== undefined && item?.energy?.progress?.current !== null,
   },
+  // 鸣潮不走米游社：账号/凭证读 gsuid_core 鸣潮插件的库，体力直接问库街区
+  ww: {
+    label: '鸣潮', name: '鸣潮|mc', unit: '结晶波片', cap: 240, example: 200,
+    getCur: (item) => Number(item?.current_stamina) || 0,
+    getMax: (item) => Number(item?.max_stamina) || 0,
+    hasField: (item) => item?.current_stamina !== undefined && item?.current_stamina !== null,
+  },
 }
 
-const GAMES = ['gs', 'sr', 'zzz']
+const GAMES = ['gs', 'sr', 'zzz', 'ww']
+
+// 指令正则：「开启/打开」前缀可省，关闭词前置（#关闭鸣潮体力推送）后置（#鸣潮体力推送关闭）都认
+const setReg = (game, all) =>
+  `^\\s*#?(?:开启|打开)?(?:${GAME_META[game].name})体力${all ? '全(?:id)?' : ''}推送\\s*(\\d{1,3})\\s*$`
+const offReg = (game, all) => {
+  const body = `(?:${GAME_META[game].name})体力${all ? '全(?:id)?' : ''}推送`
+  return `^\\s*#?(?:(?:关闭|关掉|取消|停止)${body}|${body}\\s*(?:关闭|关|取消|停止))\\s*$`
+}
 
 // 「全id推送」为每个游戏独立的一套订阅：监控该 QQ 名下所有绑定 UID，
 // 每个 UID 各自记录 armed 状态（达到阈值只提醒一次，回落后自动重新武装）。
@@ -137,22 +159,26 @@ export class resinPush extends plugin {
       priority: -Infinity,
       rule: [
         // 全推送（关闭）— 需在「主 UID 推送」之前匹配，避免被通用式吞掉；「全id」保留为兼容别名
-        { reg: '^\\s*#?原神体力全(?:id)?推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offGsAll' },
-        { reg: '^\\s*#?星铁体力全(?:id)?推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offSrAll' },
-        { reg: '^\\s*#?(?:绝区零|zzz)体力全(?:id)?推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offZzzAll' },
+        { reg: offReg('gs', true), fnc: 'offGsAll' },
+        { reg: offReg('sr', true), fnc: 'offSrAll' },
+        { reg: offReg('zzz', true), fnc: 'offZzzAll' },
+        { reg: offReg('ww', true), fnc: 'offWwAll' },
         // 全推送（设置）
-        { reg: '^\\s*#?原神体力全(?:id)?推送\\s*(\\d{1,3})\\s*$', fnc: 'setGsAll' },
-        { reg: '^\\s*#?星铁体力全(?:id)?推送\\s*(\\d{1,3})\\s*$', fnc: 'setSrAll' },
-        { reg: '^\\s*#?(?:绝区零|zzz)体力全(?:id)?推送\\s*(\\d{1,3})\\s*$', fnc: 'setZzzAll' },
+        { reg: setReg('gs', true), fnc: 'setGsAll' },
+        { reg: setReg('sr', true), fnc: 'setSrAll' },
+        { reg: setReg('zzz', true), fnc: 'setZzzAll' },
+        { reg: setReg('ww', true), fnc: 'setWwAll' },
         // 主 UID 推送（关闭）
-        { reg: '^\\s*#?原神体力推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offGs' },
-        { reg: '^\\s*#?星铁体力推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offSr' },
-        { reg: '^\\s*#?(?:绝区零|zzz)体力推送\\s*(?:关闭|关|取消|停止)\\s*$', fnc: 'offZzz' },
+        { reg: offReg('gs', false), fnc: 'offGs' },
+        { reg: offReg('sr', false), fnc: 'offSr' },
+        { reg: offReg('zzz', false), fnc: 'offZzz' },
+        { reg: offReg('ww', false), fnc: 'offWw' },
         // 主 UID 推送（设置）
-        { reg: '^\\s*#?原神体力推送\\s*(\\d{1,3})\\s*$', fnc: 'setGs' },
-        { reg: '^\\s*#?星铁体力推送\\s*(\\d{1,3})\\s*$', fnc: 'setSr' },
-        { reg: '^\\s*#?(?:绝区零|zzz)体力推送\\s*(\\d{1,3})\\s*$', fnc: 'setZzz' },
-        { reg: '^\\s*#?(?:原神|星铁|绝区零|zzz)?体力全?(?:id)?推送\\s*$', fnc: 'usage' },
+        { reg: setReg('gs', false), fnc: 'setGs' },
+        { reg: setReg('sr', false), fnc: 'setSr' },
+        { reg: setReg('zzz', false), fnc: 'setZzz' },
+        { reg: setReg('ww', false), fnc: 'setWw' },
+        { reg: '^\\s*#?(?:开启|打开)?(?:原神|星铁|绝区零|zzz|鸣潮|mc)?体力全?(?:id)?推送\\s*$', fnc: 'usage' },
         { reg: '^\\s*#?体力推送(?:列表|状态|查询)\\s*$', fnc: 'listSubs' },
       ],
     })
@@ -182,6 +208,10 @@ export class resinPush extends plugin {
     return this._set(e, 'zzz')
   }
 
+  async setWw(e) {
+    return this._set(e, 'ww')
+  }
+
   // -------- 指令：设置（全 id 推送）--------
   async setGsAll(e) {
     return this._setAll(e, 'gs')
@@ -195,6 +225,10 @@ export class resinPush extends plugin {
     return this._setAll(e, 'zzz')
   }
 
+  async setWwAll(e) {
+    return this._setAll(e, 'ww')
+  }
+
   /** 功能总开关：锅巴里关闭 resin_push_enable 时，所有指令一并停用 */
   _pushDisabled(e) {
     if (config().resin_push_enable === false) {
@@ -202,6 +236,35 @@ export class resinPush extends plugin {
       return true
     }
     return false
+  }
+
+  /** 鸣潮专用前置校验：锅巴总开关 + gsuid_core 里是否有可用凭证。通过返回 null，否则返回提示文案 */
+  _wavesGuard(qq) {
+    if (!isWavesTlEnabled()) {
+      return '鸣潮体力未启用，请让管理员在锅巴「小火花体力小组件」里打开「启用鸣潮体力」'
+    }
+    if (!listWavesAccounts(qq).length) {
+      return '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）后再开启推送~'
+    }
+    return null
+  }
+
+  /** 查询失败（返回字符串/false）时的用户提示；鸣潮不走米游社，文案单独一套 */
+  _queryErrText(game, item) {
+    const meta = GAME_META[game]
+    if (game === 'ww') {
+      if (item === '没有') {
+        return '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）后再开启推送~'
+      }
+      return `鸣潮体力查询失败：${item || '未知错误'}\n请确认库街区登录仍有效（可重新「w登录」）后再试~`
+    }
+    if (item === '没有') {
+      return `你还没有绑定${meta.label}账号，请先【#扫码登录】米游社后再开启体力推送~`
+    }
+    if (item === '过期') {
+      return `你的${meta.label}米游社登录已过期，请【#刷新ck】，仍不行则【#扫码登录】后再开启体力推送~`
+    }
+    return `查询${meta.label}体力失败，请稍后再试~`
   }
 
   async _set(e, game) {
@@ -221,23 +284,26 @@ export class resinPush extends plugin {
       e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, true)
       return true
     }
+    if (game === 'ww') {
+      const guard = this._wavesGuard(e.user_id)
+      if (guard) {
+        e.reply(guard, true)
+        return true
+      }
+    }
 
     // 开启前先校验：必须真能查到自己该游戏的体力（已#扫码登录 stoken）才允许订阅，
     // 否则要么根本没绑（不该推送），要么会被兜底 CK 顶成别人的号（串号）。
     let item
     try {
-      item = await new TL().note(e, game, true)
+      item = await this.queryItem(new TL(), game, { qq: e.user_id, groupId: e.group_id, e })
     } catch (err) {
       logger?.error?.(`[xhh-TL][体力推送] 设置校验查询失败 ${e.user_id}: ${err.message}`)
       e.reply('查询体力失败，请稍后再试~', true)
       return true
     }
-    if (item === '没有' || !item) {
-      e.reply(`你还没有绑定${meta.label}账号，请先【#扫码登录】米游社后再开启体力推送~`, true)
-      return true
-    }
-    if (item === '过期') {
-      e.reply(`你的${meta.label}米游社登录已过期，请【#刷新ck】，仍不行则【#扫码登录】后再开启体力推送~`, true)
+    if (!item || typeof item === 'string') {
+      e.reply(this._queryErrText(game, item), true)
       return true
     }
     if (!meta.hasField(item)) {
@@ -281,28 +347,40 @@ export class resinPush extends plugin {
       e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, true)
       return true
     }
+    if (game === 'ww') {
+      const guard = this._wavesGuard(e.user_id)
+      if (guard) {
+        e.reply(guard, true)
+        return true
+      }
+    }
 
     // 枚举该 QQ 该游戏名下所有绑定 UID，逐个校验能否查到体力（已#扫码登录 stoken）
+    // 鸣潮的账号列表来自 gsuid_core 鸣潮插件的库，不走米游社绑定
     const tl = new TL()
     let uidList
     try {
-      const noteUser = await createUser(e.user_id, e)
-      uidList = (noteUser.getUidList(game) || []).map((x) => String(x.uid || x)).filter(Boolean)
+      if (game === 'ww') {
+        uidList = listWavesAccounts(e.user_id).map((a) => String(a.uid)).filter(Boolean)
+      } else {
+        const noteUser = await createUser(e.user_id, e)
+        uidList = (noteUser.getUidList(game) || []).map((x) => String(x.uid || x)).filter(Boolean)
+      }
     } catch (err) {
       logger?.error?.(`[xhh-TL][体力推送] 全id枚举失败 ${e.user_id}: ${err.message}`)
       e.reply('查询绑定 UID 失败，请稍后再试~', true)
       return true
     }
     if (!uidList.length) {
-      e.reply(`你还没有绑定${meta.label}账号，请先【#扫码登录】米游社后再开启体力推送~`, true)
+      e.reply(this._queryErrText(game, '没有'), true)
       return true
     }
 
     const validUids = []
     for (const uid of uidList) {
       try {
-        const item = await tl.note(e, game, true, null, uid)
-        if (item && item !== '没有' && item !== '过期' && meta.hasField(item)) {
+        const item = await this.queryItem(tl, game, { qq: e.user_id, groupId: e.group_id, uid, e })
+        if (item && typeof item !== 'string' && meta.hasField(item)) {
           validUids.push(uid)
         }
       } catch (err) {
@@ -310,7 +388,12 @@ export class resinPush extends plugin {
       }
     }
     if (!validUids.length) {
-      e.reply(`暂时查不到你的${meta.label}体力，请试【#刷新ck】，仍不行则【#扫码登录】`, true)
+      e.reply(
+        game === 'ww'
+          ? '暂时查不到你的鸣潮体力，请确认库街区登录仍有效（可重新「w登录」）'
+          : `暂时查不到你的${meta.label}体力，请试【#刷新ck】，仍不行则【#扫码登录】`,
+        true,
+      )
       return true
     }
 
@@ -346,6 +429,10 @@ export class resinPush extends plugin {
     return this._off(e, 'zzz')
   }
 
+  async offWw(e) {
+    return this._off(e, 'ww')
+  }
+
   async offGsAll(e) {
     return this._offAll(e, 'gs')
   }
@@ -356,6 +443,10 @@ export class resinPush extends plugin {
 
   async offZzzAll(e) {
     return this._offAll(e, 'zzz')
+  }
+
+  async offWwAll(e) {
+    return this._offAll(e, 'ww')
   }
 
   async _off(e, game) {
@@ -390,16 +481,29 @@ export class resinPush extends plugin {
   // -------- 指令：用法 --------
   async usage(e) {
     if (this._pushDisabled(e)) return true
+    // 只打了游戏名没带阈值（如 #开启鸣潮体力推送）时，直接给该游戏的示例，省得自己去菜单里找
+    const hit = GAMES.find((g) => new RegExp(`(?:${GAME_META[g].name})体力`).test(e.msg || ''))
+    if (hit) {
+      const meta = GAME_META[hit]
+      const isAll = /全(?:id)?推送/.test(e.msg || '')
+      e.reply(
+        `请带上阈值，例如：#${meta.label}体力${isAll ? '全' : ''}推送 ${meta.example}` +
+          `（${meta.unit}上限 ${meta.cap}）\n关闭：#${meta.label}体力${isAll ? '全' : ''}推送关闭`,
+        true,
+      )
+      return true
+    }
     e.reply(
       [
         '📌 体力阈值推送用法',
         '#原神体力推送 130   原粹树脂达到130时@你并发图',
         '#星铁体力推送 200   开拓力达到200时@你并发图',
         '#绝区零体力推送 220 电量达到220时@你并发图',
+        '#鸣潮体力推送 200   结晶波片达到200时@你并发图（需先在锅巴开「启用鸣潮体力」）',
         '#原神体力全推送 130   监控名下所有原神UID，各自达标各自发图',
-        '（星铁/绝区零同理：#星铁体力全推送 200 / #绝区零体力全推送 220）',
-        '#原神体力推送关闭 / #星铁体力推送关闭 / #绝区零体力推送关闭',
-        '#原神体力全推送关闭 / #星铁体力全推送关闭 / #绝区零体力全推送关闭',
+        '（星铁/绝区零/鸣潮同理：#星铁体力全推送 200 / #绝区零体力全推送 220 / #鸣潮体力全推送 200）',
+        '关闭：#原神体力推送关闭（或 #关闭原神体力推送），星铁/绝区零/鸣潮同理',
+        '#原神体力全推送关闭 / #星铁体力全推送关闭 / #绝区零体力全推送关闭 / #鸣潮体力全推送关闭',
         '#体力推送列表        查看你的订阅',
         '（需在群里设置，仅在该群@提醒；达到后提醒一次，回落后自动恢复监控）',
       ].join('\n'),
@@ -465,12 +569,15 @@ export class resinPush extends plugin {
 
     for (const game of GAMES) {
       const meta = GAME_META[game]
+      // 鸣潮总开关（锅巴「启用鸣潮体力」）关掉时整段跳过，免得每轮白读一遍 core 的库
+      if (game === 'ww' && !isWavesTlEnabled()) continue
       for (const qq of Object.keys(subs[game])) {
         const sub = subs[game][qq]
         if (!sub || !sub.group) continue
         try {
-          const item = await this.queryResin(tl, qq, game, sub.group)
-          if (!item || item === '没有' || item === '过期' || item === false) continue
+          const item = await this.queryItem(tl, game, { qq, groupId: sub.group })
+          // 字符串一律是错误说明（'没有'/'过期'/鸣潮的接口报错），本轮跳过不动 armed
+          if (!item || typeof item === 'string') continue
 
           const cur = meta.getCur(item)
 
@@ -507,8 +614,8 @@ export class resinPush extends plugin {
           const state = allSub.uids[uid]
           if (!state) continue
           try {
-            const item = await this.queryResinUid(tl, qq, game, allSub.group, uid)
-            if (!item || item === '没有' || item === '过期' || item === false) continue
+            const item = await this.queryItem(tl, game, { qq, groupId: allSub.group, uid })
+            if (!item || typeof item === 'string') continue
 
             const cur = meta.getCur(item)
 
@@ -565,16 +672,29 @@ export class resinPush extends plugin {
     }
   }
 
-  /** 用「假 e + Runtime」复用 TL.note 查询体力（主 UID） */
-  async queryResin(tl, qq, game, groupId) {
-    const fakeE = this.makeFakeE(qq, groupId)
-    return await tl.note(fakeE, game, true, null, null)
+  /**
+   * 查一个订阅目标的体力
+   * - gs/sr/zzz：走 TL.note（定时场景用「假 e + Runtime」，uid 为空即主 UID）
+   * - ww：不走米游社，凭证读 gsuid_core 鸣潮插件的库后直接问库街区
+   * @param {object} opts { qq, groupId, uid 指定 UID（全推送用）, e 交互场景传真实事件 }
+   * @returns {Promise<object|string|false>} item，或错误说明字符串
+   */
+  async queryItem(tl, game, { qq, groupId, uid = null, e = null } = {}) {
+    if (game === 'ww') return this.queryWaves(qq, uid)
+    const ev = e || this.makeFakeE(qq, groupId)
+    return tl.note(ev, game, true, null, uid)
   }
 
-  /** 查询指定 UID 的体力（全 id 推送用） */
-  async queryResinUid(tl, qq, game, groupId, uid) {
-    const fakeE = this.makeFakeE(qq, groupId)
-    return await tl.note(fakeE, game, true, null, uid)
+  /** 鸣潮体力：uid 为空时取绑定列表第一个（主 UID）；返回 item 或错误说明字符串 */
+  async queryWaves(qq, uid = null) {
+    if (!isWavesTlEnabled()) return '鸣潮体力未启用'
+    const accounts = listWavesAccounts(qq)
+    if (!accounts.length) return '没有'
+    const acc = uid ? accounts.find((a) => String(a.uid) === String(uid)) : accounts[0]
+    // 指定 UID 已从 core 的库里消失（解绑/换绑）→ 与「没绑」同处理，本轮跳过
+    if (!acc) return '没有'
+    const timeoutMs = Math.max(5, Number(config().waves_tl_timeout) || 15) * 1000
+    return fetchWavesStamina(acc, timeoutMs)
   }
 
   /** 出图并在群里 @ 用户发送；forceUid 指定时用于日志/渲染定位（全 id 推送） */
