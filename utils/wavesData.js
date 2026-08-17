@@ -20,7 +20,19 @@ const GSUID_DB_CANDIDATES = [
 
 /** 库街区接口（与 XutheringWavesUID 的 api.py 保持一致） */
 const MAIN_URL = 'https://api.kurobbs.com'
-/** 小组件数据：一次拿全体力/活跃度/周本/深塔/海墟/活动 */
+/**
+ * 小组件数据：一次拿全体力/活跃度/周本/深塔/海墟/活动。
+ * refresh 与 getData 返回结构完全一致，区别是新鲜度：
+ *   · refresh — 让库街区回游戏服务器重新取数（xw 的 get_daily_info 就用这个），
+ *               但约 1 分钟内只准调一次，再调返回「操作频繁，请稍后再试」
+ *   · getData — 只读小组件那份缓存快照，不会主动更新，实测比 refresh 落后
+ *               （同一秒 refresh 给结晶单质 32、getData 给 31）；没人刷新时能一直陈旧下去，
+ *               体力曾停在 236/240 不动，害得 237 的推送阈值永远不触发
+ * 所以先 refresh，被限流再退回 getData，保证有数据可用。
+ * 注意 refresh 只保证「库街区侧最新」：库街区与游戏服务器之间还有一层同步延迟，
+ * 刚在游戏里清掉的体力/刚做满的活跃度，两个接口都可能要等一会儿才反映（xw 同样如此）。
+ */
+const MR_REFRESH_URL = `${MAIN_URL}/gamer/widget/game3/refresh`
 const GAME_DATA_URL = `${MAIN_URL}/gamer/widget/game3/getData`
 /** 账号基础数据：等级、结晶单质上限、周本次数、成就等 */
 const BASE_DATA_URL = `${MAIN_URL}/aki/roleBox/akiBox/baseData`
@@ -243,39 +255,43 @@ async function postKuro(url, acc, body, needToken, timeoutMs) {
  */
 export async function fetchWavesStamina(acc, timeoutMs = 15000) {
   const serverId = serverIdOf(acc.uid)
-  let daily
-  try {
-    daily = await postKuro(
-      GAME_DATA_URL,
-      acc,
-      { type: '2', sizeType: '1', gameId: String(WAVES_GAME_ID), serverId, roleId: acc.uid },
-      true,
-      timeoutMs,
-    )
-  } catch (err) {
-    return err?.name === 'AbortError' ? '库街区响应超时' : `库街区请求失败：${err?.message || err}`
-  }
-  if (!daily.success || !daily.data) {
-    return daily.msg || '库街区返回异常'
-  }
+  const idBody = { gameId: String(WAVES_GAME_ID), serverId, roleId: acc.uid }
+  let daily = null
+  let lastErr = null
 
-  // baseData 是补充信息，坏了就用 getData 里已有的部分
+  // refresh 拿实时值，撞限流（或任何非成功返回）再退回 getData 的缓存快照
+  for (const [url, extra] of [
+    [MR_REFRESH_URL, { type: '1', sizeType: '2' }],
+    [GAME_DATA_URL, { type: '2', sizeType: '1' }],
+  ]) {
+    try {
+      const res = await postKuro(url, acc, { ...extra, ...idBody }, true, timeoutMs)
+      if (res.success && res.data) {
+        daily = res
+        break
+      }
+      lastErr = res.msg || '库街区返回异常'
+    } catch (err) {
+      lastErr = err?.name === 'AbortError' ? '库街区响应超时' : `库街区请求失败：${err?.message || err}`
+      // 超时/网络故障时 getData 大概率同样打不通，但便宜，还是试一把
+    }
+    if (url === MR_REFRESH_URL) {
+      log().debug?.(`[xhh-TL][鸣潮体力] ${acc.uid} refresh 未成功（${lastErr}），退回 getData 缓存`)
+    }
+  }
+  if (!daily) return lastErr || '库街区返回异常'
+
+  // baseData 是补充信息，坏了就用小组件接口里已有的部分
   let base = null
   try {
-    const res = await postKuro(
-      BASE_DATA_URL,
-      acc,
-      { gameId: String(WAVES_GAME_ID), serverId, roleId: acc.uid },
-      false,
-      timeoutMs,
-    )
+    const res = await postKuro(BASE_DATA_URL, acc, idBody, false, timeoutMs)
     if (res.success && res.data && typeof res.data === 'object') base = res.data
   } catch (_) {}
 
   return normalizeWavesItem(acc, daily.data, base)
 }
 
-/** getData + baseData → 体力卡 item（字段风格对齐三游戏） */
+/** 小组件数据 + baseData → 体力卡 item（字段风格对齐三游戏） */
 export function normalizeWavesItem(acc, d, base) {
   const energy = d.energyData || {}
   const liveness = d.livenessData || {}
