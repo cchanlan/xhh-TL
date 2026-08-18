@@ -39,7 +39,7 @@ import Runtime from '../../../lib/plugins/runtime.js'
 import { TL } from './TL.js'
 import { createUser } from '../utils/userBind.js'
 import { config, getRenderScaleStyle, pluginDir } from '../utils/pluginConfig.js'
-import { listWavesAccounts, fetchWavesStamina, isWavesTlEnabled } from '../utils/wavesData.js'
+import { listWavesAccounts, fetchWavesStamina, isWavesTlEnabled, getWavesEnvError } from '../utils/wavesData.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'resin_push.json')
@@ -239,11 +239,13 @@ export class resinPush extends plugin {
   }
 
   /** 鸣潮专用前置校验：锅巴总开关 + gsuid_core 里是否有可用凭证。通过返回 null，否则返回提示文案 */
-  _wavesGuard(qq) {
+  async _wavesGuard(qq) {
     if (!isWavesTlEnabled()) {
       return '鸣潮体力未启用，请让管理员在锅巴「小火花体力小组件」里打开「启用鸣潮体力」'
     }
-    if (!listWavesAccounts(qq).length) {
+    if (!(await listWavesAccounts(qq)).length) {
+      const envErr = getWavesEnvError()
+      if (envErr) return `鸣潮体力暂时不可用：${envErr}`
       return '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）后再开启推送~'
     }
     return null
@@ -285,7 +287,7 @@ export class resinPush extends plugin {
       return true
     }
     if (game === 'ww') {
-      const guard = this._wavesGuard(e.user_id)
+      const guard = await this._wavesGuard(e.user_id)
       if (guard) {
         e.reply(guard, true)
         return true
@@ -348,7 +350,7 @@ export class resinPush extends plugin {
       return true
     }
     if (game === 'ww') {
-      const guard = this._wavesGuard(e.user_id)
+      const guard = await this._wavesGuard(e.user_id)
       if (guard) {
         e.reply(guard, true)
         return true
@@ -361,7 +363,7 @@ export class resinPush extends plugin {
     let uidList
     try {
       if (game === 'ww') {
-        uidList = listWavesAccounts(e.user_id).map((a) => String(a.uid)).filter(Boolean)
+        uidList = (await listWavesAccounts(e.user_id)).map((a) => String(a.uid)).filter(Boolean)
       } else {
         const noteUser = await createUser(e.user_id, e)
         uidList = (noteUser.getUidList(game) || []).map((x) => String(x.uid || x)).filter(Boolean)
@@ -688,8 +690,8 @@ export class resinPush extends plugin {
   /** 鸣潮体力：uid 为空时取绑定列表第一个（主 UID）；返回 item 或错误说明字符串 */
   async queryWaves(qq, uid = null) {
     if (!isWavesTlEnabled()) return '鸣潮体力未启用'
-    const accounts = listWavesAccounts(qq)
-    if (!accounts.length) return '没有'
+    const accounts = await listWavesAccounts(qq)
+    if (!accounts.length) return getWavesEnvError() || '没有'
     const acc = uid ? accounts.find((a) => String(a.uid) === String(uid)) : accounts[0]
     // 指定 UID 已从 core 的库里消失（解绑/换绑）→ 与「没绑」同处理，本轮跳过
     if (!acc) return '没有'

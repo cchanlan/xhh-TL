@@ -197,7 +197,7 @@ export function supportGuoba() {
           field: 'waves_tl_gsuid_db',
           label: 'gsuid_core 数据库路径',
           bottomHelpMessage:
-            'core 的 GsData.db 位置（只读打开，取鸣潮绑定与凭证）。留空自动探测 /opt/gsuid_core/data/GsData.db、/root/gsuid_core/data/GsData.db；多个路径用换行分隔，取第一个存在的',
+            'core 的 GsData.db 文件路径（只读打开，取鸣潮绑定与凭证）。Windows 推荐填写 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠也会自动归一化）；留空自动探测 Linux 默认路径。多个路径用换行、逗号或分号分隔，按顺序尝试存在的路径；Docker/WSL 请填写 Yunzai 进程可见的路径。',
           component: 'Input',
           componentProps: {
             type: 'textarea',
@@ -527,7 +527,7 @@ export function supportGuoba() {
           field: 'bbs_coin_gsuid_db',
           label: 'gsuid 数据库路径',
           bottomHelpMessage:
-            '米游币任务需要 stoken。若你同时在跑 gsuid_core（早柚core），它#扫码登录的 stoken 存在 GsData.db 里，且带该账号注册过的真实 device_id/fp，比插件现派生的更不容易被风控，因此优先读取。留空自动探测 /opt/gsuid_core/data/GsData.db 与 /root/gsuid_core/data/GsData.db；多个路径用换行分隔。只读打开，不写入、不锁库，不影响 gsuid 运行',
+            '米游币任务需要 stoken。若你同时在跑 gsuid_core（早柚core），它#扫码登录的 stoken 存在 GsData.db 里，且带该账号注册过的真实 device_id/fp，比插件现派生的更不容易被风控，因此优先读取。留空自动探测 /opt/gsuid_core/data/GsData.db 与 /root/gsuid_core/data/GsData.db；Windows 需手填如 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠会自动归一化）；多个路径用换行分隔。只读打开，不写入、不锁库，不影响 gsuid 运行',
           component: 'Input',
           componentProps: {
             type: 'textarea',

@@ -41,7 +41,9 @@
 
 - 卡片内容：结晶波片 + 预计恢复时间、结晶单质、今日活跃度、战歌重奏剩余次数、逆境深塔、冥歌海墟、终焉矩阵、周度游历、先约电台等级、库街区签到态、限时活动
 - **凭证不自己管**：只从 gsuid_core 的鸣潮插件（[XutheringWavesUID](https://github.com/Loping151/XutheringWavesUID)）的 `GsData.db` 里**只读**借用该 QQ 的 UID 绑定（`wavesbind`）与登录凭证（`wavesuser`），不写库、不锁库、不影响 core 运行；被 core 标记「无效」的账号自动跳过
-- 前置条件：① 同机跑着 gsuid_core 且装了鸣潮插件；② 该 QQ 已在那边登录过（如 `w登录`）；③ 锅巴里打开「启用鸣潮体力」（`waves_tl_enable`，默认关）；④ Node ≥ 22.5（用 `node:sqlite` 只读打开数据库，低版本自动降级为不可用）
+- 前置条件：① 同机跑着 gsuid_core 且装了鸣潮插件；② 该 QQ 已在那边登录过（如 `w登录`）；③ 锅巴里打开「启用鸣潮体力」（`waves_tl_enable`，默认关）。
+- 数据库路径：Linux 留空即自动探测 `/opt/gsuid_core/data/GsData.db`、`/root/gsuid_core/data/GsData.db`；**Windows 必须在锅巴「gsuid_core 数据库路径」里手填**，如 `D:/QingShuiBot/gsuid_core/data/GsData.db`（反斜杠会自动归一化）；Docker/WSL 请填写 Yunzai 进程实际可见的路径
+- SQLite 驱动按 `node:sqlite`（Node 22.5+ 内置）→ `better-sqlite3` → `sqlite3`（Yunzai 自带依赖）顺序自动兜底，Node 18/20 也能用；三者都缺时日志会打印具体原因
 - 纳入 `#体力` 总览还需用户自己发 `#开启鸣潮体力`（默认关）。艾特别人查总览时以**发起人**的开关为准，但被艾特者自己关过就尊重他
 - 立绘目录 `tl_ww_portrait_folder`：默认 `plugins/xhh-TL/resources/ww_role_pile`（子目录 = 角色 ID，内含图片随机抽取）。**该图库体积过大未随仓库分发**，可自备，或直接指向鸣潮插件下载好的官方立绘（平铺目录同样支持）：
 
@@ -199,7 +201,7 @@ tl_portrait_bg: plugins/xhh-TL/resources/stat/imgs/bg1.png                  # �
 
 # ===== 鸣潮体力 =====
 waves_tl_enable: false      # 总开关（用户还需 #开启鸣潮体力 才进总览）
-waves_tl_gsuid_db: ""       # gsuid_core 的 GsData.db 路径，留空自动探测
+waves_tl_gsuid_db: ""       # GsData.db 文件路径；Windows 可填 D:/QingShuiBot/gsuid_core/data/GsData.db，留空自动探测
 waves_tl_timeout: 15        # 请求库街区的超时（秒）
 tl_ww_portrait_folder: plugins/xhh-TL/resources/ww_role_pile  # 鸣潮立绘目录（需自备）
 

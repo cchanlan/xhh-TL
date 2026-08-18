@@ -40,9 +40,10 @@ tl_cards_per_msg: 3
 # 总开关：开了以后 #体力 总览可附带鸣潮体力，另外还要用户自己 #开启鸣潮体力（默认关）
 # 单独 #鸣潮体力 只受本开关约束。出图用本插件模板，与三游戏同款
 waves_tl_enable: false
-# gsuid_core 的 GsData.db 路径（只读打开，取鸣潮绑定 wavesbind 与凭证 wavesuser）
-# 留空自动探测 /opt/gsuid_core/data/GsData.db、/root/gsuid_core/data/GsData.db
-# 多个路径用换行或逗号分隔，取第一个存在的
+# gsuid_core 的 GsData.db 文件路径（只读打开，取鸣潮绑定 wavesbind 与凭证 wavesuser）
+# 留空自动探测 Linux 默认路径；Windows 推荐 D:/QingShuiBot/gsuid_core/data/GsData.db
+# 反斜杠会自动归一化；多个路径用换行、逗号或分号分隔，按顺序尝试存在的路径
+# Docker/WSL 请填写 Yunzai 进程实际可见的路径
 waves_tl_gsuid_db: ""
 # 请求库街区接口的超时（秒）
 waves_tl_timeout: 15

@@ -642,6 +642,23 @@ export function parsePathList(value) {
 }
 
 /**
+ * 解析外部文件路径配置：去引号、统一分隔符、解析相对路径并去重。
+ * Windows 路径应在 Windows 进程中解析；容器/WSL 请填写进程可见的路径。
+ */
+export function resolveConfiguredPaths(value, defaults = []) {
+  const values = [...parsePathList(value), ...parsePathList(defaults)]
+  const paths = []
+  const seen = new Set()
+  for (const item of values) {
+    const resolved = resolvePluginPath(item)
+    if (!resolved || seen.has(resolved)) continue
+    seen.add(resolved)
+    paths.push(resolved)
+  }
+  return paths
+}
+
+/**
  * 获取 stoken/ck 搜索目录列表（已 resolve 为绝对路径）
  * 配置项：stoken_paths
  */

@@ -10,7 +10,8 @@
  */
 
 import fs from 'fs'
-import { config } from './pluginConfig.js'
+import { config, resolveConfiguredPaths } from './pluginConfig.js'
+import { openReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
 
 /** core 数据库默认位置（按顺序探测，取第一个存在的） */
 const GSUID_DB_CANDIDATES = [
@@ -54,32 +55,45 @@ const IOS_USER_AGENT =
 
 const log = () => (typeof logger !== 'undefined' ? logger : console)
 
-/** node:sqlite 是 Node 22.5+ 的实验特性，老版本取不到就整体降级（鸣潮不出图） */
-let DatabaseSync = null
-try {
-  ;({ DatabaseSync } = await import('node:sqlite'))
-} catch (_) {
-  DatabaseSync = null
+/**
+ * 最近一次环境级失败的简短说明（驱动缺失 / 找不到库 / 读库报错）。
+ * 空账号既可能是「这人没登录」，也可能是「机器人这边根本读不到库」，
+ * 后者若也回「请先登录」会把人往错方向带，所以单独记一份给用户看。
+ */
+let envError = ''
+
+export function getWavesEnvError() {
+  return envError
 }
+
 
 /** 总开关（锅巴「启用鸣潮体力」） */
 export function isWavesTlEnabled(cfg = config()) {
   return !!cfg?.waves_tl_enable
 }
 
-/** GsData.db 候选路径：配置优先（换行/逗号分隔），其次默认候选 */
+/** GsData.db 候选路径：配置优先，默认候选兜底。 */
 export function resolveGsuidDbPaths(cfg = config()) {
-  const custom = String(cfg?.waves_tl_gsuid_db || cfg?.bbs_coin_gsuid_db || '').trim()
-  const list = custom
-    ? custom.split(/[\n,]/).map((s) => s.trim()).filter(Boolean)
-    : GSUID_DB_CANDIDATES
-  return list.filter((p) => {
+  const custom = cfg?.waves_tl_gsuid_db || cfg?.bbs_coin_gsuid_db || ''
+  // 双环境（本机 Windows / 服务器 Linux）来回抄配置时最容易踩的坑：
+  // 盘符路径在 Linux 下不是绝对路径，会被拼到 Yunzai 目录下变成一条谁也看不懂的路径
+  if (custom && process.platform !== 'win32' && /(^|[\n,;])\s*[A-Za-z]:[\\/]/.test(String(custom))) {
+    log().warn?.(
+      `[xhh-TL][鸣潮体力] 配置的是 Windows 盘符路径，但当前进程跑在 ${process.platform}；` +
+        'Docker/WSL 请改成容器内可见的路径',
+    )
+  }
+  const candidates = resolveConfiguredPaths(custom, GSUID_DB_CANDIDATES)
+  const found = []
+  for (const file of candidates) {
     try {
-      return fs.existsSync(p)
-    } catch (_) {
-      return false
+      if (fs.existsSync(file)) found.push(file)
+      else if (custom) log().warn?.(`[xhh-TL][鸣潮体力] 配置的数据库路径不存在：${file}`)
+    } catch (err) {
+      log().warn?.(`[xhh-TL][鸣潮体力] 检查数据库路径失败：${file} (${err?.message || err})`)
     }
-  })
+  }
+  return found
 }
 
 /** 国际服 uid（9 位以上且首位 >= 5） */
@@ -99,24 +113,33 @@ function serverIdOf(uid) {
  * wavesbind.uid 是「_」分隔的多 uid（第一个为当前主 uid），凭证在 wavesuser 里按 uid 存。
  * 只返回既在绑定列表、又有 cookie 的账号；xw 标为「无效」的直接跳过。
  *
- * @returns {Array<{uid,cookie,did,bat,net}>}
+ * @returns {Promise<Array<{uid,cookie,did,bat,net}>>}
  */
-export function listWavesAccounts(qq, cfg = config()) {
+export async function listWavesAccounts(qq, cfg = config()) {
   const out = []
-  if (!DatabaseSync) {
-    log().debug?.('[xhh-TL][鸣潮体力] node:sqlite 不可用，跳过')
+  envError = ''
+  const driver = await getSqliteDriver()
+  if (!driver) {
+    envError = '机器人缺少可用的 SQLite 驱动，请看控制台日志'
+    log().warn?.(`[xhh-TL][鸣潮体力] ${sqliteUnavailableMessage()}`)
     return out
   }
   const paths = resolveGsuidDbPaths(cfg)
-  if (!paths.length) return out
+  if (!paths.length) {
+    envError = '没找到 gsuid_core 的 GsData.db，请在锅巴里填写数据库路径'
+    log().warn?.(
+      '[xhh-TL][鸣潮体力] 未找到可用的 GsData.db。' +
+        'Windows/Docker 请在锅巴「gsuid_core 数据库路径」里填写 Yunzai 进程能访问到的绝对路径，' +
+        '例如 D:/QingShuiBot/gsuid_core/data/GsData.db',
+    )
+    return out
+  }
 
   for (const file of paths) {
     let db = null
     try {
-      db = new DatabaseSync(file, { readOnly: true })
-      const bind = db
-        .prepare('SELECT uid FROM wavesbind WHERE user_id = ?')
-        .all(String(qq))
+      db = await openReadonlyDb(file)
+      const bind = await db.all('SELECT uid FROM wavesbind WHERE user_id = ?', [String(qq)])
       // 绑定顺序即展示顺序，去重后作为白名单
       const order = []
       for (const row of bind) {
@@ -125,13 +148,12 @@ export function listWavesAccounts(qq, cfg = config()) {
           if (u && !order.includes(u)) order.push(u)
         }
       }
-      const users = db
-        .prepare(
-          `SELECT uid, cookie, did, bat, status
-             FROM wavesuser
-            WHERE user_id = ? AND game_id = ? AND cookie IS NOT NULL AND cookie != ''`,
-        )
-        .all(String(qq), WAVES_GAME_ID)
+      const users = await db.all(
+        `SELECT uid, cookie, did, bat, status
+           FROM wavesuser
+          WHERE user_id = ? AND game_id = ? AND cookie IS NOT NULL AND cookie != ''`,
+        [String(qq), WAVES_GAME_ID],
+      )
 
       const byUid = new Map()
       for (const row of users) {
@@ -150,11 +172,21 @@ export function listWavesAccounts(qq, cfg = config()) {
       // 绑定过的排前面，没在 bind 里但有 ck 的（换绑残留）也带上
       for (const uid of order) if (byUid.has(uid)) out.push(byUid.get(uid))
       for (const [uid, acc] of byUid) if (!order.includes(uid)) out.push(acc)
+      if (!out.length) {
+        // 库和表都读通了，只是这个 QQ 没登录过 —— 与「找不到库」区分开，省得瞎调路径
+        log().debug?.(
+          `[xhh-TL][鸣潮体力] ${file}（${db.driver}）里 ${qq} 有 ${bind.length} 条绑定、${users.length} 条凭证，无可用账号`,
+        )
+      }
     } catch (err) {
-      log().debug?.(`[xhh-TL][鸣潮体力] 读 ${file} 失败：${err?.message}`)
+      envError = `读取 gsuid_core 数据库失败（${err?.code || err?.name || 'SQLite'}）`
+      log().warn?.(
+        `[xhh-TL][鸣潮体力] 读取数据库失败：${file}（${driver.name}）` +
+          `(${err?.code || err?.name || 'SQLite'}: ${err?.message || err})`,
+      )
     } finally {
       try {
-        db?.close()
+        await db?.close()
       } catch (_) {}
     }
     if (out.length) break
@@ -380,8 +412,9 @@ export function normalizeWavesItem(acc, d, base) {
  */
 export async function getWavesStaminaList(qq, opts = {}) {
   const cfg = config()
-  const accounts = listWavesAccounts(qq, cfg)
-  if (!accounts.length) return { items: [], error: '没有' }
+  const accounts = await listWavesAccounts(qq, cfg)
+  // 环境问题（缺驱动/找不到库/读库报错）原样透给用户，别一律说「没登录」
+  if (!accounts.length) return { items: [], error: getWavesEnvError() || '没有' }
 
   const all = opts.all ?? cfg.show_all_bindings !== false
   const picked = all ? accounts : accounts.slice(0, 1)

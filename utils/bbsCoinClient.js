@@ -31,7 +31,8 @@ import { runBbsVerify } from './mysVerify.js'
 import { cookiePart } from './auth.js'
 import { createUser, getAliveMysIds, hasRuntimeBinding } from './userBind.js'
 import { getDeletedMap, fingerprintStoken, removeDeleted } from './deletedCk.js'
-import { getStokenCandidateFiles, config } from './pluginConfig.js'
+import { getStokenCandidateFiles, config, resolveConfiguredPaths } from './pluginConfig.js'
+import { openReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
 
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
@@ -550,17 +551,6 @@ function readYaml(file) {
   return {}
 }
 
-/**
- * node:sqlite 是 Node 22 的实验特性（22.5+ 免 flag），老版本 Node 上取不到就降级跳过。
- * 顶层 await 拿一次，避免每次枚举都 import。
- */
-let DatabaseSync = null
-try {
-  ;({ DatabaseSync } = await import('node:sqlite'))
-} catch (_) {
-  DatabaseSync = null
-}
-
 /** gsuid_core 数据库默认位置（按顺序探测，取存在且能读的） */
 const GSUID_DB_CANDIDATES = [
   '/opt/gsuid_core/data/GsData.db',
@@ -568,12 +558,12 @@ const GSUID_DB_CANDIDATES = [
 ]
 
 function gsuidDbPaths() {
-  const custom = String(config()?.bbs_coin_gsuid_db || '').trim()
-  const list = custom ? custom.split(/[\n,]/).map((s) => s.trim()).filter(Boolean) : GSUID_DB_CANDIDATES
-  return list.filter((p) => {
+  const custom = config()?.bbs_coin_gsuid_db || ''
+  return resolveConfiguredPaths(custom, GSUID_DB_CANDIDATES).filter((file) => {
     try {
-      return fs.existsSync(p)
-    } catch (_) {
+      return fs.existsSync(file)
+    } catch (err) {
+      log.debug(`[xhh-TL][米游币] 检查数据库路径失败 ${file}: ${err?.message || err}`)
       return false
     }
   })
@@ -588,29 +578,28 @@ function gsuidDbPaths() {
  * status='error' 是 gsuid 自己标记的失效账号，直接跳过（实测这类必定 -100）。
  * 反过来 status 为空不代表一定有效，所以只当负向过滤用。
  *
- * 用 node:sqlite 只读打开，不写、不锁库，不影响正在跑的 gsuid。
+ * 只读打开（驱动见 utils/sqlite.js），不写、不锁库，不影响正在跑的 gsuid。
  */
-function readGsuidAccounts(qq) {
+async function readGsuidAccounts(qq) {
   const out = []
-  const paths = gsuidDbPaths()
-  if (!paths.length) return out
-
-  if (!DatabaseSync) {
-    log.debug('[xhh-TL][米游币] node:sqlite 不可用，跳过 gsuid 库')
+  const driver = await getSqliteDriver()
+  if (!driver) {
+    log.error(`[xhh-TL][米游币] ${sqliteUnavailableMessage()}`)
     return out
   }
+  const paths = gsuidDbPaths()
+  if (!paths.length) return out
 
   for (const file of paths) {
     let db = null
     try {
-      db = new DatabaseSync(file, { readOnly: true })
-      const rows = db
-        .prepare(
-          `SELECT user_id, mys_id, status, stoken, fp, device_id, device_info
-             FROM gsuser
-            WHERE user_id = ? AND stoken IS NOT NULL AND stoken != ''`,
-        )
-        .all(String(qq))
+      db = await openReadonlyDb(file)
+      const rows = await db.all(
+        `SELECT user_id, mys_id, status, stoken, fp, device_id, device_info
+           FROM gsuser
+          WHERE user_id = ? AND stoken IS NOT NULL AND stoken != ''`,
+        [String(qq)],
+      )
       for (const row of rows) {
         if (String(row.status || '').toLowerCase() === 'error') {
           log.debug(`[xhh-TL][米游币] gsuid 账号 ${row.mys_id} 已被标记失效，跳过`)
@@ -631,10 +620,10 @@ function readGsuidAccounts(qq) {
         })
       }
     } catch (err) {
-      log.debug(`[xhh-TL][米游币] 读 gsuid 库失败 ${file}: ${err?.message}`)
+      log.error(`[xhh-TL][米游币] 读取 gsuid 库失败 ${file}（${driver.name}）: ${err?.code || err?.name || 'SQLite'}: ${err?.message || err}`)
     } finally {
       try {
-        db?.close()
+        await db?.close()
       } catch (_) {}
     }
     if (out.length) break
@@ -730,7 +719,7 @@ export async function listBbsAccounts(qq, e = null) {
   }
 
   // 1) gsuid_core 库：另一份 stoken，且带账号注册过的真实 device_id/fp
-  for (const acc of readGsuidAccounts(qq)) {
+  for (const acc of await readGsuidAccounts(qq)) {
     accept(acc.stuid, acc.stoken, acc.mid, {
       fp: acc.fp,
       device_id: acc.device_id,
