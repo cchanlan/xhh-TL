@@ -12,7 +12,7 @@ import { extractRenderBuffer } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import { prepareMysContext, resolveAuth } from '../utils/runtimePatch.js';
 import LiteMysApi from '../utils/mysClient.js';
-import { getWavesStaminaList, isWavesTlEnabled } from '../utils/wavesData.js';
+import { getWavesStaminaList, isWavesTlEnabled, listWavesAccounts } from '../utils/wavesData.js';
 
 // ============ 用户 UID 显示设置 ============
 async function getShowUid(qq) {
@@ -46,6 +46,49 @@ async function getWavesPref(qq) {
   const val = await redis.get(`xhh:show_waves:${qq}`);
   if (val === null || val === undefined || val === '') return null;
   return val === 'true';
+}
+
+// ============ 单 UID 体力屏蔽（#关闭原神123456789） ============
+// 与「#关闭原神体力」（整个游戏不进总览）不同：这里按 UID 屏蔽，用于小号/托管号
+// 不想出现在体力卡里的情况。只影响体力显示（总览 / 单游戏 / 多号列表），
+// 不解绑、不影响体力推送订阅。
+const GAME_ALIAS = {
+  原神: 'gs', ys: 'gs',
+  星铁: 'sr', xt: 'sr',
+  绝区零: 'zzz', zzz: 'zzz',
+  鸣潮: 'ww', mc: 'ww',
+};
+const GAME_LABEL = { gs: '原神', sr: '星铁', zzz: '绝区零', ww: '鸣潮' };
+const HIDE_GAMES = ['gs', 'sr', 'zzz', 'ww'];
+
+const hideUidKey = (qq, game) => `xhh:hide_uid:${game}:${qq}`;
+
+/** 某人某游戏被屏蔽的 UID 集合（字符串） */
+async function getHiddenUids(qq, game) {
+  try {
+    const raw = await redis.get(hideUidKey(qq, game));
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set((Array.isArray(arr) ? arr : []).map(String));
+  } catch (_) {
+    return new Set();
+  }
+}
+
+async function setHiddenUids(qq, game, uidSet) {
+  const arr = [...uidSet];
+  if (!arr.length) await redis.del(hideUidKey(qq, game));
+  else await redis.set(hideUidKey(qq, game), JSON.stringify(arr));
+}
+
+/** 某人四游戏的屏蔽情况：{ gs: ['uid'], ... }（空游戏不留键） */
+async function getAllHiddenUids(qq) {
+  const out = {};
+  for (const game of HIDE_GAMES) {
+    const set = await getHiddenUids(qq, game);
+    if (set.size) out[game] = [...set];
+  }
+  return out;
 }
 
 // ============ MHY 工具函数 (内联自 xhh/system/mhy.js) ============
@@ -254,6 +297,16 @@ export class TL extends plugin {
           reg: '^\\s*#?(?:开启|打开|关闭|关掉)(?:鸣潮|mc)体力\\s*$',
           fnc: 'toggleWavesDisplay',
         },
+        {
+          // 单 UID 屏蔽：#关闭原神123456789 / #屏蔽星铁体力123456789 / #开启鸣潮123456789
+          // 必须带 UID 才走这里，不带 UID 的「#关闭原神体力」仍是上面的整游戏开关
+          reg: '^\\s*#?(?:取消屏蔽|解除屏蔽|开启|打开|恢复|显示|关闭|关掉|屏蔽|隐藏)(?:原神|ys|星铁|xt|绝区零|zzz|鸣潮|mc)(?:体力)?\\s*\\d{6,12}\\s*$',
+          fnc: 'toggleUidHidden',
+        },
+        {
+          reg: '^\\s*#?(?:体力屏蔽|屏蔽体力|屏蔽)(?:列表|清单)\\s*$',
+          fnc: 'hiddenUidList',
+        },
       ],
     });
     this.gsUrl =
@@ -299,9 +352,11 @@ export class TL extends plugin {
       }
       const res = await this.getWavesList(e, targetQq || e.user_id);
       if (!res.items.length) {
-        await replyQuote(e, res.error === '没有'
-          ? '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）'
-          : `鸣潮体力查询失败：${res.error}`);
+        await replyQuote(e, res.hiddenAll
+          ? '你已屏蔽全部鸣潮 UID 的体力显示，发【#体力屏蔽列表】看看，或【#开启鸣潮<UID>】恢复'
+          : res.error === '没有'
+            ? '没有可用的鸣潮账号，请先在 gsuid_core 的鸣潮插件里登录（如「w登录」）'
+            : `鸣潮体力查询失败：${res.error}`);
         return true;
       }
     }
@@ -373,7 +428,9 @@ export class TL extends plugin {
       return true;
     }
     if (Object.values(resultData).every(v => v === '没有')) {
-      if (hasAllData) e.reply('没有绑定米游社，请【#扫码登录】米游社', true);
+      if (hasAllData) {
+        e.reply(await this.noAccountTip(overviewQq, '没有绑定米游社，请【#扫码登录】米游社'), true);
+      }
       return true;
     }
     if (Object.values(resultData).every(v => v === '过期')) {
@@ -460,15 +517,18 @@ export class TL extends plugin {
   /**
    * 本次事件内共享的鸣潮体力数据（库街区接口，凭证借自 gsuid_core 的鸣潮插件）
    * 挂在 e 上做单次缓存：总览预取与后续渲染取列表复用同一个 promise，不重复请求
-   * @returns {Promise<{items: object[], error: string|null}>}
+   * 被屏蔽的 UID 在选号阶段就剔除（同一事件内屏蔽集合不变，故缓存仍按 qq 即可）
+   * @returns {Promise<{items: object[], error: string|null, hiddenAll?: boolean}>}
    */
   getWavesList(e, qq) {
     const key = `_xhhWaves_${qq}`;
     if (!e[key]) {
-      e[key] = getWavesStaminaList(qq).catch((err) => ({
-        items: [],
-        error: err?.message || String(err),
-      }));
+      e[key] = getHiddenUids(qq, 'ww')
+        .then((hidden) => getWavesStaminaList(qq, { hideUids: [...hidden] }))
+        .catch((err) => ({
+          items: [],
+          error: err?.message || String(err),
+        }));
     }
     return e[key];
   }
@@ -565,7 +625,7 @@ export class TL extends plugin {
         gameCount++;
       }
       if (!gameCount) {
-        e.reply('没有找到有效绑定的账号', true);
+        e.reply(await this.noAccountTip(targetQq || e.user_id, '没有找到有效绑定的账号'), true);
         return true;
       }
 
@@ -648,9 +708,11 @@ export class TL extends plugin {
     // 通过兼容层枚举 UID（不依赖 genshin import）
     const noteUser = await createUser(qq, e);
     const uidList = noteUser.getUidList(game) || [];
+    // 被 #关闭<游戏><uid> 屏蔽的号直接跳过，连接口都不请求
+    const hidden = await getHiddenUids(qq, game);
     for (const item of uidList) {
       const uid = String(item.uid || item);
-      if (!uid) continue;
+      if (!uid || hidden.has(uid)) continue;
       const data = await this.note(e, game, san, qq, uid);
       if (data && data !== '没有' && data !== '过期') {
         if (game === 'zzz' && !data.s2_bounty_commission) {
@@ -766,6 +828,103 @@ export class TL extends plugin {
     return true;
   }
 
+  /**
+   * 单 UID 体力屏蔽：#关闭原神123456789 屏蔽，#开启原神123456789 恢复。
+   * 屏蔽后该 UID 不出现在任何体力卡里（总览 / 单游戏 / 多号列表都跳过，也不再为它请求接口），
+   * 绑定与体力推送订阅都不动。
+   */
+  async toggleUidHidden(e) {
+    const msg = (e.msg || '').trim();
+    const m = /^#?(取消屏蔽|解除屏蔽|开启|打开|恢复|显示|关闭|关掉|屏蔽|隐藏)(原神|ys|星铁|xt|绝区零|zzz|鸣潮|mc)(?:体力)?\s*(\d{6,12})$/.exec(msg);
+    if (!m) return false;
+    const [, action, alias, uid] = m;
+    const game = GAME_ALIAS[alias];
+    const label = GAME_LABEL[game];
+    // 「取消屏蔽/解除屏蔽」含「屏蔽」，故先判恢复词
+    const unhide = /^(取消屏蔽|解除屏蔽|开启|打开|恢复|显示)$/.test(action);
+    const qq = e.user_id;
+
+    const hidden = await getHiddenUids(qq, game);
+    if (unhide) {
+      if (!hidden.delete(uid)) {
+        e.reply(`${label} UID ${uid} 本来就没被屏蔽`, true);
+        return true;
+      }
+      await setHiddenUids(qq, game, hidden);
+      e.reply(`已恢复 ${label} UID ${uid} 的体力显示`, true);
+      return true;
+    }
+
+    if (hidden.has(uid)) {
+      e.reply(`${label} UID ${uid} 已在屏蔽列表里，发【#开启${label}${uid}】可恢复`, true);
+      return true;
+    }
+
+    // 能枚举出绑定列表时校验一次，挡掉打错的 UID；枚举不到（无凭证/鸣潮没开）就不拦
+    const bound = await this.listBoundUids(e, game, qq);
+    if (bound.length && !bound.includes(uid)) {
+      e.reply(`没在你的${label}绑定里找到 UID ${uid}\n当前绑定：${bound.join('、')}`, true);
+      return true;
+    }
+
+    hidden.add(uid);
+    await setHiddenUids(qq, game, hidden);
+    const lines = [`已屏蔽 ${label} UID ${uid} 的体力显示（不影响绑定和体力推送）`];
+    if (bound.length) {
+      const rest = bound.filter((u) => !hidden.has(u));
+      lines.push(rest.length
+        ? `剩余显示：${rest.join('、')}`
+        : `该游戏已无可显示 UID，查${label}体力会提示已屏蔽`);
+    }
+    lines.push(`恢复：#开启${label}${uid}`);
+    e.reply(lines.join('\n'), true);
+    return true;
+  }
+
+  /** #体力屏蔽列表 */
+  async hiddenUidList(e) {
+    const all = await getAllHiddenUids(e.user_id);
+    const games = Object.keys(all);
+    if (!games.length) {
+      e.reply('你没有屏蔽任何 UID\n屏蔽：#关闭原神123456789（该 UID 不再出现在体力卡里）', true);
+      return true;
+    }
+    const lines = games.map((g) => `${GAME_LABEL[g]}：${all[g].join('、')}`);
+    e.reply(
+      `已屏蔽的体力 UID：\n${lines.join('\n')}\n` +
+      `恢复：#开启${GAME_LABEL[games[0]]}${all[games[0]][0]}`,
+      true,
+    );
+    return true;
+  }
+
+  /** 枚举某人某游戏的绑定 UID（拿不到就返回空数组，调用方不要据此下结论） */
+  async listBoundUids(e, game, qq) {
+    try {
+      if (game === 'ww') {
+        if (!isWavesTlEnabled()) return [];
+        const accounts = await listWavesAccounts(qq);
+        return accounts.map((a) => String(a.uid)).filter(Boolean);
+      }
+      const list = (await createUser(qq, e)).getUidList(game) || [];
+      return list.map((it) => String(it.uid || it)).filter(Boolean);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /**
+   * 一个号都没查到时的提示文案：号是被自己屏蔽掉的就直说，
+   * 别一律甩「没绑定/去扫码」把人往错方向指
+   */
+  async noAccountTip(qq, fallback) {
+    const hidden = await getAllHiddenUids(qq);
+    const count = Object.values(hidden).reduce((n, arr) => n + arr.length, 0);
+    return count
+      ? `没有可显示的体力数据，你已屏蔽 ${count} 个 UID，发【#体力屏蔽列表】查看`
+      : fallback;
+  }
+
   // ============ 立绘卡（原神/星铁大立绘） ============
 
   // 立绘卡总流程：gs/sr/zzz/ww 均渲染立绘卡，合并回复
@@ -804,7 +963,7 @@ export class TL extends plugin {
     }
 
     if (!Object.keys(dataMap).length) {
-      e.reply('没有找到有效绑定的账号', true);
+      e.reply(await this.noAccountTip(qq, '没有找到有效绑定的账号'), true);
       return true;
     }
 
@@ -1275,6 +1434,25 @@ export class TL extends plugin {
     if (!uid) {
       if (!san) e.reply('未发现绑定的 uid，请【#扫码登录】米游社~');
       return '没有';
+    }
+
+    // 单号模式下主 UID 被 #关闭<游戏><uid> 屏蔽：顺位取第一个未屏蔽的号，
+    // 全被屏蔽才算没有。forceUid（多号列表 / 体力推送）由调用方自己过滤，这里不插手。
+    if (!forceUid) {
+      const hidden = await getHiddenUids(qq, game);
+      if (hidden.has(String(uid))) {
+        const alt = (await this.listBoundUids(e, game, qq)).find((u) => !hidden.has(u));
+        if (!alt) {
+          if (!san) {
+            e.reply(
+              `你已屏蔽${GAME_LABEL[game]}全部 UID 的体力显示，发【#开启${GAME_LABEL[game]}${uid}】可恢复`,
+              true,
+            );
+          }
+          return '没有';
+        }
+        uid = alt;
+      }
     }
 
     let sk = await getstoken(qq, uid, e);

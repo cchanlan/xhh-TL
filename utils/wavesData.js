@@ -407,8 +407,9 @@ export function normalizeWavesItem(acc, d, base) {
 /**
  * 查某 QQ 的鸣潮体力
  * @param {string|number} qq
- * @param {object} [opts] { all 是否查名下全部 UID（默认跟随 show_all_bindings） }
- * @returns {Promise<{items: object[], error: string|null}>}
+ * @param {object} [opts] { all 是否查名下全部 UID（默认跟随 show_all_bindings）,
+ *                          hideUids 被 #关闭鸣潮<uid> 屏蔽的 UID，选号阶段就剔除 }
+ * @returns {Promise<{items: object[], error: string|null, hiddenAll?: boolean}>}
  */
 export async function getWavesStaminaList(qq, opts = {}) {
   const cfg = config()
@@ -416,8 +417,13 @@ export async function getWavesStaminaList(qq, opts = {}) {
   // 环境问题（缺驱动/找不到库/读库报错）原样透给用户，别一律说「没登录」
   if (!accounts.length) return { items: [], error: getWavesEnvError() || '没有' }
 
+  // 屏蔽在「取前 N 个」之前做：否则单号模式下主号被屏蔽会直接查不到东西
+  const hide = new Set((opts.hideUids || []).map(String))
+  const visible = hide.size ? accounts.filter((a) => !hide.has(String(a.uid))) : accounts
+  if (!visible.length) return { items: [], error: '全部鸣潮 UID 已被屏蔽', hiddenAll: true }
+
   const all = opts.all ?? cfg.show_all_bindings !== false
-  const picked = all ? accounts : accounts.slice(0, 1)
+  const picked = all ? visible : visible.slice(0, 1)
   const timeoutMs = Math.max(5, Number(cfg.waves_tl_timeout) || 15) * 1000
 
   const results = await Promise.all(picked.map((acc) => fetchWavesStamina(acc, timeoutMs)))
