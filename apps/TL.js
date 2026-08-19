@@ -327,16 +327,16 @@ export class TL extends plugin {
       ? await Promise.all([getShowGs(overviewQq), getShowSr(overviewQq), getShowZzz(overviewQq)])
       : [true, true, true];
 
-    // 鸣潮体力：需锅巴总开关 + 发起人 #开启鸣潮体力（默认关）。和三游戏不同，这里以
-    // 「发起人」为准——鸣潮默认关，若按被查者判定，艾特别人基本永远出不来；
-    // 但被艾特者自己 #关闭鸣潮体力 过就尊重他，不给别人查他的鸣潮。
+    // 鸣潮体力：需锅巴总开关 + #开启鸣潮体力（默认关）。艾特别人查时，按「被查者自己开过就显示」，
+    // 他没设置过才退回看发起人的开关（否则鸣潮默认关，艾特别人基本永远出不来）；
+    // 被艾特者显式 #关闭鸣潮体力 过则一律尊重，不给别人查他的鸣潮。
     let wavesOn = false;
     if (isQueryAll && isWavesTlEnabled()) {
       const [selfPref, targetPref] = await Promise.all([
         getWavesPref(e.user_id),
         targetQq ? getWavesPref(overviewQq) : Promise.resolve(null),
       ]);
-      wavesOn = selfPref === true && targetPref !== false;
+      wavesOn = targetPref === true || (targetPref !== false && selfPref === true);
     }
     // 与米游社三游戏并行取数（同一 promise 会被后续渲染复用，不会重复请求库街区）
     const wavesTask = wavesOn ? this.getWavesList(e, overviewQq) : null;
