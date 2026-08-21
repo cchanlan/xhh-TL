@@ -383,6 +383,40 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
+          label: '队伍伤害'
+        },
+        {
+          field: 'team_damage',
+          label: '启用队伍伤害',
+          bottomHelpMessage:
+            '是否启用 #队伍伤害。用提瓦特小助手算队伍 DPS，面板取 miao-plugin 的角色面板缓存（需先 #更新面板）。支持自定义手法（队伍后接 钟离e,班尼特q,a1…）与换装模拟（角色名后接 换护摩之杖 / 换4千岩 / 换六命 / 换精5 / 换天赋101313）',
+          component: 'Switch'
+        },
+        {
+          field: 'team_damage_priority',
+          label: '队伍伤害优先级',
+          bottomHelpMessage:
+            '插件优先级，数字越小越优先。默认 -98：同时装了 FanSky_Qs（它的同名指令优先级 3141）时由本插件出图',
+          component: 'InputNumber',
+          componentProps: {
+            min: -9999,
+            max: 9999,
+            placeholder: '默认 -98'
+          }
+        },
+        {
+          field: 'team_damage_timeout',
+          label: '队伍伤害接口超时(秒)',
+          bottomHelpMessage: '手法写长、队伍复杂时小助手算得慢，别调太小。默认 20 秒',
+          component: 'InputNumber',
+          componentProps: {
+            min: 5,
+            max: 120,
+            placeholder: '默认 20'
+          }
+        },
+        {
+          component: 'Divider',
           label: '帮助图'
         },
         {

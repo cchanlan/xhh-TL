@@ -7,6 +7,7 @@ import { gsAllAbyss } from './apps/gsAllAbyss.js'
 import { abyssTeam } from './apps/abyssTeam.js'
 import { hardTeam } from './apps/hardTeam.js'
 import { holdRate } from './apps/holdRate.js'
+import { teamDamage } from './apps/teamDamage.js'
 import { TmpCleaner } from './apps/tmpCleaner.js'
 import { nanokaAbyss } from './apps/nanokaAbyss.js'
 import { help } from './apps/help.js'
@@ -24,6 +25,7 @@ export {
   abyssTeam,
   hardTeam,
   holdRate,
+  teamDamage,
   TmpCleaner,
   nanokaAbyss,
   help,

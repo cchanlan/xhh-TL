@@ -80,6 +80,19 @@ hold_rate: true
 hold_rate_theme: ""
 hold_rate_priority: -98
 
+# ===== 队伍伤害（#队伍伤害）=====
+# 提瓦特小助手的队伍伤害计算，面板取 miao-plugin 的角色面板缓存（需先 #更新面板）
+#   基础：#队伍伤害 钟离,班尼特,香菱,行秋
+#   自定义手法：队伍后面直接接动作，如 … 钟离e,班尼特q,香菱q,行秋q,行秋e
+#              动作可写 e / 长e / 短e / q / zj(重击) / a1~a6，同一角色连招可省略角色名
+#   换装模拟：角色名后接「换…」，如 香菱换六命换精5换天赋101313 / 行秋换讨龙换4千岩
+#   加「详情」出逐条伤害表：#队伍伤害详情 …
+team_damage: true
+# 默认 -98：比 FanSky_Qs 的同名指令（3141）优先，同装两个插件时由本插件出图
+team_damage_priority: -98
+# 接口超时（秒）。手法长、队伍复杂时小助手算得慢，别调太小
+team_damage_timeout: 20
+
 # 帮助图背景（#小火花帮助）
 # 默认插件自带 bg2.png，Linux/Win 通用相对路径：
 #   plugins/xhh-TL/resources/stat/imgs/bg2.png

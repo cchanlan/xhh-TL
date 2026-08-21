@@ -1,0 +1,636 @@
+/* 队伍伤害出图（提瓦特小助手数据）
+   风格沿用 FanSky_Qs 那套「元素底图 + 深色半透明卡」，饼图改成纯 CSS conic-gradient，
+   不再依赖 1MB 的 g2plot。字体 @font-face 在 html 内联（指向 miao 的字体文件）。 */
+
+:root {
+  --card: rgba(30, 35, 44, 0.72);
+  --card-deep: rgba(20, 24, 31, 0.78);
+  --line: rgba(255, 255, 255, 0.12);
+  --text: #f2eee6;
+  --text-dim: rgba(242, 238, 230, 0.62);
+  --gold: #ebcd7c;
+  --r5: #c87c24;
+  --r4: #9470bb;
+  --r3: #5987ad;
+  --r2: #5a977a;
+  --r1: #818486;
+  --cons0: #4a5366;
+  --cons1: #5cbac2;
+  --cons2: #339d61;
+  --cons3: #3e95b9;
+  --cons4: #3955b7;
+  --cons5: #6f38c7;
+  --cons6: #ff5722;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* sys.scale 是加在 body 上的 transform，必须锚在左上角，否则放大后内容跑到负坐标、截图被裁 */
+  transform-origin: 0 0;
+  font-family: "PanelFont", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+}
+
+#container {
+  width: 1000px;
+  padding: 18px 18px 12px;
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-color: #22262e;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+/* ───────────── 左栏：评级 / 饼图 / 最高一击 ───────────── */
+
+.left {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uid {
+  font-size: 20px;
+  color: var(--gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.rank {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+}
+
+.rank .cell {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rank .cell b {
+  font-family: "PanelNumFont";
+  font-size: 30px;
+  line-height: 1.1;
+  color: #9ee7ff;
+}
+
+.rank .cell.big {
+  width: 100%;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rank .cell.big b {
+  font-size: 54px;
+}
+
+.rank .cell i {
+  font-style: normal;
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+/* 评级配色：ACE 红 / S 紫 / A 青 / B 橙 / 其它蓝 */
+.rank-ACE .cell b {
+  color: #ff8f8f;
+}
+.rank-ACE .cell.big b {
+  color: #f90000;
+}
+.rank-S .cell b {
+  color: #fbc3ff;
+}
+.rank-S .cell.big b {
+  color: #ef00ff;
+}
+.rank-A .cell b {
+  color: #acf8c9;
+}
+.rank-A .cell.big b {
+  color: #0ae3a9;
+}
+.rank-B .cell b {
+  color: #fcdaa6;
+}
+.rank-B .cell.big b {
+  color: #ff8800;
+}
+
+.pie {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 10px 8px;
+}
+
+.pie-chart {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  margin: 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08) inset;
+}
+
+.pie-hole {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--card-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: var(--text-dim);
+  line-height: 1.2;
+}
+
+.pie-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.pie-label b {
+  display: block;
+  font-size: 17px;
+  color: #12161c;
+}
+
+.pie-label i {
+  font-style: normal;
+  font-family: "PanelNumFont";
+  font-size: 16px;
+  color: #12161c;
+}
+
+.pie-legend {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+}
+
+.pie-legend .item {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+}
+
+.pie-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.pie-legend .pct {
+  font-family: "PanelNumFont";
+  color: var(--text-dim);
+}
+
+.max-hit {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.max-hit .label {
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+.max-hit .value {
+  font-family: "PanelNumFont";
+  font-size: 40px;
+  color: #ffd479;
+  line-height: 1.15;
+}
+
+.max-hit .from {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+/* ───────────── 右栏：角色卡 ───────────── */
+
+.right {
+  /* 占满剩余宽度，别写死宽度：写死了容易和左栏加起来溢出，flex 一换行左栏就跑到上面去 */
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.avatar {
+  width: calc(50% - 5px);
+  background: var(--card);
+  border-radius: 14px;
+  padding: 8px 10px 10px;
+}
+
+.avatar .head {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.avatar .slot {
+  width: 58px;
+  flex: none;
+}
+
+.avatar .slot .icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 9px;
+  display: block;
+  object-fit: cover;
+}
+
+.avatar .slot .icon.r5 {
+  background: var(--r5);
+}
+.avatar .slot .icon.r4 {
+  background: var(--r4);
+}
+.avatar .slot .icon.r3 {
+  background: var(--r3);
+}
+.avatar .slot .icon.r2 {
+  background: var(--r2);
+}
+.avatar .slot .icon.r1 {
+  background: var(--r1);
+}
+
+.avatar .slot .icon.empty {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar .slot .tags {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.avatar .slot .tags span {
+  flex: 1;
+  text-align: center;
+  font-family: "PanelNumFont";
+  font-size: 12px;
+  line-height: 17px;
+  border-radius: 4px;
+  background: var(--cons0);
+  color: var(--text);
+}
+
+.avatar .slot .tags .c1 {
+  background: var(--cons1);
+}
+.avatar .slot .tags .c2 {
+  background: var(--cons2);
+}
+.avatar .slot .tags .c3 {
+  background: var(--cons3);
+}
+.avatar .slot .tags .c4 {
+  background: var(--cons4);
+}
+.avatar .slot .tags .c5 {
+  background: var(--cons5);
+}
+.avatar .slot .tags .c6 {
+  background: var(--cons6);
+}
+
+.avatar .slot .tags .a2 {
+  background: #51b72f;
+}
+.avatar .slot .tags .a3 {
+  background: #396cde;
+}
+.avatar .slot .tags .a4 {
+  background: #c539de;
+}
+.avatar .slot .tags .a5 {
+  background: #deaf39;
+}
+
+.avatar .slot.arti .arti-imgs {
+  width: 58px;
+  height: 58px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar .slot.arti .arti-imgs img {
+  width: 58px;
+  height: 58px;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.avatar .slot.arti .arti-imgs.n2 img {
+  width: 40px;
+  height: 40px;
+}
+
+.avatar .slot.arti .arti-imgs.n2 img:first-child {
+  left: 0;
+  top: 0;
+}
+
+.avatar .slot.arti .arti-imgs.n2 img:last-child {
+  left: 18px;
+  top: 18px;
+}
+
+.avatar .name-box {
+  flex: 1;
+  padding-left: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.avatar .name-box .name {
+  font-size: 20px;
+  color: var(--gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.avatar .name-box .mod {
+  font-size: 12px;
+  line-height: 17px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: rgba(255, 145, 77, 0.85);
+  color: #241202;
+}
+
+.avatar .props {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.avatar .props .prop {
+  width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.avatar .props .prop b {
+  font-family: "PanelNumFont";
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.avatar .props .prop i {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.avatar .props .prop.energy svg {
+  width: 30px;
+  height: 30px;
+}
+
+.avatar .talent {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.avatar .talent > div {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.12);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar .talent img {
+  width: 28px;
+  height: 28px;
+}
+
+.avatar .talent span {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  min-width: 19px;
+  text-align: center;
+  font-family: "PanelNumFont";
+  font-size: 13px;
+  line-height: 19px;
+  border-radius: 50%;
+  background: var(--card-deep);
+  color: var(--text);
+}
+
+.avatar .talent span.extra {
+  color: #7de2c3;
+}
+
+.avatar .mod-line {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.avatar .mod-line span {
+  font-size: 13px;
+  line-height: 19px;
+  padding: 0 7px;
+  border-radius: 10px;
+  background: rgba(255, 145, 77, 0.22);
+  color: #ffbd8f;
+}
+
+/* ───────────── 通用区块：手法 / 换装 / Buff / 明细 ───────────── */
+
+.block {
+  width: 100%;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px 12px 12px;
+}
+
+.block-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.block-title .label {
+  font-size: 20px;
+  color: var(--gold);
+}
+
+.block-title .tag {
+  font-size: 13px;
+  line-height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-dim);
+}
+
+.block-title .tag.on {
+  background: rgba(125, 226, 195, 0.24);
+  color: #7de2c3;
+}
+
+.block-title .note {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.act-list {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.act-list .act {
+  font-size: 15px;
+  line-height: 25px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(125, 226, 195, 0.16);
+  color: #b6f0dd;
+}
+
+.mod-list {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mod-list .mod-item {
+  font-size: 15px;
+  line-height: 25px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(255, 145, 77, 0.18);
+  color: #ffbd8f;
+}
+
+.rows {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.rows li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 23px;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.rows li:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rows li.head {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.rows .t {
+  width: 52px;
+  flex: none;
+  font-family: "PanelNumFont";
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.rows .n {
+  width: 190px;
+  flex: none;
+  color: #9ee7ff;
+}
+
+.rows .d {
+  flex: 1;
+  color: var(--text);
+}
+
+.rows .a {
+  flex: 1;
+  color: #9ee7ff;
+}
+
+.rows .v {
+  width: 92px;
+  flex: none;
+  text-align: right;
+  font-family: "PanelNumFont";
+}
+
+.copyright {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 4px 2px;
+}

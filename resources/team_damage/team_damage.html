@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{ppath}}team_damage/team_damage.css" />
+  <style>
+    @font-face {
+      font-family: "PanelFont";
+      src: url("{{fontPanel}}");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "PanelNumFont";
+      src: url("{{fontNum}}");
+      font-weight: 400;
+      font-style: normal;
+    }
+    #container {
+      {{if elemBg}}background-image: url("{{elemBg}}");{{else if bgImage}}background-image: url("{{bgImage}}");{{/if}}
+    }
+    {{if talentBg}}
+    .avatar .talent > div {
+      background-image: url("{{talentBg}}");
+    }
+    {{/if}}
+    .pie-chart {
+      background-image: {{pie.gradient}};
+    }
+  </style>
+</head>
+<body {{sys.scale}}>
+<div id="container">
+  <div class="left">
+    <div class="uid">#队伍伤害 UID{{uid}}</div>
+
+    <div class="rank rank-{{rank}}">
+      <div class="cell big">
+        <b>{{rank}}</b>
+        <i>伤害评级</i>
+      </div>
+      <div class="cell">
+        <b>{{dps}}</b>
+        <i>DPS</i>
+      </div>
+      <div class="cell">
+        <b>{{tm}}</b>
+        <i>输出轴长</i>
+      </div>
+      <div class="cell">
+        <b>{{total}}</b>
+        <i>输出总伤</i>
+      </div>
+    </div>
+
+    <div class="pie">
+      <div class="pie-chart">
+        <div class="pie-hole">
+          <span>输出</span>
+          <span>比例</span>
+        </div>
+        {{each pie.labels label}}
+        <div class="pie-label" style="left: {{label.left}}%; top: {{label.top}}%;">
+          <b>{{label.name}}</b>
+          <i>{{label.text}}</i>
+        </div>
+        {{/each}}
+      </div>
+      <div class="pie-legend">
+        {{each pie.legend item}}
+        <div class="item">
+          <span class="dot" style="background: {{item.color}};"></span>
+          <span class="name">{{item.name}}</span>
+          <span class="pct">{{item.pct}}</span>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+
+    {{if maxHit}}
+    <div class="max-hit">
+      <div class="label">最高一击</div>
+      <div class="value">{{maxHit.value}}</div>
+      <div class="from">{{maxHit.time}}s · {{maxHit.action}}</div>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="right">
+    <div class="avatars">
+      {{each avatars a}}
+      <div class="avatar">
+        <div class="head">
+          <div class="slot">
+            <img class="icon r{{a.star}}" src="{{a.face}}" />
+            <div class="tags">
+              <span class="con c{{a.cons}}">C{{a.cons}}</span>
+              <span class="lvl">Lv{{a.level}}</span>
+            </div>
+          </div>
+          <div class="slot">
+            {{if a.weapon.icon}}<img class="icon r{{a.weapon.rarity}}" src="{{a.weapon.icon}}" />{{else}}<div class="icon r{{a.weapon.rarity}} empty"></div>{{/if}}
+            <div class="tags">
+              <span class="aff a{{a.weapon.affix}}">R{{a.weapon.affix}}</span>
+              <span class="lvl">Lv{{a.weapon.level}}</span>
+            </div>
+          </div>
+          <div class="slot arti">
+            <div class="arti-imgs n{{a.sets.length}}">
+              {{each a.sets suit}}
+              <img class="s{{suit.num}}" src="{{suit.icon}}" />
+              {{/each}}
+            </div>
+            <div class="tags">
+              {{each a.sets suit}}<span class="num">{{suit.num}}</span>{{/each}}
+            </div>
+          </div>
+          <div class="name-box">
+            <div class="name">{{a.name}}</div>
+            {{if a.mods.length}}<div class="mod">改装</div>{{/if}}
+          </div>
+        </div>
+
+        <div class="props">
+          <div class="prop">
+            <b>{{a.cp}}%</b>
+            <i>暴击率</i>
+          </div>
+          <div class="prop">
+            <b>{{a.cd}}%</b>
+            <i>暴击伤害</i>
+          </div>
+          <div class="prop">
+            <b>{{a.keyValue}}</b>
+            <i>{{a.keyProp}}</i>
+          </div>
+          <div class="prop energy">
+            <svg viewBox="0 0 26 26">
+              <circle cx="13" cy="13" r="10.5" stroke="rgba(255,255,255,.22)" stroke-width="4" fill="none" />
+              <circle
+                cx="13" cy="13" r="10.5" stroke="#7de2c3" stroke-width="4" fill="none"
+                stroke-dasharray="{{a.recharge.dash}}" transform="rotate(-90 13 13)" stroke-linecap="round" />
+              <text x="13" y="15.2" text-anchor="middle" font-size="8" fill="#ffffff">{{a.recharge.pctNum}}</text>
+            </svg>
+            <i>充能达成</i>
+          </div>
+          <div class="prop">
+            <b>{{a.recharge.same}}</b>
+            <i>同色球</i>
+          </div>
+          <div class="prop">
+            <b>{{a.recharge.diff}}</b>
+            <i>异色球</i>
+          </div>
+        </div>
+
+        <div class="talent">
+          {{each a.skills skill}}
+          <div>
+            {{if skill.icon}}<img src="{{skill.icon}}" />{{/if}}
+            <span class="{{skill.style}}">{{skill.level}}</span>
+          </div>
+          {{/each}}
+        </div>
+
+        {{if a.mods.length}}
+        <div class="mod-line">{{each a.mods m}}<span>{{m}}</span>{{/each}}</div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="block actions">
+      <div class="block-title">
+        <span class="label">操作手法</span>
+        <span class="tag {{if custom}}on{{/if}}">{{if custom}}自定义手法{{else}}小助手推荐手法{{/if}}</span>
+        {{if rankTip}}<span class="note">{{rankTip}}</span>{{/if}}
+      </div>
+      <div class="act-list">
+        {{each actions action}}
+        <span class="act">{{action}}</span>
+        {{/each}}
+      </div>
+    </div>
+
+    {{if modSummary.length}}
+    <div class="block mods">
+      <div class="block-title">
+        <span class="label">换装模拟</span>
+        <span class="note">替换套装 / 武器被动 / 命座 / 天赋后重算；圣遗物词条沿用原面板，结果为估算</span>
+      </div>
+      <div class="mod-list">
+        {{each modSummary line}}
+        <span class="mod-item">{{line}}</span>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="block buffs">
+    <div class="block-title">
+      <span class="label">Buff 情况</span>
+      <span class="note">按手法时间轴触发的增益</span>
+    </div>
+    <ul class="rows">
+      {{each buffs item}}
+      <li>
+        <div class="t">{{item[0]}}s</div>
+        <div class="n">{{item[1]}}</div>
+        <div class="d">{{item[2]}}</div>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  {{if detail}}
+  <div class="block damages">
+    <div class="block-title"><span class="label">伤害明细</span>{{if damagesCut}}<span class="note">条数过多，后 {{damagesCut}} 条未展示</span>{{/if}}</div>
+    <ul class="rows">
+      <li class="head">
+        <div class="t">时间</div>
+        <div class="a">动作</div>
+        <div class="v">暴击</div>
+        <div class="v">不暴击</div>
+        <div class="v">期望</div>
+      </li>
+      {{each damages row}}
+      <li>
+        <div class="t">{{row[0]}}s</div>
+        <div class="a">{{row[1]}}</div>
+        <div class="v">{{row[2]}}</div>
+        <div class="v">{{row[3]}}</div>
+        <div class="v">{{row[4]}}</div>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+  {{/if}}
+
+  <div class="copyright">
+    xhh-TL × Data from 提瓦特小助手 × Prototype by FanSky_Qs / nonebot-plugin-gspanel
+    <span>{{qqname}} · {{generatedAt}}</span>
+  </div>
+</div>
+</body>
+</html>

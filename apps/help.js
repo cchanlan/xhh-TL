@@ -242,6 +242,21 @@ export function buildHelpGroups() {
           desc: '深渊玩家各角色持有比例；绑CK标记已持有',
         },
         {
+          icon: 'gs-胡桃.webp',
+          title: '#队伍伤害 钟离,班尼特,香菱,行秋',
+          desc: '小助手算队伍DPS；需先#更新面板。加「详情」出逐条伤害',
+        },
+        {
+          icon: 'gs-夜兰.webp',
+          title: '#队伍伤害 …队伍… 钟离e,班尼特q,香菱q',
+          desc: '自定义手法：e/长e/短e/q/zj/a1~a6，同角色连招可省名',
+        },
+        {
+          icon: 'gs-纳西妲.webp',
+          title: '#队伍伤害 香菱换六命换精5换4千岩',
+          desc: '换装模拟：换武器/圣遗物/命座/精炼/天赋101313/90级',
+        },
+        {
           icon: 'gs-芙宁娜.webp',
           title: '#小剧诗 #小幻想',
           desc: '幻想真境剧诗关键关卡通关速览',
