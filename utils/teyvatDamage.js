@@ -166,30 +166,76 @@ export async function requestTeamDamage(body, timeout = 20000) {
 
 /* ────────────────────────────── 技能码 / 手法 ────────────────────────────── */
 
-/** 中文动作词 → 技能码 */
-const SKILL_WORD = [
-  [/^(?:[qQ]|大招|元素爆发|爆发)$/, 'q'],
-  [/^(?:长按?[eE]|大[eE])$/, 'e2'],
-  [/^(?:短按?[eE]|小[eE]|点[eE])$/, 'e1'],
-  [/^(?:[eE]|元素战技|战技)$/, 'e'],
-  [/^(?:重击|蓄力|蓄力攻击|[zZ][jJ])$/, 'zj'],
+/**
+ * 动作片段匹配表（按优先级，长写法在前）
+ * 每项：[正则, (m) => 码数组]
+ * 说明：
+ * - `a1`…`a9` 里的数字是普攻**第几段**（小助手语义），不是次数
+ * - `zj` / `q` 后面的数字是**次数**（这两个动作没有段位概念，`重击5` 就是连点 5 次重击）
+ * - `e1` 短按 / `e2` 长按
+ */
+const ACTION_PATTERNS = [
+  [/^(?:长按?|大)[eE]/, () => ['e2']],
+  [/^(?:短按?|点|小)[eE]/, () => ['e1']],
+  [/^(?:重击|蓄力攻击|蓄力|[zZ][jJ])\s*([1-9]\d?)?/, (m) => repeat('zj', m[1])],
+  [/^(?:普攻|平[aA]|[aA])\s*([1-9])?/, (m) => [`a${m[1] || 1}`]],
+  [/^(?:元素战技|战技)/, () => ['e']],
+  [/^[eE]\s*([12])?/, (m) => [m[1] ? `e${m[1]}` : 'e']],
+  [/^(?:大招|元素爆发|爆发|[qQ])\s*([1-9]\d?)?/, (m) => repeat('q', m[1])],
 ]
 
+const MAX_REPEAT = 20
+
+function repeat(code, countRaw) {
+  const n = countRaw ? Number(countRaw) : 1
+  if (!Number.isFinite(n) || n < 1 || n > MAX_REPEAT) return null
+  return Array.from({ length: n }, () => code)
+}
+
 /**
- * 规范化技能码：兼容大小写与中文写法，非法返回 ''
+ * 把一段动作文本拆成技能码序列，非法返回 null
+ * 支持：单个动作（`e` / `长E` / `a3` / `重击`）、连写（`eq` / `a1a2` / `ezj`）、
+ *      次数（`重击5` / `q2` / `a1*3` / `e2x2` / `q3次`）
+ */
+export function expandActionCodes(raw) {
+  const text = String(raw || '').trim()
+  if (!text) return null
+
+  // 通用重复后缀：*N / xN / ×N / N次（作用于前面整段）
+  const rep = text.match(/^(.+?)\s*(?:[*xX×]\s*([1-9]\d?)|([1-9]\d?)\s*次)$/)
+  if (rep) {
+    const base = expandActionCodes(rep[1])
+    const n = Number(rep[2] || rep[3])
+    if (!base || n < 1 || n > MAX_REPEAT || base.length * n > MAX_REPEAT * 2) return null
+    return Array.from({ length: n }, () => base).flat()
+  }
+
+  const codes = []
+  let rest = text
+  while (rest) {
+    let matched = false
+    for (const [re, toCodes] of ACTION_PATTERNS) {
+      const m = rest.match(re)
+      if (!m || !m[0]) continue
+      const part = toCodes(m)
+      if (!part) return null
+      codes.push(...part)
+      rest = rest.slice(m[0].length).replace(/^[\s+·、]+/, '')
+      matched = true
+      break
+    }
+    if (!matched) return null
+  }
+  return codes.length ? codes : null
+}
+
+/**
+ * 规范化单个技能码：兼容大小写与中文写法，非法或含多个动作时返回 ''
  * 合法输出：q / e / e1 / e2 / zj / a1..a9
  */
 export function normalizeSkillCode(raw) {
-  const s = String(raw || '').trim()
-  if (!s) return ''
-  for (const [re, code] of SKILL_WORD) if (re.test(s)) return code
-  // 普攻：a / a3 / 普攻2 / A2
-  const a = s.match(/^(?:[aA]|普攻|平[aA])\s*([1-9])?$/)
-  if (a) return `a${a[1] || 1}`
-  // 长短 E 的数字写法
-  const e = s.match(/^[eE]\s*([12])$/)
-  if (e) return `e${e[1]}`
-  return ''
+  const codes = expandActionCodes(raw)
+  return codes?.length === 1 ? codes[0] : ''
 }
 
 /** 技能码 → 展示名（本地兜底用，正常走接口返回的 combo_intro） */
@@ -205,7 +251,8 @@ export function skillCodeLabel(code) {
 
 /**
  * 解析手法 token 列表
- * token 形如：班尼特e / 希诺宁e / a1 / q / 火神q / 钟离长E / 香菱重击
+ * token 形如：班尼特e / 希诺宁e / a1 / q / 火神q / 钟离长E / 香菱重击 /
+ *            班尼特eq（连写） / 重击5（次数） / a1*3
  * 省略角色名时沿用上一个角色（和小程序、图里的写法一致）
  *
  * @param {string[]} tokens
@@ -228,22 +275,22 @@ export function parseCombo(tokens, team) {
     const raw = String(token || '').trim()
     if (!raw) continue
 
-    // 先整体当动作词试一次（纯 a1 / q / 重击 这类）
-    let code = normalizeSkillCode(raw)
+    // 先整体当动作试一次（纯 a1 / q / 重击5 / eq 这类）
+    let codes = expandActionCodes(raw)
     let roleName = ''
-    if (!code) {
+    if (!codes) {
       // 角色名 + 动作：从右往左切，取最长能识别成角色名的前缀
       for (let i = raw.length - 1; i >= 1; i--) {
-        const c = normalizeSkillCode(raw.slice(i))
+        const c = expandActionCodes(raw.slice(i))
         if (!c) continue
         const prefix = raw.slice(0, i)
         if (!Character.get(prefix) && !findNo(prefix)) continue
-        code = c
+        codes = c
         roleName = prefix
         break
       }
     }
-    if (!code) return { combo: [], actions: [], error: `手法里的「${raw}」看不懂` }
+    if (!codes) return { combo: [], actions: [], error: `手法里的「${raw}」看不懂` }
 
     if (roleName) {
       const no = findNo(roleName)
@@ -257,8 +304,10 @@ export function parseCombo(tokens, team) {
       cur = 1
       combo.push(1)
     }
-    combo.push(code)
-    actions.push(`${team[cur - 1]?.name || ''}${skillCodeLabel(code)}`)
+    for (const code of codes) {
+      combo.push(code)
+      actions.push(`${team[cur - 1]?.name || ''}${skillCodeLabel(code)}`)
+    }
   }
 
   if (!combo.length) return { combo: [], actions: [] }
@@ -325,10 +374,13 @@ function parseArtisSets(text) {
 /**
  * 解析单个角色的换装描述（「换」之后的部分）
  * 支持：六命 / 6命 / 命座6 ； 精5 / 精炼5 ； 天赋101313 ； 90级 ；
- *       武器名（含别名，如 讨龙 / 息灾） ； 圣遗物套装（4千岩 / 2追忆2如雷）
+ *       武器名（含别名，如 讨龙 / 息灾）； 专武（按角色名查 miao 的「X专武」别名）；
+ *       圣遗物套装（4千岩 / 2追忆2如雷 / 绝缘）
+ * @param {string[]} list 「换」分段后的描述
+ * @param {string} [charName] 角色标准名，用于把裸写的「专武」补成「X专武」
  * @returns {{mods: object, unknown: string[]}}
  */
-export function parseLoadoutMods(list) {
+export function parseLoadoutMods(list, charName = '') {
   const mods = {}
   const unknown = []
   for (const rawItem of list) {
@@ -360,6 +412,16 @@ export function parseLoadoutMods(list) {
     m = item.match(/^(?:等级)?\s*(\d{1,2})\s*级$/)
     if (m) {
       mods.level = Math.min(90, Math.max(1, Number(m[1])))
+      continue
+    }
+    // 专武：miao 的武器别名表里就收了「玛薇卡专武」这种写法，补上角色名去查即可
+    if (/^(?:专武|专属武器|专属)$/.test(item)) {
+      const own = charName ? Weapon.get(`${charName}专武`) : null
+      if (own?.name) {
+        mods.weapon = own.name
+        continue
+      }
+      unknown.push(charName ? `${item}（没查到${charName}的专武，请直接写武器名）` : item)
       continue
     }
     // 武器（含别名）。放在圣遗物之前：武器名更具体，「息灾」这类不会被套装别名抢走；

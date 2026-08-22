@@ -24,7 +24,7 @@ import { createUser } from '../utils/userBind.js'
 import {
   ELEM_CN,
   applyLoadoutMods,
-  normalizeSkillCode,
+  expandActionCodes,
   parseCombo,
   parseLoadoutMods,
   profileToPanel,
@@ -45,10 +45,11 @@ const TRAVELER = ['旅行者', '空', '荧', '萤']
 function isActionToken(token) {
   const raw = String(token || '').trim()
   if (!raw) return false
-  if (normalizeSkillCode(raw)) return true
-  // 角色名 + 动作：如 班尼特e / 香菱重击
+  // 用 expandActionCodes 而不是单码判断：不然「班尼特eq」「重击5」这种连写会被当成队员名
+  if (expandActionCodes(raw)) return true
+  // 角色名 + 动作：如 班尼特e / 香菱重击 / 玛薇卡a1*3
   for (let i = raw.length - 1; i >= 1; i--) {
-    if (!normalizeSkillCode(raw.slice(i))) continue
+    if (!expandActionCodes(raw.slice(i))) continue
     if (Character.get(raw.slice(0, i))) return true
   }
   return false
@@ -83,7 +84,9 @@ export function parseMember(token) {
     .map((s) => s.trim())
     .filter(Boolean)
   const name = parts.shift() || ''
-  const { mods, unknown } = parseLoadoutMods(parts)
+  // 传标准名进去：「换专武」要靠它拼成 miao 的「X专武」别名
+  const stdName = Character.get(name)?.name || name
+  const { mods, unknown } = parseLoadoutMods(parts, stdName)
   return { name, mods, unknown }
 }
 
@@ -415,7 +418,11 @@ export class teamDamage extends plugin {
         return true
       }
       if (unknown.length) {
-        await e.reply(`「换${unknown.join('换')}」看不懂，支持：换武器名 / 换4千岩 / 换六命 / 换精5 / 换天赋101313 / 换90级`, true)
+        await e.reply(
+          `${char.name} 的「换${unknown.join('换')}」看不懂\n` +
+            '支持：换武器名（讨龙 / 息灾 / 专武）/ 换4千岩 / 换绝缘 / 换2追忆2如雷 / 换六命 / 换精5 / 换天赋101313 / 换90级',
+          true,
+        )
         return true
       }
       if (members.some((m) => m.char.id === char.id)) {
@@ -463,7 +470,12 @@ export class teamDamage extends plugin {
     if (comboTokens.length) {
       const parsed = parseCombo(comboTokens, team)
       if (parsed.error) {
-        await e.reply(`${parsed.error}\n手法写法：角色名+动作，动作可写 e / 长e / 短e / q / zj / a1~a6，同一角色连招可省略名字`, true)
+        await e.reply(
+          `${parsed.error}\n` +
+            '手法写法：角色名+动作，动作可写 e / 长e / 短e / q / 重击(zj) / a1~a6（普攻第N段）\n' +
+            '同一角色连招可省略名字，也能连写或带次数：班尼特eq、重击5、a1*3',
+          true,
+        )
         return true
       }
       custom = parsed.combo
@@ -478,6 +490,18 @@ export class teamDamage extends plugin {
 
     const res = await requestTeamDamage(requestBody, (config().team_damage_timeout ?? 20) * 1000)
     if (!res.ok) {
+      // 「暂不支持该队伍」是小助手自己的配队库没收录这套，跟角色认不认识无关（实测：
+      // 闲云 / 伊安珊 / 夏沃蕾 单独配常规队都能算，但两三个功能位凑一队就会被拒），
+      // 直接抛原文用户会以为是插件不认角色，这里补一句说明
+      if (/暂不支持该队伍/.test(res.msg || '')) {
+        await e.reply(
+          `小助手算不了这套队：${team.map((t) => t.name).join('|')}\n` +
+            '它只收录了部分配队套路，队里功能位太多、或没有它认得的主 C 时就会拒绝（角色本身是认识的）。\n' +
+            '把其中一位换成明确的输出位再试试~',
+          true,
+        )
+        return true
+      }
       await e.reply(res.msg, true)
       return true
     }
