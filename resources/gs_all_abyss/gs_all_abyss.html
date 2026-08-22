@@ -441,7 +441,8 @@
                 <span class="bh-star">用时 {{ch.second}}s</span>
               </div>
 
-              <!-- 上：Boss + DPS -->
+              <!-- Boss + 战绩 与 队伍并排：竖着叠会白白多出一整行的高度 -->
+              <div class="hard-mid">
               <div class="hard-top">
                 {{if ch.monster}}
                 <div class="hard-boss">
@@ -466,7 +467,7 @@
                 {{/if}}
               </div>
 
-              <!-- 中：队伍（人数 1~4 自适应） -->
+              <!-- 队伍（人数 1~4 自适应） -->
               <div class="team mcard-team team-hard hard-team-mid team-n{{ch.avatars.length}}">
                 {{each ch.avatars a}}
                 <div class="mcard star-{{a.star}}">
@@ -498,6 +499,7 @@
                   </div>
                 </div>
                 {{/each}}
+              </div>
               </div>
 
               <!-- 下：机制全文 -->

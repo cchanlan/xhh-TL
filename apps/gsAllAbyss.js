@@ -665,7 +665,8 @@ export class gsAllAbyss extends plugin {
     const qq = targetQq || e.user_id || e.sender?.user_id || ''
     const qqname = await resolveDisplayName(e, qq)
     const bgImage = pickGsBgImage('xhh-TL/gsAllAbyss')
-    const renderScale = getRenderScaleStyle(config(), 2.0)
+    // 1.5 倍够清晰（三列压缩后总高只有原来一半），再高就是几 MB 的 PNG
+    const renderScale = getRenderScaleStyle(config(), 1.5)
     // 毛玻璃主题：light=初版浅色玻璃 / dark=深色半透明（锅巴可配）
     const themeRaw = String(config().gs_all_abyss_theme || 'light').toLowerCase()
     const theme = themeRaw === 'dark' ? 'dark' : 'light'
@@ -688,11 +689,13 @@ export class gsAllAbyss extends plugin {
     try {
       const renderResult = await e.runtime.render('xhh-TL', 'gs_all_abyss', renderData, {
         retType: 'base64',
-        imgType: 'png',
+        imgType: 'jpeg',
+        quality: 92,
         beforeRender({ data }) {
           return {
             ...data,
-            imgType: 'png',
+            imgType: 'jpeg',
+            quality: 92,
             sys: { scale: renderScale },
             ppath,
             tplFile,

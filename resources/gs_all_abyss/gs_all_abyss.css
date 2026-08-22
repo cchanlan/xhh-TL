@@ -105,10 +105,19 @@ body {
 .col > .col-body {
   flex: 1 1 auto;
 }
-.col-abyss,
-.col-hard,
+/* 三列不等宽：按各自内容的「天然高度」配权重，让三列底边尽量齐。
+   危战列有大段地脉素乱说明（最吃高度）→ 给它最宽，行数少了列就矮；
+   深渊/剧诗列内容短 → 收窄一点、自然变高，三列就对得上 */
+.col-abyss {
+  flex: 1.04 1 0;
+  width: 0;
+}
+.col-hard {
+  flex: 1.08 1 0;
+  width: 0;
+}
 .col-role {
-  flex: 1 1 0;
+  flex: 1.0 1 0;
   width: 0;
 }
 
@@ -472,19 +481,42 @@ footer {
 }
 
 /* 幻想剧诗：居中隔开，少人时也不拉伸 */
+/* 剧诗 6 个区块两列排：竖着叠的话这列比另外两列高一倍，右下会空出一大片 */
+.col-role > .col-body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 5px;
+}
+.col-role > .col-body > .block-card {
+  width: calc(50% - 3px);
+  box-sizing: border-box;
+}
 .col-role .team.mcard-team {
-  justify-content: center;
-  gap: 14px;
-  padding: 8px 8px 8px;
+  justify-content: space-evenly;
+  gap: 3px;
+  padding: 4px 3px 4px;
 }
-.col-role .mcard {
-  flex: 0 0 auto;
-  width: 70px;
-  max-width: 70px;
+/* 卡片宽度按百分比给：写死 px 的话列一变窄第 4 张卡就顶出容器（被邻列盖住）。
+   选择器要带上 .team.mcard-team，否则压不住上面那条 3 类选择器 */
+.col-role .team.mcard-team > .mcard {
+  flex: 0 1 auto;
+  width: calc(25% - 3px);
+  max-width: none;
 }
-.col-role .team-n1 > .mcard { width: 92px; max-width: 92px; }
-.col-role .team-n2 > .mcard { width: 82px; max-width: 82px; }
-.col-role .team-n3 > .mcard { width: 74px; max-width: 74px; }
+.col-role .team.mcard-team.team-n1 > .mcard { width: 74px; max-width: 74px; }
+.col-role .team.mcard-team.team-n2 > .mcard { width: calc(45% - 3px); }
+.col-role .team.mcard-team.team-n3 > .mcard { width: calc(32% - 3px); }
+
+/* 两列后每块变窄，卡片按容器百分比走；头像等尺寸保持和深渊列一致，
+   顺便把这列剩下的高度吃掉，三列底边更接近 */
+.col-role .mcard-face,
+.col-role .mcard-face img { width: 44px; height: 44px; }
+.col-role .mcard-name { font-size: 9.4px; }
+.col-role .mcard-talent span { height: 13px; line-height: 13px; font-size: 9.4px; }
+.col-role .gbox { width: 24px; height: 24px; }
+.col-role .enemy-box { padding: 0 5px 5px; }
+.col-role .enemy-name { font-size: 8.6px; }
 
 .mcard {
   flex: 0 0 auto;
@@ -740,11 +772,18 @@ footer {
   z-index: 2;
 }
 
-/* 危战 v2：上 Boss+DPS，中机制全文，下队伍 */
+/* 危战 v2：Boss+战绩 与队伍左右并排，机制全文在下 */
+.hard-card.v2 .hard-mid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 2px;
+}
 .hard-card.v2 .hard-top {
   display: flex;
-  gap: 8px;
-  padding: 6px 8px 4px;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 0;
   align-items: center;
 }
 .hard-boss {
@@ -772,10 +811,15 @@ footer {
   flex: 1;
   min-width: 0;
   display: flex;
+  /* 竖排两条战绩，跟 Boss 图凑成左侧一栏，右侧放队伍 */
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  width: 122px;
+  flex: 0 0 122px;
 }
 .dps-row {
+  flex: 1 1 0;
+  min-width: 0;
   background: rgba(255,255,255,0.42);
   border-radius: 6px;
   padding: 4px 6px;
@@ -810,25 +854,35 @@ footer {
 .hard-desc,
 .hard-desc.full {
   margin: 0;
-  padding: 5px 10px 6px 18px;
-  font-size: 9px;
+  padding: 4px 8px 5px 16px;
+  font-size: 8.6px;
   color: #444;
-  line-height: 1.4;
+  line-height: 1.32;
   max-height: none;
   overflow: visible;
   border-top: 1px dashed rgba(0,0,0,0.06);
   border-bottom: 1px dashed rgba(0,0,0,0.06);
   background: rgba(255,255,255,0.18);
 }
-.hard-desc li { margin-bottom: 3px; }
+.hard-desc li { margin-bottom: 2px; }
 .hard-desc li:last-child { margin-bottom: 0; }
 /* 危战队伍：居中隔开；1~3 人卡片略放大 */
 .hard-card.v2 .hard-team-mid,
 .hard-card.v2 .team-hard {
-  justify-content: center;
-  gap: 14px;
-  padding: 8px 12px 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: space-evenly;
+  gap: 4px;
+  padding: 2px 2px 4px;
 }
+.hard-card.v2 .team-hard.mcard-team > .mcard {
+  flex: 0 1 auto;
+  width: calc(25% - 4px);
+  max-width: none;
+}
+.hard-card.v2 .team-hard.mcard-team.team-n1 > .mcard { width: 76px; max-width: 76px; }
+.hard-card.v2 .team-hard.mcard-team.team-n2 > .mcard { width: calc(45% - 4px); }
+.hard-card.v2 .team-hard.mcard-team.team-n3 > .mcard { width: calc(32% - 4px); }
 .hard-card.v2 .mcard {
   flex: 0 0 auto;
   width: 70px;

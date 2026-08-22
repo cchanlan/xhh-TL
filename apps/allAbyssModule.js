@@ -397,11 +397,14 @@ export async function allAbyss(e) {
       try {
         const renderResult = await e.runtime.render('xhh-TL', templateName, renderData, {
           retType: 'base64',
-          imgType: 'png',
+          // jpeg 体积约为同尺寸 png 的 1/5，这张图内容多、原来动辄好几 MB
+          imgType: 'jpeg',
+          quality: 92,
           beforeRender({ data }) {
             return {
               ...data,
-              imgType: 'png',
+              imgType: 'jpeg',
+              quality: 92,
               sys: { scale: renderScale },
               ppath,
               tplFile,
