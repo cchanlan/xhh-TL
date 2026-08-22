@@ -36,13 +36,9 @@
         </div>
       </div>
 
-      <div class="cols3" id="cols3">
-        <div class="col3"></div>
-        <div class="col3"></div>
-        <div class="col3"></div>
-      </div>
-      <div class="pool" id="pool">
+      <div class="cols">
         <!-- 深境螺旋 -->
+        <div class="col col-abyss">
           <div class="section-title">
             <span class="sec-badge abyss">深境螺旋</span>
             {{if abyss.ok}}
@@ -52,6 +48,7 @@
             {{/if}}
           </div>
           {{if abyss.ok}}
+          <div class="col-body">
             {{if abyss.stats && abyss.stats.length}}
             <div class="abyss-rank-row">
               {{each abyss.stats st}}
@@ -65,12 +62,13 @@
             </div>
             {{/if}}
             {{each abyss.floors fl}}
-            {{if fl.useSplitLineup}}
-            <div class="block-card abyss-floor floor-split">
+            <div class="block-card abyss-floor {{if fl.useSplitLineup}}floor-split{{else}}floor-rooms-detail{{/if}}">
               <div class="block-head">
                 <span class="bh-title">第 {{fl.index}} 层</span>
                 <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
               </div>
+
+              {{if fl.useSplitLineup}}
               <!-- 仅 11 层：顶部上/下半队共用一个大框 + 底部 1/2/3 间小头像 -->
               <!-- 1/2 人：横版立绘卡（对齐 miao wide）；3/4 人：原竖版小卡 -->
               <div class="floor-one-box">
@@ -221,13 +219,6 @@
                 </div>
               </div>
 
-            </div>
-            <!-- 11 层的各间小头像行单独成卡：一整张大卡太高，分栏时会把某一栏顶出去 -->
-            <div class="block-card abyss-floor floor-split floor-rooms-card">
-              <div class="block-head">
-                <span class="bh-title">第 {{fl.index}} 层 · 各间</span>
-                <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
-              </div>
               <div class="floor-rooms">
                 {{each fl.levels lv}}
                 <div class="floor-room">
@@ -261,17 +252,15 @@
                 {{/each}}
               </div>
 
-            </div>
-            {{else}}
-            <!-- 12 层：每个「间」单独一张卡，分栏时粒度细，三栏才配得平 -->
-            {{each fl.levels lv}}
-
-              <div class="block-card abyss-floor floor-room-single">
-                <div class="block-head">
-                  <span class="bh-title">第 {{fl.index}} 层 · 间 {{lv.index}}</span>
-                  <span class="bh-star">{{lv.starText}} {{lv.time || ''}}</span>
+              {{else}}
+              <!-- 12 层：3 间，每间上/下半；1/2 人横版立绘卡，3/4 人竖版小卡 -->
+              {{each fl.levels lv}}
+              <div class="level-compact">
+                <div class="lv-bar">
+                  <span>间 {{lv.index}}</span>
+                  <span class="room-stars">{{lv.starText}}</span>
+                  <span class="room-time">{{lv.time || ''}}</span>
                 </div>
-                <div class="level-compact">
                 <div class="half-row">
                   {{if lv.up}}
                   <div class="half-col shared-box">
@@ -423,15 +412,18 @@
                   {{/if}}
                 </div>
               </div>
-              </div>
+              {{/each}}
+              {{/if}}
+            </div>
             {{/each}}
-            {{/if}}
-            {{/each}}
+          </div>
           {{else}}
           <div class="empty-col">暂无深渊数据</div>
           {{/if}}
+        </div>
 
         <!-- 幽境危战：队伍 + Boss图 + 最强一击/总伤 + 机制（对齐 #幽境危战） -->
+        <div class="col col-hard">
           <div class="section-title">
             <span class="sec-badge hard">幽境危战</span>
             {{if hard.ok}}
@@ -441,6 +433,7 @@
             {{/if}}
           </div>
           {{if hard.ok}}
+          <div class="col-body">
             {{each hard.challs ch}}
             <div class="block-card hard-card v2">
               <div class="block-head">
@@ -448,8 +441,7 @@
                 <span class="bh-star">用时 {{ch.second}}s</span>
               </div>
 
-              <!-- Boss + 战绩 与 队伍并排：竖着叠会白白多出一整行的高度 -->
-              <div class="hard-mid">
+              <!-- 上：Boss + DPS -->
               <div class="hard-top">
                 {{if ch.monster}}
                 <div class="hard-boss">
@@ -474,7 +466,7 @@
                 {{/if}}
               </div>
 
-              <!-- 队伍（人数 1~4 自适应） -->
+              <!-- 中：队伍（人数 1~4 自适应） -->
               <div class="team mcard-team team-hard hard-team-mid team-n{{ch.avatars.length}}">
                 {{each ch.avatars a}}
                 <div class="mcard star-{{a.star}}">
@@ -507,7 +499,6 @@
                 </div>
                 {{/each}}
               </div>
-              </div>
 
               <!-- 下：机制全文 -->
               {{if ch.monster && ch.monster.descs && ch.monster.descs.length}}
@@ -519,11 +510,14 @@
               {{/if}}
             </div>
             {{/each}}
+          </div>
           {{else}}
           <div class="empty-col">暂无危战数据</div>
           {{/if}}
+        </div>
 
         <!-- 幻想剧诗 -->
+        <div class="col col-role">
           <div class="section-title">
             <span class="sec-badge role">幻想剧诗</span>
             {{if role.ok}}
@@ -533,8 +527,9 @@
             {{/if}}
           </div>
           {{if role.ok}}
+          <div class="col-body">
             {{each role.stages s}}
-            <div class="block-card role-stage {{s.kind}}">
+            <div class="block-card {{s.kind}}">
               <div class="block-head">
                 <div class="bh-left">
                   <span class="medal {{if s.is_get_medal}}on{{else}}off{{/if}}"></span>
@@ -593,64 +588,13 @@
               {{/if}}
             </div>
             {{/each}}
+          </div>
           {{else}}
           <div class="empty-col">暂无剧诗数据</div>
           {{/if}}
+        </div>
       </div>
 
-
-      <script>
-        /* 三栏等高装箱：CSS 的 column-fill:balance 只能做到「差不多齐」，右下角总空一块。
-           这里改成自己算：先量出每个区块的真实高度，按阅读顺序做最优三等分
-           （二分 + 贪心，段数 ≤ 3 的最小最大段和），剩下的差值由 CSS 的
-           space-between 摊到卡片间距上，三栏底边齐平且卡片不变形。模块标题跟它后面第一个区块绑成一组，不会被拆到栏底。 */
-        (function () {
-          var pool = document.getElementById('pool')
-          var cols = Array.prototype.slice.call(document.querySelectorAll('#cols3 .col3'))
-          if (!pool || cols.length !== 3) return
-          var kids = Array.prototype.slice.call(pool.children)
-          var groups = []
-          for (var i = 0; i < kids.length; i++) {
-            var el = kids[i]
-            if (el.classList.contains('section-title') && kids[i + 1]) {
-              groups.push([el, kids[i + 1]])
-              i++
-            } else {
-              groups.push([el])
-            }
-          }
-          var GAP = 6
-          var hs = groups.map(function (g) {
-            var h = 0
-            g.forEach(function (el, idx) { h += el.getBoundingClientRect().height + (idx ? 4 : 0) })
-            return h
-          })
-          var total = hs.reduce(function (a, b) { return a + b }, 0)
-          var maxH = Math.max.apply(null, hs)
-          function segs(limit) {
-            var cnt = 1, cur = 0
-            for (var i = 0; i < hs.length; i++) {
-              var add = cur ? GAP + hs[i] : hs[i]
-              if (cur + add > limit) { cnt++; cur = hs[i] } else { cur += add }
-              if (cnt > 3) return 99
-            }
-            return cnt
-          }
-          var lo = Math.max(maxH, Math.ceil(total / 3)), hi = total
-          while (lo < hi) {
-            var mid = Math.floor((lo + hi) / 2)
-            if (segs(mid) <= 3) hi = mid; else lo = mid + 1
-          }
-          var limit = lo, ci = 0, cur = 0
-          for (var j = 0; j < groups.length; j++) {
-            var add = cur ? GAP + hs[j] : hs[j]
-            if (cur + add > limit && ci < 2) { ci++; cur = hs[j] } else { cur += add }
-            groups[j].forEach(function (el) { cols[ci].appendChild(el) })
-          }
-          pool.parentNode.removeChild(pool)
-          cols.forEach(function (col) { if (!col.children.length) col.style.display = 'none' })
-        })()
-      </script>
       <footer>角色卡：头像·天赋·武器·圣遗物 · from 小火花</footer>
     </div>
   </div>
