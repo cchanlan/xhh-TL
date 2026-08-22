@@ -63,7 +63,8 @@ export function splitInput(text) {
   const tokens = String(text || '')
     .split(/[\s,，、。|]+/)
     .map((s) => s.trim())
-    .filter(Boolean)
+    // 手打的「@昵称」不会变成 at 段而是留在正文里，别把它当角色名（真 at 走 resolveTargetQq）
+    .filter((s) => s && !s.startsWith('@'))
 
   const team = []
   const combo = []
@@ -339,6 +340,60 @@ export function buildView(raw, panels, modLabels) {
   }
 }
 
+/* ─────────────────────────── 帮助图内容 ─────────────────────────── */
+
+/**
+ * #队伍伤害帮助 的图文内容
+ * 动作码与换装写法必须和 utils/teyvatDamage.js 里的 ACTION_PATTERNS / parseLoadoutMods 对齐，
+ * 改解析规则时记得同步这里。
+ */
+const HELP_DATA = {
+  basics: [
+    { cmd: '#队伍伤害 钟离,班尼特,香菱,行秋', desc: '最简写法，手法用小助手的推荐轴' },
+    { cmd: '#队伍伤害详情 钟离,班尼特,香菱,行秋', desc: '多出一张逐条伤害表（详情 / 过程 / 全图 都认）' },
+    { cmd: '#队伍伤害 @某人 钟离,班尼特,香菱,行秋', desc: '算别人的面板' },
+    { cmd: '#队伍伤害102515702 钟离,班尼特,香菱', desc: '直接指定 UID；队伍 1~4 人都行' },
+  ],
+  actions: [
+    { code: 'e', mean: '元素战技', tip: '也可写 元素战技 / 战技' },
+    { code: '长e / 短e', mean: '长按 / 短按 E', tip: '钟离、班尼特这类可长按的角色才有区别；也可写 e2 / e1' },
+    { code: 'q', mean: '元素爆发', tip: '也可写 大招 / 爆发' },
+    { code: '重击 / zj', mean: '重击（蓄力攻击）', tip: '也可写 蓄力' },
+    { code: 'a1 ~ a6', mean: '普攻第 N 段', tip: 'aN 的 N 是段位，不是次数；裸写 a = a1' },
+  ],
+  actionRules: [
+    '手法写在队伍后面，用空格或逗号隔开：<b>#队伍伤害 钟离,班尼特,香菱,行秋 钟离长e,班尼特q,香菱q,e</b>',
+    '<b>不写角色名就沿用上一个角色</b>：<b>香菱q,e</b> = 香菱 Q 接 香菱 E',
+    '同一个角色可以<b>连写</b>：<b>班尼特eq</b> = 班尼特 E 接 Q；<b>玛薇卡qa1</b> = Q 接普攻一段',
+    '带<b>次数</b>：<b>重击5</b>（重击 5 次）、<b>q2</b>（Q 两次）、<b>a1*3</b> / <b>a1x3</b> / <b>a1 3次</b>',
+    '⚠️ 只有 <b>重击 / q</b> 后面的数字是次数，<b>aN 的 N 是普攻第几段</b>，<b>e1 / e2</b> 是短按 / 长按',
+    '至少要写 2 个动作；某角色用不了的动作（普攻段数超了之类）小助手会罢工，会提示你换写法',
+  ],
+  mods: [
+    { code: '换六命 / 换6命 / 换命座6', mean: '命座 0~6' },
+    { code: '换精5 / 换精炼5', mean: '武器精炼 1~5' },
+    { code: '换天赋101313 / 换天赋10-13-13', mean: '天赋等级（普攻 / E / Q）' },
+    { code: '换90级 / 换80级', mean: '角色等级' },
+    { code: '换护摩之杖 / 换讨龙', mean: '换武器，支持 miao 的所有别名' },
+    { code: '换专武', mean: '该角色的专属武器（没收录会提示你直接写武器名）' },
+    { code: '换4千岩 / 换千岩4 / 换绝缘', mean: '圣遗物套装，不写件数按 4 件' },
+    { code: '换2追忆2如雷', mean: '2+2 散搭' },
+  ],
+  modRules: [
+    '换装接在角色名后面，<b>可以叠加</b>，一个角色写几个就都生效',
+    '完整例子：<b>#队伍伤害 玛薇卡换专武换六命换天赋101313,茜特菈莉换4千岩,班尼特换精5,希诺宁</b>',
+    '换武器时插件按 miao 的武器数据把<b>白值与副词条</b>（双爆 / 精通 / 充能等）换算过去，攻击力% 类按近似折算',
+    '换套装只替换<b>套装效果</b>，圣遗物<b>词条沿用你现在的面板</b>，所以结果是估算，不是真的重新刷圣遗物',
+    '武器类型不对（给行秋换法器）会提示并跳过该项，其余换装照常生效',
+  ],
+  notes: [
+    '面板取 <b>miao-plugin 的角色面板缓存</b>，队里每个人都要先 <b>#更新面板</b>，缺谁会告诉你缺谁',
+    '伤害由<b>提瓦特小助手</b>服务端计算，插件只负责组装面板、翻译手法与出图',
+    '小助手只收录了部分配队套路：功能位太多、或找不到它认得的主 C 时会回「暂不支持该队伍」——<b>不是角色没认出来</b>，换个输出位即可',
+    '想让 FanSky_Qs 的同名指令出图，把配置里的 team_damage 关掉即可',
+  ],
+}
+
 /* ─────────────────────────── 插件 ─────────────────────────── */
 
 export class teamDamage extends plugin {
@@ -351,11 +406,54 @@ export class teamDamage extends plugin {
       priority: config().team_damage_priority ?? -98,
       rule: [
         {
+          reg: '^\\s*#?队伍伤害(帮助|说明|教程|用法|怎么用|怎么玩)\\s*$',
+          fnc: 'help',
+        },
+        {
           reg: '^\\s*#?队伍伤害(详情|过程|全图)?\\s*(\\d{9})?\\s*(.*)$',
           fnc: 'query',
         },
       ],
     })
+  }
+
+  /** #队伍伤害帮助：把手法与换装的全部写法出成一张图 */
+  async help(e) {
+    if (config().team_damage === false) return false
+
+    const qq = e.user_id || ''
+    const renderData = {
+      ...HELP_DATA,
+      qq,
+      qqname: await resolveDisplayName(e, qq),
+      bgImage: toDataUrl(pickGsBgImage('xhh-TL/teamDamage')),
+      fontPanel: toFileUrl(path.join(MIAO_RES, 'common/font/HYWH-65W.ttf')),
+      fontNum: toFileUrl(path.join(MIAO_RES, 'common/font/tttgbnumber.ttf')),
+      generatedAt: moment().format('MM-DD HH:mm'),
+    }
+
+    try {
+      const renderResult = await e.runtime.render('xhh-TL', 'team_damage_help', renderData, {
+        retType: 'base64',
+        imgType: 'png',
+        beforeRender({ data }) {
+          return {
+            ...data,
+            imgType: 'png',
+            sys: { scale: getRenderScaleStyle(config(), 1.4) },
+            ppath: '../../../../plugins/xhh-TL/resources/',
+            tplFile: pluginDir + '/resources/team_damage/team_damage_help.html',
+            saveId: 'team_damage_help',
+          }
+        },
+      })
+      const image = extractRenderBuffer(renderResult)
+      if (!image) throw new Error('渲染结果中没有图片数据')
+      return replyQuote(e, segment.image(image))
+    } catch (err) {
+      logger.error('[xhh][teamDamage] 帮助渲染失败:', err)
+      return e.reply(`渲染失败：${err.message || err}`)
+    }
   }
 
   async query(e) {
@@ -374,6 +472,7 @@ export class teamDamage extends plugin {
           '自定义手法：#队伍伤害 钟离,班尼特,香菱,行秋 钟离e,班尼特q,香菱q,行秋q,行秋e',
           '换装模拟：#队伍伤害 香菱换六命换精5换天赋101313,行秋换讨龙换4千岩',
           '加「详情」出逐条伤害表：#队伍伤害详情 ...',
+          '全部写法看 #队伍伤害帮助',
         ].join('\n'),
         true,
       )

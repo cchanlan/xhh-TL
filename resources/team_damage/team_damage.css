@@ -634,3 +634,140 @@ body {
   color: rgba(255, 255, 255, 0.5);
   padding: 0 4px 2px;
 }
+
+/* ───────────── #队伍伤害帮助（team_damage_help.html）───────────── */
+
+#container.help {
+  width: 900px;
+  display: block;
+}
+
+.help-head {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: var(--card);
+  border-radius: 14px;
+}
+
+.help-head .title {
+  font-size: 30px;
+  color: var(--gold);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.7);
+  line-height: 1.25;
+}
+
+.help-head .sub {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+#container.help .block {
+  margin-bottom: 12px;
+}
+
+.cmd-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cmd-row code {
+  font-family: "PanelNumFont", "PanelFont", monospace;
+  font-size: 16px;
+  line-height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(125, 226, 195, 0.16);
+  color: #b6f0dd;
+}
+
+.cmd-row span {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+.kv-list {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+}
+
+.kv-row {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+.kv-list.two .kv-row {
+  width: 50%;
+}
+
+.kv-row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.kv-row b {
+  min-width: 186px;
+  font-weight: normal;
+  color: #ffd479;
+}
+
+.kv-row .mean {
+  min-width: 118px;
+  color: var(--text);
+}
+
+.kv-row .tip {
+  flex: 1;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.kv-list.two .kv-row {
+  padding-right: 12px;
+}
+
+.tips {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.tips li {
+  position: relative;
+  padding: 2px 0 2px 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.tips li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.tips li b {
+  font-weight: normal;
+  color: #b6f0dd;
+}

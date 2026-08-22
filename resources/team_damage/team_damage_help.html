@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="{{ppath}}team_damage/team_damage.css" />
+  <style>
+    @font-face {
+      font-family: "PanelFont";
+      src: url("{{fontPanel}}");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "PanelNumFont";
+      src: url("{{fontNum}}");
+      font-weight: 400;
+      font-style: normal;
+    }
+    #container {
+      {{if bgImage}}background-image: url("{{bgImage}}");{{/if}}
+    }
+  </style>
+</head>
+<body {{sys.scale}}>
+<div id="container" class="help">
+  <div class="help-head">
+    <div class="title">#队伍伤害 使用说明</div>
+    <div class="sub">提瓦特小助手算伤害 · miao 面板 · 支持自定义手法与换装模拟</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title"><span class="label">基础用法</span><span class="note">队伍用逗号或空格隔开，1~4 人</span></div>
+    <div class="cmd-list">
+      {{each basics item}}
+      <div class="cmd-row">
+        <code>{{item.cmd}}</code>
+        <span>{{item.desc}}</span>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title"><span class="label">操作手法</span><span class="note">不写手法就用小助手的推荐轴</span></div>
+    <div class="kv-list">
+      {{each actions item}}
+      <div class="kv-row">
+        <b>{{item.code}}</b>
+        <span class="mean">{{item.mean}}</span>
+        <span class="tip">{{item.tip}}</span>
+      </div>
+      {{/each}}
+    </div>
+    <ul class="tips">
+      {{each actionRules line}}
+      <li>{{@line}}</li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <div class="block">
+    <div class="block-title"><span class="label">换装模拟</span><span class="note">接在角色名后面，可叠加</span></div>
+    <div class="kv-list">
+      {{each mods item}}
+      <div class="kv-row">
+        <b>{{item.code}}</b>
+        <span class="mean">{{item.mean}}</span>
+      </div>
+      {{/each}}
+    </div>
+    <ul class="tips">
+      {{each modRules line}}
+      <li>{{@line}}</li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <div class="block">
+    <div class="block-title"><span class="label">要注意的</span></div>
+    <ul class="tips">
+      {{each notes line}}
+      <li>{{@line}}</li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <div class="copyright">
+    xhh-TL × 提瓦特小助手
+    <span>{{qqname}} · {{generatedAt}}</span>
+  </div>
+</div>
+</body>
+</html>

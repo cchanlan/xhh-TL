@@ -257,6 +257,11 @@ export function buildHelpGroups() {
           desc: '换装模拟：换武器/圣遗物/命座/精炼/天赋101313/90级',
         },
         {
+          icon: 'gs-钟离.webp',
+          title: '#队伍伤害帮助',
+          desc: '手法与换装的全部写法说明（出图）',
+        },
+        {
           icon: 'gs-芙宁娜.webp',
           title: '#小剧诗 #小幻想',
           desc: '幻想真境剧诗关键关卡通关速览',
