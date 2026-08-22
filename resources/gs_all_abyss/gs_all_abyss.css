@@ -105,21 +105,44 @@ body {
 .col > .col-body {
   flex: 1 1 auto;
 }
-/* 三列不等宽：按各自内容的「天然高度」配权重，让三列底边尽量齐。
-   危战列有大段地脉素乱说明（最吃高度）→ 给它最宽，行数少了列就矮；
-   深渊/剧诗列内容短 → 收窄一点、自然变高，三列就对得上 */
-.col-abyss {
-  flex: 1.04 1 0;
-  width: 0;
+/* 报纸式分栏：三个模块的区块全部丢进同一个流里，由浏览器把它们摊到 3 栏并**均衡高度**。
+   之前是「一列一个模块」，各模块内容量天差地别，列高怎么调权重都对不齐；
+   改成分栏后同一个模块可能跨栏续排，但三栏底边基本齐平，整图也矮了一截。
+   注意：区块必须 break-inside: avoid，否则一张卡会被拦腰截断分到两栏。 */
+/* 三栏等高：区块先放在 #pool 里量高度，页内脚本按阅读顺序做最优三等分后塞进三栏，
+   每栏最后一块拉伸填满 → 三栏底边完全齐平（CSS column-fill:balance 只能做到差不多齐）。
+   模块标题与其后第一个区块绑成一组，不会被留在栏底。 */
+.cols3 {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
 }
-.col-hard {
-  flex: 1.08 1 0;
+.col3 {
+  flex: 1 1 0;
   width: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.col-role {
-  flex: 1.0 1 0;
-  width: 0;
+.col3 > .section-title {
+  margin-bottom: -2px;
 }
+/* 三栏对齐方式：把差出来的高度摊到卡片之间（卡片本身不变形），底边就齐了。
+   拉伸最后一张卡的话卡里会空出一大片，看着比不齐还怪 */
+.col3 {
+  justify-content: space-between;
+}
+.pool {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 480px;
+  visibility: hidden;
+}
+
 
 .section-title {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-bottom: 5px;
@@ -481,42 +504,31 @@ footer {
 }
 
 /* 幻想剧诗：居中隔开，少人时也不拉伸 */
-/* 剧诗 6 个区块两列排：竖着叠的话这列比另外两列高一倍，右下会空出一大片 */
-.col-role > .col-body {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 5px;
-}
-.col-role > .col-body > .block-card {
-  width: calc(50% - 3px);
-  box-sizing: border-box;
-}
-.col-role .team.mcard-team {
+.role-stage .team.mcard-team {
   justify-content: space-evenly;
   gap: 3px;
   padding: 4px 3px 4px;
 }
 /* 卡片宽度按百分比给：写死 px 的话列一变窄第 4 张卡就顶出容器（被邻列盖住）。
    选择器要带上 .team.mcard-team，否则压不住上面那条 3 类选择器 */
-.col-role .team.mcard-team > .mcard {
+.role-stage .team.mcard-team > .mcard {
   flex: 0 1 auto;
   width: calc(25% - 3px);
   max-width: none;
 }
-.col-role .team.mcard-team.team-n1 > .mcard { width: 74px; max-width: 74px; }
-.col-role .team.mcard-team.team-n2 > .mcard { width: calc(45% - 3px); }
-.col-role .team.mcard-team.team-n3 > .mcard { width: calc(32% - 3px); }
+.role-stage .team.mcard-team.team-n1 > .mcard { width: 74px; max-width: 74px; }
+.role-stage .team.mcard-team.team-n2 > .mcard { width: calc(45% - 3px); }
+.role-stage .team.mcard-team.team-n3 > .mcard { width: calc(32% - 3px); }
 
 /* 两列后每块变窄，卡片按容器百分比走；头像等尺寸保持和深渊列一致，
    顺便把这列剩下的高度吃掉，三列底边更接近 */
-.col-role .mcard-face,
-.col-role .mcard-face img { width: 44px; height: 44px; }
-.col-role .mcard-name { font-size: 9.4px; }
-.col-role .mcard-talent span { height: 13px; line-height: 13px; font-size: 9.4px; }
-.col-role .gbox { width: 24px; height: 24px; }
-.col-role .enemy-box { padding: 0 5px 5px; }
-.col-role .enemy-name { font-size: 8.6px; }
+.role-stage .mcard-face,
+.role-stage .mcard-face img { width: 44px; height: 44px; }
+.role-stage .mcard-name { font-size: 9.4px; }
+.role-stage .mcard-talent span { height: 13px; line-height: 13px; font-size: 9.4px; }
+.role-stage .gbox { width: 24px; height: 24px; }
+.role-stage .enemy-box { padding: 0 5px 5px; }
+.role-stage .enemy-name { font-size: 8.6px; }
 
 .mcard {
   flex: 0 0 auto;
@@ -1167,9 +1179,9 @@ footer {
 }
 
 /* 深渊列整体 */
-.col-abyss .block-head { padding: 5px 8px; }
-.col-abyss .col-body { gap: 6px; }
-.col-abyss .block-card + .block-card { margin-top: 0; }
+.abyss-floor .block-head { padding: 5px 8px; }
+
+
 
 
 /* 顶部上/下半队：共用大框，角色无独立小框 */
@@ -1920,3 +1932,15 @@ body.theme-dark .hard-desc.full {
   border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
+/* 分栏后同一个模块可能跨栏，给区块内嵌一条模块色条（inset 阴影，不占布局宽度），
+   这样即使卡片流到下一栏顶部也认得出是哪个模块 */
+.col3 > .abyss-rank-row,
+.col3 > .block-card.abyss-floor {
+  box-shadow: inset 3px 0 0 rgba(61, 111, 216, 0.75);
+}
+.col3 > .block-card.hard-card {
+  box-shadow: inset 3px 0 0 rgba(142, 68, 216, 0.75);
+}
+.col3 > .block-card.role-stage {
+  box-shadow: inset 3px 0 0 rgba(224, 107, 26, 0.8);
+}
