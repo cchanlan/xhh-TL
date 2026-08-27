@@ -411,6 +411,17 @@ export class TL extends plugin {
       if (showSr) resultData.sr_data = srData;
       if (showZzz) resultData.zzz_data = zzzData;
       if (wavesOn) resultData.ww_data = wavesRes?.items?.[0] || '没有';
+      // 鸣潮取数失败时总览只会「静默少一块」，用户根本不知道为什么（实测就是撞上 core 库被锁）。
+      // 环境级失败（读不到库/库正忙/接口报错）先说一句；「没登录」「全屏蔽」属正常状态不提示
+      if (
+        wavesOn &&
+        !wavesRes?.items?.length &&
+        wavesRes?.error &&
+        wavesRes.error !== '没有' &&
+        !wavesRes.hiddenAll
+      ) {
+        e.reply(`鸣潮体力这次没取到：${wavesRes.error}`, true);
+      }
     } else if (isWaves) {
       const res = await this.getWavesList(e, targetQq || e.user_id);
       resultData = { ww_data: res.items[0] };

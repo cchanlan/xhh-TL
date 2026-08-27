@@ -12,6 +12,17 @@
  * 三者都只读打开，不写、不锁库，不影响正在跑的 gsuid_core。
  *
  * 对外只暴露 async 接口（驱动探测本身要 await import），调用方不必关心用了哪个驱动。
+ *
+ * ── 关于 SQLITE_BUSY（database is locked）─────────────────────────────
+ * 只读打开也会被锁：core 侧写库（gsuid_core 及其插件，尤其是高频写记忆/统计表的 AI 插件）
+ * 恰好持锁时，reader 默认 busy_timeout=0 会「0ms 立刻失败」。实测就撞在用户发指令的那一秒
+ * ——群消息本身会触发 core 侧写库，两边天然同时发生，所以偶发但专挑关键时刻。
+ * 处理分两层，不能只靠调大 busy_timeout：
+ *   · node:sqlite / better-sqlite3 都是**同步** API，busy_timeout 期间连事件循环一起阻塞
+ *     （实测 timeout=5000 会让整个 Yunzai 卡满 5 秒），所以同步驱动只给一小段 400ms；
+ *   · 剩下的靠 withReadonlyDb 的异步重试：每次重试之间 await 一小会儿，
+ *     把时间让给事件循环（也让 core 那边有机会提交事务释放锁）。
+ * sqlite3 是回调式的，等锁不占事件循环，可以给大一点。
  */
 
 /** 驱动名 → 加载失败原因，全部失败时拼进提示里 */
@@ -19,6 +30,27 @@ const loadErrors = new Map()
 let driverPromise = null
 
 const log = () => (typeof logger !== 'undefined' ? logger : console)
+
+/** 同步驱动的 busy_timeout：等锁会阻塞事件循环，只给一小段，其余交给异步重试 */
+const SYNC_BUSY_TIMEOUT_MS = 400
+/** 异步驱动（sqlite3）等锁不占事件循环，可以多等一会儿 */
+const ASYNC_BUSY_TIMEOUT_MS = 2000
+/** 默认重试次数与间隔（间隔是 await，不阻塞） */
+const BUSY_RETRIES = 3
+const BUSY_RETRY_GAP_MS = 250
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * 是否「库被锁住」类错误（可重试）
+ * node:sqlite 报 ERR_SQLITE_ERROR + 'database is locked'，
+ * better-sqlite3 / sqlite3 报 SQLITE_BUSY（或 SQLITE_LOCKED）。
+ */
+export function isBusyError(err) {
+  const code = String(err?.code || '')
+  if (code.includes('SQLITE_BUSY') || code.includes('SQLITE_LOCKED')) return true
+  return /database is locked|database table is locked|SQLITE_BUSY/i.test(String(err?.message || ''))
+}
 
 function errText(err) {
   // better-sqlite3 缺 .node 时会把十几条候选路径全列出来，截断免得刷屏
@@ -39,7 +71,22 @@ async function loadNodeSqlite() {
   return {
     name: 'node:sqlite',
     open(file) {
-      const db = new DatabaseSync(file, { readOnly: true })
+      // timeout 是较新 Node 才有的选项，老版本传了会抛参数错 → 退回不带选项再用 PRAGMA 补
+      let db = null
+      try {
+        db = new DatabaseSync(file, { readOnly: true, timeout: SYNC_BUSY_TIMEOUT_MS })
+      } catch (err) {
+        // 只有「不认识这个选项」才值得重开；库被锁等真实错误照旧抛给上层重试
+        const optionErr = /ERR_INVALID_ARG|ERR_OUT_OF_RANGE|unknown|unrecognized/i.test(
+          String(err?.message || ''),
+        )
+        if (!optionErr || isBusyError(err)) throw err
+        db = new DatabaseSync(file, { readOnly: true })
+      }
+      // 老 Node 走到这儿 timeout 还是 0，补一条 PRAGMA（连接级设置，不写库、不会 busy）
+      try {
+        db.exec(`PRAGMA busy_timeout = ${SYNC_BUSY_TIMEOUT_MS}`)
+      } catch (_) {}
       return {
         all: async (sql, params = []) => db.prepare(sql).all(...params),
         close: async () => db.close(),
@@ -62,7 +109,12 @@ async function loadBetterSqlite3() {
   return {
     name: 'better-sqlite3',
     open(file) {
-      const db = new Database(file, { readonly: true, fileMustExist: true })
+      // better-sqlite3 的 timeout 默认就是 5000，同步阻塞太久，显式压到一小段
+      const db = new Database(file, {
+        readonly: true,
+        fileMustExist: true,
+        timeout: SYNC_BUSY_TIMEOUT_MS,
+      })
       return {
         all: async (sql, params = []) => db.prepare(sql).all(...params),
         close: async () => db.close(),
@@ -93,6 +145,10 @@ async function loadSqlite3() {
         db = new sqlite3.Database(file, sqlite3.OPEN_READONLY, (err) =>
           err ? reject(err) : resolve(),
         )
+        // 回调式驱动等锁不占事件循环，等久点也没关系
+        try {
+          db.configure('busyTimeout', ASYNC_BUSY_TIMEOUT_MS)
+        } catch (_) {}
       })
       return {
         all: async (sql, params = []) => {
@@ -153,13 +209,44 @@ export async function openReadonlyDb(file) {
 
 /** 打开→查→关的一次性封装（只查一条 SQL 时用） */
 export async function queryAll(file, sql, params = []) {
-  const db = await openReadonlyDb(file)
-  if (!db) return null
-  try {
-    return await db.all(sql, params)
-  } finally {
-    await db.close().catch(() => {})
+  return withReadonlyDb(file, (db) => db.all(sql, params))
+}
+
+/**
+ * 只读打开 → 跑一段查询 → 关闭，遇 SQLITE_BUSY 整段重试
+ *
+ * 「整段」是刻意的：一次业务查询往往要读好几张表（如鸣潮的 wavesbind + wavesuser），
+ * 中途被锁时重开连接从头读，比单条 SQL 各自重试更简单，也不会读到半新半旧的两张表。
+ * 重试间隔用 await，不阻塞事件循环，同时给 core 那边时间提交事务放锁。
+ *
+ * @param {string} file 数据库路径
+ * @param {(db:{driver:string,all:Function}) => Promise<any>} fn 拿到连接后要做的事
+ * @param {{retries?:number, gap?:number}} opts
+ * @returns {Promise<any>} fn 的返回值；驱动全不可用时返回 null
+ */
+export async function withReadonlyDb(file, fn, { retries = BUSY_RETRIES, gap = BUSY_RETRY_GAP_MS } = {}) {
+  const driver = await getSqliteDriver()
+  if (!driver) return null
+  let lastErr = null
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let db = null
+    try {
+      db = driver.open(file)
+      return await fn({ driver: driver.name, all: db.all })
+    } catch (err) {
+      lastErr = err
+      if (!isBusyError(err) || attempt === retries) throw err
+      log().debug?.(
+        `[xhh-TL][SQLite] ${file} 被锁（${driver.name}，第 ${attempt + 1}/${retries} 次重试）`,
+      )
+    } finally {
+      try {
+        await db?.close()
+      } catch (_) {}
+    }
+    await sleep(gap * (attempt + 1))
   }
+  throw lastErr
 }
 
 /** 三种驱动都不可用时的排查提示 */

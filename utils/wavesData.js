@@ -11,7 +11,7 @@
 
 import fs from 'fs'
 import { config, resolveConfiguredPaths } from './pluginConfig.js'
-import { openReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
+import { withReadonlyDb, getSqliteDriver, sqliteUnavailableMessage, isBusyError } from './sqlite.js'
 
 /** core 数据库默认位置（按顺序探测，取第一个存在的） */
 const GSUID_DB_CANDIDATES = [
@@ -65,6 +65,18 @@ let envError = ''
 export function getWavesEnvError() {
   return envError
 }
+
+/**
+ * 上一次成功读到的账号列表（qq → { at, accounts }）
+ *
+ * core 的库偶发被写方锁住（见 utils/sqlite.js 里的说明），重试完还是读不到时
+ * 宁可用上次的凭证去问库街区，也别让体力卡直接少一块、推送整轮跳过——
+ * 凭证本身几天都不变，而「锁住」只是几百毫秒的瞬时状态。
+ * 只在读库失败时兜底，正常路径照旧每次读库，所以换绑/重登能立刻生效。
+ * 兜底用的凭证若真过期了，库街区会回登录失效，用户看得到，不会一直被瞒着。
+ */
+const ACC_CACHE_TTL = 6 * 3600 * 1000
+const accCache = new Map()
 
 
 /** 总开关（锅巴「启用鸣潮体力」） */
@@ -135,61 +147,87 @@ export async function listWavesAccounts(qq, cfg = config()) {
     return out
   }
 
+  let busy = false
   for (const file of paths) {
-    let db = null
     try {
-      db = await openReadonlyDb(file)
-      const bind = await db.all('SELECT uid FROM wavesbind WHERE user_id = ?', [String(qq)])
-      // 绑定顺序即展示顺序，去重后作为白名单
-      const order = []
-      for (const row of bind) {
-        for (const uid of String(row.uid || '').split('_')) {
-          const u = uid.trim()
-          if (u && !order.includes(u)) order.push(u)
+      // 回调可能被重试（库被锁时整段重跑），所以结果先攒在局部数组里，
+      // 成功返回后才并进 out —— 直接 push 外层数组会在重试时把账号加两遍
+      const found = await withReadonlyDb(file, async (db) => {
+        const rows = []
+        const bind = await db.all('SELECT uid FROM wavesbind WHERE user_id = ?', [String(qq)])
+        // 绑定顺序即展示顺序，去重后作为白名单
+        const order = []
+        for (const row of bind) {
+          for (const uid of String(row.uid || '').split('_')) {
+            const u = uid.trim()
+            if (u && !order.includes(u)) order.push(u)
+          }
         }
-      }
-      const users = await db.all(
-        `SELECT uid, cookie, did, bat, status
+        const users = await db.all(
+          `SELECT uid, cookie, did, bat, status
            FROM wavesuser
           WHERE user_id = ? AND game_id = ? AND cookie IS NOT NULL AND cookie != ''`,
-        [String(qq), WAVES_GAME_ID],
-      )
-
-      const byUid = new Map()
-      for (const row of users) {
-        if (String(row.status || '') === '无效') {
-          log().debug?.(`[xhh-TL][鸣潮体力] ${row.uid} 已被 xw 标记失效，跳过`)
-          continue
-        }
-        byUid.set(String(row.uid), {
-          uid: String(row.uid),
-          cookie: String(row.cookie || ''),
-          did: String(row.did || ''),
-          bat: String(row.bat || ''),
-          net: isNetUid(row.uid),
-        })
-      }
-      // 绑定过的排前面，没在 bind 里但有 ck 的（换绑残留）也带上
-      for (const uid of order) if (byUid.has(uid)) out.push(byUid.get(uid))
-      for (const [uid, acc] of byUid) if (!order.includes(uid)) out.push(acc)
-      if (!out.length) {
-        // 库和表都读通了，只是这个 QQ 没登录过 —— 与「找不到库」区分开，省得瞎调路径
-        log().debug?.(
-          `[xhh-TL][鸣潮体力] ${file}（${db.driver}）里 ${qq} 有 ${bind.length} 条绑定、${users.length} 条凭证，无可用账号`,
+          [String(qq), WAVES_GAME_ID],
         )
-      }
+
+        const byUid = new Map()
+        for (const row of users) {
+          if (String(row.status || '') === '无效') {
+            log().debug?.(`[xhh-TL][鸣潮体力] ${row.uid} 已被 xw 标记失效，跳过`)
+            continue
+          }
+          byUid.set(String(row.uid), {
+            uid: String(row.uid),
+            cookie: String(row.cookie || ''),
+            did: String(row.did || ''),
+            bat: String(row.bat || ''),
+            net: isNetUid(row.uid),
+          })
+        }
+        // 绑定过的排前面，没在 bind 里但有 ck 的（换绑残留）也带上
+        for (const uid of order) if (byUid.has(uid)) rows.push(byUid.get(uid))
+        for (const [uid, acc] of byUid) if (!order.includes(uid)) rows.push(acc)
+        if (!rows.length) {
+          // 库和表都读通了，只是这个 QQ 没登录过 —— 与「找不到库」区分开，省得瞎调路径
+          log().debug?.(
+            `[xhh-TL][鸣潮体力] ${file}（${db.driver}）里 ${qq} 有 ${bind.length} 条绑定、${users.length} 条凭证，无可用账号`,
+          )
+        }
+        return rows
+      })
+      out.push(...(found || []))
     } catch (err) {
-      envError = `读取 gsuid_core 数据库失败（${err?.code || err?.name || 'SQLite'}）`
+      // 被锁是瞬时的，文案与真正的读库故障分开，也留给下面走缓存兜底
+      busy = isBusyError(err)
+      envError = busy
+        ? 'gsuid_core 数据库正忙（被 core 那边写占住了），稍等一下再试'
+        : `读取 gsuid_core 数据库失败（${err?.code || err?.name || 'SQLite'}）`
       log().warn?.(
-        `[xhh-TL][鸣潮体力] 读取数据库失败：${file}（${driver.name}）` +
+        `[xhh-TL][鸣潮体力] 读取数据库${busy ? '被锁（重试后仍失败）' : '失败'}：${file}（${driver.name}）` +
           `(${err?.code || err?.name || 'SQLite'}: ${err?.message || err})`,
       )
-    } finally {
-      try {
-        await db?.close()
-      } catch (_) {}
     }
     if (out.length) break
+  }
+
+  if (out.length) {
+    // 多路径时前面的库可能刚报过错（如被锁），既然这一把读到了账号就别把旧错误留给上层
+    envError = ''
+    accCache.set(String(qq), { at: Date.now(), accounts: out })
+    return out
+  }
+  // 读不通（被锁 / 库读坏）时退回上次成功的凭证，别让体力卡少一块、推送整轮跳过
+  if (envError) {
+    const hit = accCache.get(String(qq))
+    if (hit && Date.now() - hit.at < ACC_CACHE_TTL) {
+      log().mark?.(
+        `[xhh-TL][鸣潮体力] ${qq} 读库失败（${envError}），改用 ${Math.round(
+          (Date.now() - hit.at) / 1000,
+        )} 秒前缓存的 ${hit.accounts.length} 个账号`,
+      )
+      envError = ''
+      return hit.accounts.slice()
+    }
   }
   return out
 }

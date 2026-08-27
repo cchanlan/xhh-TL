@@ -32,7 +32,7 @@ import { cookiePart } from './auth.js'
 import { createUser, getAliveMysIds, hasRuntimeBinding } from './userBind.js'
 import { getDeletedMap, fingerprintStoken, removeDeleted } from './deletedCk.js'
 import { getStokenCandidateFiles, config, resolveConfiguredPaths } from './pluginConfig.js'
-import { openReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
+import { withReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
 
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
@@ -591,16 +591,16 @@ async function readGsuidAccounts(qq) {
   if (!paths.length) return out
 
   for (const file of paths) {
-    let db = null
     try {
-      db = await openReadonlyDb(file)
-      const rows = await db.all(
-        `SELECT user_id, mys_id, status, stoken, fp, device_id, device_info
+      const rows = await withReadonlyDb(file, (db) =>
+        db.all(
+          `SELECT user_id, mys_id, status, stoken, fp, device_id, device_info
            FROM gsuser
           WHERE user_id = ? AND stoken IS NOT NULL AND stoken != ''`,
-        [String(qq)],
+          [String(qq)],
+        ),
       )
-      for (const row of rows) {
+      for (const row of rows || []) {
         if (String(row.status || '').toLowerCase() === 'error') {
           log.debug(`[xhh-TL][米游币] gsuid 账号 ${row.mys_id} 已被标记失效，跳过`)
           continue
@@ -621,10 +621,6 @@ async function readGsuidAccounts(qq) {
       }
     } catch (err) {
       log.error(`[xhh-TL][米游币] 读取 gsuid 库失败 ${file}（${driver.name}）: ${err?.code || err?.name || 'SQLite'}: ${err?.message || err}`)
-    } finally {
-      try {
-        await db?.close()
-      } catch (_) {}
     }
     if (out.length) break
   }
