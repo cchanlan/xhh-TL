@@ -532,29 +532,24 @@ export class srGachaLog extends plugin {
       priority: -Infinity,
       rule: [
         { reg: '^\\s*#?星铁(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
-        { reg: '^\\s*#?星铁(?:全部)?抽卡记录\\s*$', fnc: 'viewLog' },
+        // 单个卡池的记录都走小程序风格新图；「全部」系列（*全部记录 / *全部抽卡记录）
+        // 故意不匹配，留给 genshin 的四合一模板
+        {
+          reg:
+            '^\\s*#?星铁(?:抽卡|抽奖|角色联动|角色|武器联动|武器|光锥联动|光锥|常驻|up|UP|新手)' +
+            '池?(?:记录|祈愿|分析)\\s*$',
+          fnc: 'viewLog',
+        },
       ],
     })
   }
 
   /** *抽卡记录 —— 数据已经并进 genshin 的库，直接借它的模板出图 */
+  /** *抽卡记录 / *武器记录 / *光锥记录 …—— 单池记录，走小程序风格新图 */
   async viewLog() {
     this.e.isSr = true
-    this.e.isAll = /全部/.test(this.e.msg)
     // 出图走 e.runtime.render；正常事件链上一定有，这里只是兜住被别处转发来的 e
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
-
-    // *全部记录 保持原样交给 genshin 的模板，只有 *抽卡记录 走小程序风格的新图
-    if (this.e.isAll) {
-      const { default: GachaLog } = await import('../../genshin/model/gachaLog.js')
-      const data = await new GachaLog(this.e).getLogData()
-      if (!data) return true
-      const img = await this.renderImg('genshin', 'html/gacha/gacha-all-log', data, {
-        retType: 'base64',
-      })
-      if (img) await this.reply(img)
-      return true
-    }
     return this.renderMini()
   }
 

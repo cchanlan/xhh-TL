@@ -322,8 +322,8 @@ export function buildHelpGroups() {
         },
         {
           icon: 'sr-希儿.webp',
-          title: '*抽卡记录',
-          desc: '出图查看；加「全部」看全部池。四星统计仍需抽卡链接导入',
+          title: '*抽卡记录 *武器记录',
+          desc: '仿小程序「跃迁记录统计」出图，各池分开看；*全部记录 仍是四合一老图',
         },
       ],
     },
