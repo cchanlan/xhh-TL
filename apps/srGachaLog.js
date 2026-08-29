@@ -765,6 +765,121 @@ async function buildAllViewData(e, uid) {
   }
 }
 
+/** 游戏内抽卡链接（authkey）拉取：国服 / 国际服两套域名 */
+const LOG_HOST_CN = 'https://public-operation-hkrpg.mihoyo.com'
+const LOG_HOST_OS = 'https://public-operation-hkrpg-sg.hoyoverse.com'
+
+/** 从消息里抠出抽卡链接的参数；不是星铁链接返回 null */
+function parseGachaUrl(msg = '') {
+  let url = String(msg).replace(/〈=/g, '&').trim()
+  if (!/authkey=/.test(url)) return null
+  if (url.includes('getGachaLog?')) url = url.split('getGachaLog?')[1]
+  else if (url.includes('index.html?')) url = url.split('index.html?')[1]
+  else if (url.includes('?')) url = url.slice(url.indexOf('?') + 1)
+
+  const params = Object.fromEntries(new URLSearchParams(url))
+  if (!params.authkey) return null
+  // 链接尾部常带 #/log 之类的锚点
+  params.authkey = params.authkey.replace(/#\/log|#\/|#$/g, '')
+  const biz = params.game_biz || ''
+  const isSr = /hkrpg/.test(biz) || /hkrpg/.test(String(msg))
+  if (!isSr) return null
+  return params
+}
+
+async function fetchGachaPage(params, gachaType, endId) {
+  const cn = ['prod_gf_cn', 'prod_qd_cn'].includes(params.region || 'prod_gf_cn')
+  // 联动池是另一个端点
+  const ep = ['21', '22'].includes(String(gachaType)) ? 'getLdGachaLog' : 'getGachaLog'
+  const q = new URLSearchParams({
+    authkey_ver: params.authkey_ver || '1',
+    sign_type: params.sign_type || '2',
+    auth_appid: params.auth_appid || 'webview_gacha',
+    lang: 'zh-cn',
+    game_biz: params.game_biz || 'hkrpg_cn',
+    region: params.region || 'prod_gf_cn',
+    authkey: params.authkey,
+    gacha_type: String(gachaType),
+    page: '1',
+    size: '20',
+    end_id: String(endId || 0),
+  })
+  const res = await fetch(`${cn ? LOG_HOST_CN : LOG_HOST_OS}/common/gacha_record/api/${ep}?${q}`, {
+    headers: { 'User-Agent': UA },
+    timeout: 20000,
+  })
+  if (!res.ok) throw new Error(`接口 HTTP ${res.status}`)
+  const json = await res.json().catch(() => null)
+  if (!json) throw new Error('接口没返回 JSON')
+  if (json.retcode !== 0) {
+    const expired = [-100, -101, -111].includes(json.retcode)
+    throw new Error(
+      `${json.message || '未知错误'}（${json.retcode}）${expired ? '，链接大概过期了，去游戏里重新复制一次' : ''}`,
+    )
+  }
+  return json.data || {}
+}
+
+/**
+ * 按池分页拉取。默认增量：翻到本地已有的原生记录就停，
+ * 所以第二次用链接更新会快很多（full=true 时拉全量）
+ */
+async function fetchAllByAuthkey(params, userId, { full = false, onPool } = {}) {
+  const records = []
+  let uid = ''
+  let stopId = new Map()
+  for (const pool of [...POOLS.map(p => p.type), '1']) {
+    let endId = '0'
+    let got = 0
+    let reachedOld = false
+    for (let i = 0; i < 120 && !reachedOld; i++) {
+      const data = await fetchGachaPage(params, pool, endId)
+      if (data.region && !params.region) params.region = data.region
+      const list = data.list || []
+
+      // 第一页拿到 uid 后才能读本地，算出这个池的增量下界
+      if (!uid && list[0]?.uid) uid = String(list[0].uid)
+      if (!full && uid && !stopId.has(pool)) {
+        const local = readLocal(userId, uid, pool)
+        stopId.set(
+          pool,
+          local
+            .filter(r => !r.xhh_src && !r.xhh_fid)
+            .reduce((m, r) => (big(r.id) > m ? big(r.id) : m), 0n),
+        )
+      }
+      const floor = stopId.get(pool) || 0n
+
+      for (const r of list) {
+        if (!full && floor > 0n && big(r.id) <= floor) {
+          reachedOld = true
+          break
+        }
+        records.push({
+          uid: String(r.uid || uid || ''),
+          gacha_id: String(r.gacha_id || ''),
+          gacha_type: String(r.gacha_type || pool),
+          item_id: String(r.item_id || ''),
+          count: String(r.count || '1'),
+          time: String(r.time || ''),
+          name: String(r.name || ''),
+          lang: String(r.lang || 'zh-cn'),
+          item_type: String(r.item_type || ''),
+          rank_type: String(r.rank_type || ''),
+          id: String(r.id || ''),
+        })
+        got++
+      }
+      if (list.length < 20) break
+      endId = list[list.length - 1].id
+      await sleep(400)
+    }
+    onPool?.(pool, got)
+    await sleep(200)
+  }
+  return { records, uid }
+}
+
 export class srGachaLog extends plugin {
   constructor() {
     super({
@@ -774,6 +889,8 @@ export class srGachaLog extends plugin {
       // 抢在 genshin gcLog(300) 与 xiaoyao-cvs 之前，避免这两条指令被别的插件接走
       priority: -Infinity,
       rule: [
+        // 抽卡链接：只吃星铁的（含 hkrpg），原神的交回 genshin
+        { reg: 'authkey=', fnc: 'logUrl' },
         { reg: '^\\s*#?星铁(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
         {
           // 允许「*导入记录」后面直接跟文件直链，也支持只发指令+附件
@@ -799,6 +916,57 @@ export class srGachaLog extends plugin {
     // 出图走 e.runtime.render；正常事件链上一定有，这里只是兜住被别处转发来的 e
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
     return this.renderMini()
+  }
+
+  /** 用户发来游戏内抽卡链接：拉全量真实记录，合并后出新图 */
+  async logUrl() {
+    const params = parseGachaUrl(this.e.msg)
+    // 不是星铁链接（大概率是原神的），返回 false 让 loader 继续找别的插件
+    if (!params) return false
+
+    this.e.isSr = true
+    if (!this.e.runtime?.render) await ensureRuntime(this.e)
+    const full = /全量|强制/.test(this.e.msg)
+    await this.reply(
+      `收到星铁抽卡链接，正在${full ? '全量' : '增量'}拉取记录，这一步比较慢…`,
+      false,
+      { at: true },
+    )
+    if (this.e.isGroup) await this.reply('链接里带你的凭证，记得撤回上面那条消息', false, { at: true })
+
+    try {
+      const perPool = []
+      const { records, uid: linkUid } = await fetchAllByAuthkey(params, this.e.user_id, {
+        full,
+        onPool: (pool, got) => perPool.push(`${POOL_LABEL[pool] || pool} ${got}`),
+      })
+      const uid = linkUid || (await resolveSrUid(this.e)).uid
+      if (!uid) throw new Error('链接里没有 UID，也没查到你的绑定')
+      if (!records.length) {
+        await this.reply('拉完了，没有新记录', false, { at: true })
+        await this.renderMini()
+        return true
+      }
+
+      assignIds(records)
+      const stat = mergeImport(this.e.user_id, uid, records)
+      const detail = [
+        `抽卡链接更新完成，新增 ${stat.added} 条`,
+        stat.skipped ? `已有 ${stat.skipped} 条` : '',
+        stat.dropMini ? `${stat.dropMini} 条小程序五星换成了真实记录` : '',
+        stat.dropPh ? `清理占位 ${stat.dropPh} 条` : '',
+        perPool.join('、'),
+      ]
+        .filter(Boolean)
+        .join('；')
+      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${detail}`)
+      await this.reply(`${detail}。`, false, { at: true })
+      await this.renderMini()
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
+      await this.reply(`抽卡链接更新失败：${err.message}`, false, { at: true })
+    }
+    return true
   }
 
   /** *全部记录 —— 同一套 UI 的总览版，每个池一块 */
