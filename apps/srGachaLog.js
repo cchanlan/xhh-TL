@@ -490,16 +490,53 @@ async function prepareCookie(e, uid, user) {
 const POOL_LABEL = Object.fromEntries(POOLS.map(p => [p.type, p.name]))
 POOL_LABEL['1'] = '常驻跃迁'
 
+/**
+ * 从消息里的文件段拿下载直链。
+ * 各适配器字段不一样：icqq 是 `fid` + `getFileUrl`，OneBot v11 的群文件上传事件
+ * 只给 `{id, name, size, busid}`，得走 get_group_file_url 才有 url
+ */
+async function fileUrlFromSeg(e, seg) {
+  if (/^https?:\/\//.test(seg.url || '')) return seg.url
+  const fid = seg.fid || seg.id || seg.file_id
+  if (!fid) return ''
+  const tries = [
+    () => e.group?.getFileUrl?.(fid),
+    () => e.friend?.getFileUrl?.(fid),
+    () => e.group?.fs?.download?.(fid, seg.busid),
+    () => e.friend?.fs?.download?.(fid, seg.busid),
+    () =>
+      e.group_id &&
+      e.bot?.sendApi?.('get_group_file_url', {
+        group_id: e.group_id,
+        file_id: fid,
+        busid: seg.busid,
+      }),
+    () => e.bot?.sendApi?.('get_private_file_url', { user_id: e.user_id, file_id: fid }),
+  ]
+  for (const fn of tries) {
+    try {
+      const r = await fn()
+      const url = typeof r === 'string' ? r : r?.url || r?.data?.url || ''
+      if (/^https?:\/\//.test(url)) return url
+    } catch (err) {
+      logger?.debug?.(`[xhh-TL][抽卡记录] 取文件直链失败：${err.message}`)
+    }
+  }
+  return ''
+}
+
 /** 从消息里的文件段或链接取出导入文件 */
 async function fetchImportFile(e) {
   let url = ''
   let name = ''
-  if (e.file) {
-    name = e.file.name || ''
-    url = e.file.url || ''
-    if (!/^https?:\/\//.test(url) && e.file.fid) {
-      url = (await e.group?.getFileUrl?.(e.file.fid)) || (await e.friend?.getFileUrl?.(e.file.fid)) || ''
-    }
+  const seg =
+    e.file ||
+    (Array.isArray(e.message) ? e.message.find(m => m?.type === 'file') : null) ||
+    null
+  if (seg) {
+    name = seg.name || seg.file_name || seg.file || ''
+    url = await fileUrlFromSeg(e, seg)
+    if (!url) throw new Error('拿不到这个文件的下载地址，可以改成私聊发，或者把文件直链贴在指令后面')
   }
   if (!/^https?:\/\//.test(url)) {
     url = String(e.msg || '').match(/https?:\/\/[^\s]+/i)?.[0]?.replace(/[)>】」』"'，。！？；;]+$/g, '') || ''
@@ -681,6 +718,27 @@ function parsePoolType(msg = '') {
   }
 }
 
+/** 出图前顺手把当前池的垫抽刷新一下（缓存超过 10 分钟才动，失败就沿用旧值） */
+async function refreshPity(e, uid, type) {
+  const pool = POOLS.find(p => p.type === String(type))
+  if (!pool) return // 常驻池接口不给，本地算得出来
+  const entry = readPoolCache()[String(uid)]?.[String(type)]
+  if (entry?.at && Date.now() - entry.at < 10 * 60 * 1000) return
+  try {
+    const { cookie, region } = await prepareCookie(e, uid, null)
+    const gachaCookie = await badgeLogin(cookie, uid, region)
+    const q = new URLSearchParams({ gacha_type: pool.key, version_id: '0', max_id: '0' })
+    const { json } = await api(`${GACHA_BASE}/five_star_list?${q}`, { cookie: gachaCookie })
+    if (json?.retcode !== 0) return
+    const first = (json.data?.list || [])[0]
+    // 首条 item=null 的就是当前垫抽
+    const pity = first && !first.item ? Number(first.gacha_count) || 0 : 0
+    savePoolCache(uid, type, undefined, pity)
+  } catch (err) {
+    logger?.debug?.(`[xhh-TL][抽卡记录] 刷新垫抽失败，用缓存值：${err.message}`)
+  }
+}
+
 /** 组装小程序风格出图所需数据。只读本地记录自己算，不依赖 genshin 插件 */
 async function buildViewData(e, uid) {
   if (!uid) return null
@@ -688,7 +746,9 @@ async function buildViewData(e, uid) {
   const list = readLocal(e.user_id, uid, type)
   if (!list.length) return null
 
-  const stat = analyse(list, type, cachedPity(uid, type))
+  await refreshPity(e, uid, type)
+  const entry = readPoolCache()[String(uid)]?.[String(type)]
+  const stat = analyse(list, type, Number(entry?.pity) || 0)
   const max = poolMax(type)
   const pct = n => Math.max(6, Math.min(100, (Number(n) / max) * 100))
 
@@ -739,7 +799,10 @@ async function buildViewData(e, uid) {
     fiveNum: fiveLog.length,
     firstTime: stat.firstTime,
     lastTime: stat.lastTime,
-    updatedAt: moment().format('MM-DD HH:mm'),
+    // 显示的是数据抓取时刻，不是出图时刻，免得让人以为垫抽是刚拉的
+    updatedAt: entry?.at
+      ? moment(entry.at).format('MM-DD HH:mm')
+      : (stat.lastTime || '').slice(5, 16) || moment().format('MM-DD HH:mm'),
   }
 }
 
@@ -747,10 +810,14 @@ async function buildViewData(e, uid) {
 async function buildAllViewData(e, uid) {
   if (!uid) return null
   const pools = []
+  let newestAt = 0
   for (const type of ['11', '12', '21', '22', '1', '2']) {
     const list = readLocal(e.user_id, uid, type)
     if (!list.length) continue
-    const stat = analyse(list, type, cachedPity(uid, type))
+    await refreshPity(e, uid, type)
+    const entry = readPoolCache()[String(uid)]?.[String(type)]
+    if (entry?.at > newestAt) newestAt = entry.at
+    const stat = analyse(list, type, Number(entry?.pity) || 0)
     const five = []
     for (const it of stat.fiveLog) {
       five.push({
@@ -784,7 +851,7 @@ async function buildAllViewData(e, uid) {
     totalFive,
     totalYs: ys >= 10000 ? `${(ys / 10000).toFixed(2)}w` : String(ys),
     avg: totalFive ? Math.round(total / totalFive) : 0,
-    updatedAt: moment().format('MM-DD HH:mm'),
+    updatedAt: moment(newestAt || Date.now()).format('MM-DD HH:mm'),
   }
 }
 
