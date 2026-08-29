@@ -238,7 +238,7 @@
       {{/each}}
     </div>
     <div class="recent">
-      <div class="recent-head">最近获取 5 星汇总<i>最多 15 个{{if recentMore}} · 另有 {{recentMore}} 个更早记录{{/if}}</i></div>
+      <div class="recent-head">最近获取 5 星汇总<i>本池共 {{fiveNum}} 个</i></div>
       <div class="recent-grid">
         {{each recent5 it}}
         <div class="rc {{if it.isUp}}up{{/if}}">
@@ -296,7 +296,6 @@
       </div>
     </div>
     {{/each}}
-    {{if listMore}}<div class="more">…另有 {{listMore}} 条更早的五星记录，发 *全部记录 查看完整统计</div>{{/if}}
   </div>
 
   <div class="foot">
