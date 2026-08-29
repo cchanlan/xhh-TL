@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @font-face {
+      font-family: 'NotoSansSC';
+      src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+    html, body { width: 900px; background: #0d0b0a; }
+    body {
+      font-family: 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #23201d;
+      transform-origin: 0 0;
+    }
+    .page { width: 900px; padding-bottom: 1px; background: #f2f3f5; }
+
+    .hero {
+      position: relative;
+      padding: 34px 34px 28px;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 236, 200, 0.16), transparent 42%),
+        radial-gradient(circle at 88% 8%, rgba(160, 190, 255, 0.12), transparent 40%),
+        linear-gradient(165deg, #241c17 0%, #1a1512 48%, #120f0d 100%);
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(1.6px 1.6px at 18% 30%, rgba(255,255,255,.55), transparent),
+        radial-gradient(1.4px 1.4px at 72% 22%, rgba(255,255,255,.42), transparent),
+        radial-gradient(1.8px 1.8px at 46% 12%, rgba(255,255,255,.38), transparent),
+        radial-gradient(1.3px 1.3px at 88% 46%, rgba(255,255,255,.34), transparent);
+    }
+    .hero-title {
+      position: relative; z-index: 2; text-align: center;
+      font-size: 34px; font-weight: 700; letter-spacing: 3px; color: #fdf7ee;
+    }
+    .hero-sub {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 20px 2px 18px; font-size: 19px; color: #b8ada2;
+    }
+    .hero-sub .pill {
+      padding: 7px 18px; border-radius: 20px;
+      background: rgba(255, 255, 255, .1); color: #ecdfd0; font-size: 17px;
+    }
+    .total {
+      position: relative; z-index: 2;
+      display: flex; padding: 18px 8px 20px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .055);
+      border: 1px solid rgba(255, 255, 255, .085);
+    }
+    .total .t { flex: 1; text-align: center; }
+    .total .t .v {
+      font-size: 34px; font-weight: 700; font-style: italic; color: #fdf6ea; line-height: 1.1;
+    }
+    .total .t .v i { font-style: normal; font-size: 19px; font-weight: 400; margin-left: 1px; }
+    .total .t .l { margin-top: 7px; font-size: 17px; color: #a2988c; }
+
+    /* ---------- 每个池一块 ---------- */
+    .card {
+      margin: 18px 30px 0;
+      padding: 22px 24px 24px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(30, 28, 25, .07);
+    }
+    .card-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 25px; font-weight: 700; color: #26221e;
+    }
+    .card-title::before {
+      content: ''; width: 5px; height: 22px; border-radius: 3px;
+      background: linear-gradient(180deg, #ffb054, #ef8a26);
+    }
+    .card-title .badge {
+      margin-left: auto;
+      padding: 4px 12px 5px; border-radius: 8px;
+      background: #f4f6f8; color: #6d757e;
+      font-size: 17px; font-weight: 400;
+    }
+    .card-desc { margin: 8px 0 16px 15px; font-size: 17px; color: #9aa0a8; }
+
+    /* 池内统计条 */
+    .stats {
+      padding: 16px 6px 18px; margin-bottom: 18px;
+      border-radius: 12px;
+      background: linear-gradient(150deg, #262019 0%, #1b1613 100%);
+    }
+    .srow { display: flex; }
+    .srow + .srow { margin-top: 16px; }
+    .st { flex: 1; text-align: center; }
+    .st .v {
+      font-size: 28px; font-weight: 700; font-style: italic; color: #fdf6ea; line-height: 1.1;
+    }
+    .st .v i { font-style: normal; font-size: 17px; font-weight: 400; margin-left: 1px; }
+    .st .l { margin-top: 6px; font-size: 16px; color: #a2988c; }
+
+    /* 五星头像网格，右下角挂抽数 */
+    .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .rc {
+      position: relative;
+      width: 88px; height: 88px;
+      border-radius: 10px; overflow: hidden;
+      background: linear-gradient(160deg, #d9b070, #b98a4a);
+      padding: 3px;
+    }
+    .rc.up { background: linear-gradient(160deg, #ffca7a, #e8952f); }
+    .rc img { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; display: block; }
+    .rc .tag {
+      position: absolute; top: 0; left: 0;
+      padding: 1px 7px 2px; border-radius: 8px 0 8px 0;
+      background: #ef8a26; color: #fff; font-size: 13px; font-weight: 700;
+    }
+    .rc .num {
+      position: absolute; right: 0; bottom: 0;
+      padding: 1px 6px 2px; border-radius: 8px 0 8px 0;
+      background: rgba(38, 32, 25, .82); color: #ffe7c4;
+      font-size: 15px; font-weight: 700; font-style: italic;
+    }
+    .empty { padding: 6px 0 2px; font-size: 17px; color: #9aa0a8; }
+
+    .foot {
+      padding: 20px 30px 22px;
+      display: flex; justify-content: space-between;
+      font-size: 16px; color: #9aa0a8;
+    }
+  </style>
+</head>
+<body {{sys.scale}}>
+<div class="page">
+  <div class="hero">
+    <div class="hero-title">跃迁记录总览</div>
+    <div class="hero-sub">
+      <span>UID {{uid}} · 共 {{pools.length}} 个卡池有记录</span>
+      <span class="pill">更新于 {{updatedAt}}</span>
+    </div>
+    <div class="total">
+      <div class="t"><div class="v">{{total}}<i>抽</i></div><div class="l">累计跃迁</div></div>
+      <div class="t"><div class="v">{{totalFive}}<i>个</i></div><div class="l">五星总数</div></div>
+      <div class="t"><div class="v">{{avg}}<i>抽</i></div><div class="l">五星平均</div></div>
+      <div class="t"><div class="v">{{totalYs}}</div><div class="l">累计星琼</div></div>
+    </div>
+  </div>
+
+  {{each pools p}}
+  <div class="card">
+    <div class="card-title">
+      {{p.name}}
+      <span class="badge">{{p.allNum}} 抽 · 五星 {{p.fiveNum}} 个 · 已垫 {{p.pity}} 抽</span>
+    </div>
+    <div class="card-desc">{{p.firstTime}} ~ {{p.lastTime}}</div>
+    <div class="stats">
+      {{each p.stats row}}
+      <div class="srow">
+        {{each row c}}
+        <div class="st">
+          <div class="v">{{c.num}}<i>{{c.unit}}</i></div>
+          <div class="l">{{c.lable}}</div>
+        </div>
+        {{/each}}
+      </div>
+      {{/each}}
+    </div>
+    {{if p.five.length}}
+    <div class="grid">
+      {{each p.five it}}
+      <div class="rc {{if it.isUp}}up{{/if}}">
+        <img src="{{_miao_path}}{{it.icon}}" />
+        {{if it.isUp}}<span class="tag">UP</span>{{/if}}
+        <span class="num">{{it.num}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="empty">这个池还没出过五星</div>
+    {{/if}}
+  </div>
+  {{/each}}
+
+  <div class="foot">
+    <span>xhh-TL × 米游社小程序跃迁记录</span>
+    <span>发 *抽卡记录 / *武器记录 看单池详情</span>
+  </div>
+</div>
+</body>
+</html>

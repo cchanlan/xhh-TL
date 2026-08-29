@@ -720,6 +720,51 @@ async function buildViewData(e, uid) {
   }
 }
 
+/** 全部记录：每个有数据的池各出一块，池内不铺条形列表，只放统计与五星头像 */
+async function buildAllViewData(e, uid) {
+  if (!uid) return null
+  const pools = []
+  for (const type of ['11', '12', '21', '22', '1', '2']) {
+    const list = readLocal(e.user_id, uid, type)
+    if (!list.length) continue
+    const stat = analyse(list, type)
+    const five = []
+    for (const it of stat.fiveLog) {
+      five.push({
+        name: it.name,
+        num: it.num,
+        isUp: it.isUp,
+        icon: await getIcon(it.name, it.item_type),
+      })
+    }
+    pools.push({
+      name: POOL_LABEL[type] || `${type} 号池`,
+      allNum: stat.allNum,
+      fiveNum: stat.fiveNum,
+      pity: stat.noFiveNum,
+      max: poolMax(type),
+      stats: buildLine(stat, type),
+      five,
+      firstTime: stat.firstTime,
+      lastTime: stat.lastTime,
+    })
+  }
+  if (!pools.length) return null
+
+  const total = pools.reduce((n, p) => n + p.allNum, 0)
+  const totalFive = pools.reduce((n, p) => n + p.fiveNum, 0)
+  const ys = total * 160
+  return {
+    uid: String(uid),
+    pools,
+    total,
+    totalFive,
+    totalYs: ys >= 10000 ? `${(ys / 10000).toFixed(2)}w` : String(ys),
+    avg: totalFive ? Math.round(total / totalFive) : 0,
+    updatedAt: moment().format('MM-DD HH:mm'),
+  }
+}
+
 export class srGachaLog extends plugin {
   constructor() {
     super({
@@ -735,8 +780,8 @@ export class srGachaLog extends plugin {
           reg: '^\\s*#?星铁(?:强制)?导入(?:抽卡)?记录(?:json|excel|xlsx)?(?:\\s+\\S+)?\\s*$',
           fnc: 'importLog',
         },
-        // 单个卡池的记录都走小程序风格新图；「全部」系列（*全部记录 / *全部抽卡记录）
-        // 故意不匹配，留给 genshin 的四合一模板
+        // 单个卡池走小程序风格出图；「全部记录」是同一套 UI 的总览版
+        { reg: '^\\s*#?星铁全部(?:抽卡)?记录\\s*$', fnc: 'viewAll' },
         {
           reg:
             '^\\s*#?星铁(?:抽卡|抽奖|角色联动|角色|武器联动|武器|光锥联动|光锥|常驻|up|UP|新手)' +
@@ -754,6 +799,39 @@ export class srGachaLog extends plugin {
     // 出图走 e.runtime.render；正常事件链上一定有，这里只是兜住被别处转发来的 e
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
     return this.renderMini()
+  }
+
+  /** *全部记录 —— 同一套 UI 的总览版，每个池一块 */
+  async viewAll() {
+    this.e.isSr = true
+    if (!this.e.runtime?.render) await ensureRuntime(this.e)
+    const { uid } = await resolveSrUid(this.e)
+    const data = await buildAllViewData(this.e, uid)
+    if (!data) {
+      await this.reply('还没有抽卡记录，先发 *更新抽卡记录 或 *导入记录', false, { at: true })
+      return true
+    }
+    const tplFile = path.join(pluginDir, 'resources/gachaLog/allLog.html')
+    const renderScale = getRenderScaleStyle(config(), 1.6)
+    const res = await this.e.runtime.render('xhh-TL', 'gachaLog', data, {
+      retType: 'base64',
+      imgType: 'jpeg',
+      beforeRender: ({ data: d }) => ({
+        ...d,
+        imgType: 'jpeg',
+        sys: { scale: renderScale },
+        ppath: '../../../../plugins/xhh-TL/resources/',
+        tplFile,
+        saveId: `gachaAll-${data.uid}`,
+      }),
+    })
+    const img = extractRenderBuffer(res)
+    if (!img) {
+      await this.reply('总览出图失败，请稍后重试', false, { at: true })
+      return true
+    }
+    await this.reply(segment.image(img))
+    return true
   }
 
   /** 小程序「跃迁记录统计」风格出图 */
@@ -820,7 +898,33 @@ export class srGachaLog extends plugin {
       })
       return true
     }
-    let file
+    let file = null
+    try {
+      file = await fetchImportFile(this.e)
+    } catch (err) {
+      await this.reply(`取文件失败：${err.message}`, false, { at: true })
+      return true
+    }
+    if (file) return this.doImport(file)
+
+    // QQ 的文件是单独一条消息，指令里带不上，所以挂个上下文等下一条。
+    // 本插件 priority 最低，上下文会抢在 genshin 的「请发送Json文件」之前
+    this.setContext('importFile', false, 180, '导入超时已取消，重新发一次 *导入记录 就行')
+    await this.reply(
+      '把文件发过来吧：SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或者导出的 Excel(.xlsx)，三分钟内有效',
+      false,
+      { at: true },
+    )
+    return true
+  }
+
+  /** 等文件的上下文回调 */
+  async importFile() {
+    // 不是文件也不是链接就别打断，交回给其它插件处理
+    if (!this.e.file && !/https?:\/\/\S+/.test(this.e.msg || '')) return 'continue'
+    this.finish('importFile', false)
+    this.e.isSr = true
+    let file = null
     try {
       file = await fetchImportFile(this.e)
     } catch (err) {
@@ -828,14 +932,14 @@ export class srGachaLog extends plugin {
       return true
     }
     if (!file) {
-      await this.reply(
-        '把导出的文件（SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或 Excel .xlsx）连同这条指令一起发给我，或者附上文件直链',
-        false,
-        { at: true },
-      )
+      await this.reply('没取到文件内容，重新发一次 *导入记录 试试', false, { at: true })
       return true
     }
+    return this.doImport(file)
+  }
 
+  /** 真正的解析 + 合并 */
+  async doImport(file) {
     try {
       const parsed = parseImportFile(file.buf, file.name)
       if (!parsed.records.length) throw new Error('文件里没有解析出任何记录')
