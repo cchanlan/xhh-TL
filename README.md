@@ -205,6 +205,8 @@
 | UIGF v4.x | `{info:{version}, hkrpg:[{uid, list}]}` | 多游戏统一格式，只取 hkrpg 那份 |
 | UIGF v2.x / v3.0 | `{info:{uigf_version}, list}` | 老版单游戏结构 |
 | Excel `.xlsx` | 一个卡池一个 sheet | 按表头文字认列，不依赖列顺序 |
+| csv / tsv | 一行一条记录 | 需要有「跃迁类型」列来区分卡池 |
+| 其它自有 json | 任意嵌套 | 兜底递归找带 `gacha_type` 的记录数组 |
 
 导入判重：有记录 id 的按 id 比，Excel 没有 id 就按「时间 + 名称」逐条抵扣，重复导入不会翻倍。
 Excel 记录会按时间补一个可排序的伪 id（打 `xhh_fid` 标记）。缺 `name` / 星级的记录（UIGF v4 允许只给

@@ -213,11 +213,104 @@ function parseExcel(buf) {
   return { format: `Excel · ${usedSheets.join(' ')}`, uid: '', records }
 }
 
+/** 逐字符解析 csv，兼容引号包裹与转义引号 */
+function parseCsvText(text) {
+  const rows = []
+  let row = []
+  let cell = ''
+  let inQuote = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (inQuote) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          cell += '"'
+          i++
+        } else {
+          inQuote = false
+        }
+      } else {
+        cell += ch
+      }
+    } else if (ch === '"') {
+      inQuote = true
+    } else if (ch === ',' || ch === '\t' || ch === ';') {
+      row.push(cell)
+      cell = ''
+    } else if (ch === '\n') {
+      row.push(cell)
+      rows.push(row)
+      row = []
+      cell = ''
+    } else if (ch !== '\r') {
+      cell += ch
+    }
+  }
+  if (cell !== '' || row.length) {
+    row.push(cell)
+    rows.push(row)
+  }
+  return rows.filter(r => r.some(c => String(c).trim()))
+}
+
+/** csv / tsv 导入：列按表头文字认，卡池靠「跃迁类型」那一列的文字判断 */
+function parseCsv(text) {
+  const rows = parseCsvText(String(text).replace(/^﻿/, ''))
+  if (!rows.length) throw new Error('csv 是空的')
+  const headRow = rows.findIndex(
+    r => r.some(c => COL_MATCHERS.time.test(c || '')) || r.some(c => COL_MATCHERS.name.test(c || '')),
+  )
+  if (headRow < 0) throw new Error('csv 里没找到表头（需要「时间」或「名称」列）')
+
+  const cols = {}
+  rows[headRow].forEach((cell, i) => {
+    const t = String(cell || '').trim()
+    if (!t) return
+    for (const [key, re] of Object.entries(COL_MATCHERS)) {
+      if (cols[key] === undefined && re.test(t)) cols[key] = i
+    }
+  })
+  if (cols.gacha_type === undefined) {
+    throw new Error('csv 里没有「跃迁类型」列，认不出记录属于哪个卡池')
+  }
+
+  const records = []
+  const seenPools = new Set()
+  for (const row of rows.slice(headRow + 1)) {
+    const pick = key => (cols[key] === undefined ? '' : String(row[cols[key]] ?? '').trim())
+    const poolText = pick('gacha_type')
+    const type = /^\d+$/.test(poolText)
+      ? poolText
+      : SHEET_TYPES.find(([re]) => re.test(poolText))?.[1]
+    if (!type) continue
+    const name = pick('name')
+    if (!name && !pick('item_id')) continue
+    seenPools.add(type)
+    records.push({
+      uid: '',
+      gacha_id: '',
+      gacha_type: type,
+      item_id: pick('item_id'),
+      count: '1',
+      time: pick('time'),
+      name,
+      lang: 'zh-cn',
+      item_type: pick('item_type'),
+      rank_type: toRank(pick('rank_type')),
+      id: pick('id'),
+    })
+  }
+  if (!records.length) throw new Error('csv 里没解析出记录')
+  return { format: `csv · ${records.length} 条 / ${seenPools.size} 个池`, uid: '', records }
+}
+
 /** 入口：按内容/扩展名判断格式并解析 */
 export function parseImportFile(buf, fileName = '') {
   const isZip = buf.length > 1 && buf[0] === 0x50 && buf[1] === 0x4b
   if (isZip || /\.xlsx$/i.test(fileName)) return parseExcel(buf)
-  return parseJson(buf.toString('utf8'))
+  const text = buf.toString('utf8').replace(/^﻿/, '')
+  if (/\.(csv|tsv|txt)$/i.test(fileName) || !/^\s*[[{]/.test(text)) return parseCsv(text)
+  return parseJson(text)
 }
 
 export default { parseImportFile }
