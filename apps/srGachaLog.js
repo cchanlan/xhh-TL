@@ -1022,7 +1022,6 @@ export class srGachaLog extends plugin {
       false,
       { at: true },
     )
-    if (this.e.isGroup) await this.reply('链接里带你的凭证，记得撤回上面那条消息', false, { at: true })
 
     try {
       const perPool = []
@@ -1040,17 +1039,19 @@ export class srGachaLog extends plugin {
 
       assignIds(records)
       const stat = mergeImport(this.e.user_id, uid, records)
-      const detail = [
-        `抽卡链接更新完成，新增 ${stat.added} 条`,
-        stat.skipped ? `已有 ${stat.skipped} 条` : '',
-        stat.dropMini ? `${stat.dropMini} 条小程序五星换成了真实记录` : '',
-        stat.dropPh ? `清理占位 ${stat.dropPh} 条` : '',
-        perPool.join('、'),
-      ]
-        .filter(Boolean)
-        .join('；')
-      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${detail}`)
-      await this.reply(`${detail}。`, false, { at: true })
+      // 细节只进日志
+      logger?.info?.(
+        `[xhh-TL][抽卡记录] ${uid} 抽卡链接更新：新增 ${stat.added} 条` +
+          `${stat.skipped ? `，已有 ${stat.skipped} 条` : ''}` +
+          `${stat.dropMini ? `，替换小程序五星 ${stat.dropMini} 条` : ''}` +
+          `${stat.dropPh ? `，清理占位 ${stat.dropPh} 条` : ''}` +
+          `（${perPool.join('、')}）`,
+      )
+      await this.reply(
+        `更新完成，新增 ${stat.added} 条${this.e.isGroup ? '，记得把链接撤回哦' : ''}`,
+        false,
+        { at: true },
+      )
       await this.renderMini()
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
@@ -1151,9 +1152,7 @@ export class srGachaLog extends plugin {
   async importLog() {
     this.e.isSr = true
     if (this.e.isGroup && !/强制/.test(this.e.msg)) {
-      await this.reply('导入的文件里有你的抽卡记录，建议私聊导入；确认要在群里导入请发【*强制导入记录】', false, {
-        at: true,
-      })
+      await this.reply('文件里有你的记录，建议私聊导入；就要在群里发【*强制导入记录】', false, { at: true })
       return true
     }
     let file = null
@@ -1168,11 +1167,7 @@ export class srGachaLog extends plugin {
     // QQ 的文件是单独一条消息，指令里带不上，所以挂个上下文等下一条。
     // 本插件 priority 最低，上下文会抢在 genshin 的「请发送Json文件」之前
     this.setContext('importFile', false, 180, '导入超时已取消，重新发一次 *导入记录 就行')
-    await this.reply(
-      '把文件发过来吧：SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或者导出的 Excel(.xlsx)，三分钟内有效',
-      false,
-      { at: true },
-    )
+    await this.reply('把文件发过来（json / Excel，三分钟内有效）', false, { at: true })
     return true
   }
 
@@ -1213,24 +1208,20 @@ export class srGachaLog extends plugin {
       const faked = assignIds(parsed.records)
       const stat = mergeImport(this.e.user_id, uid, parsed.records)
 
-      const detail = [
-        `${parsed.format} 导入完成`,
-        `新增 ${stat.added} 条`,
-        stat.skipped ? `重复跳过 ${stat.skipped} 条` : '',
-        stat.dropMini ? `${stat.dropMini} 条小程序五星已被真实记录替换` : '',
-        stat.dropPh ? `清理占位 ${stat.dropPh} 条` : '',
-        faked ? `${faked} 条无 id 记录按时间补了序号` : '',
-        stat.pools.length ? stat.pools.join('、') : '',
-      ]
-        .filter(Boolean)
-        .join('；')
-      await this.reply(`${detail}。`, false, { at: true })
-      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${detail}`)
-      if (stat.dropPh) {
-        await this.reply('占位记录已随导入清掉，想恢复小程序侧的垫抽进度再发一次 *更新抽卡记录', false, {
-          at: true,
-        })
-      }
+      // 细节只进日志，群里只回一句
+      logger?.info?.(
+        `[xhh-TL][抽卡记录] ${uid} ${parsed.format} 导入：新增 ${stat.added} 条` +
+          `${stat.skipped ? `，重复 ${stat.skipped} 条` : ''}` +
+          `${stat.dropMini ? `，替换小程序五星 ${stat.dropMini} 条` : ''}` +
+          `${stat.dropPh ? `，清理占位 ${stat.dropPh} 条` : ''}` +
+          `${faked ? `，补序号 ${faked} 条` : ''}` +
+          `${stat.pools.length ? `（${stat.pools.join('、')}）` : ''}`,
+      )
+      await this.reply(
+        `导入完成，新增 ${stat.added} 条${this.e.isGroup ? '，记得把文件撤回哦' : ''}`,
+        false,
+        { at: true },
+      )
       await this.renderMini()
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 导入失败：${err.stack || err.message}`)
