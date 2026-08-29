@@ -15,6 +15,7 @@ import { resinPush } from './apps/resinPush.js'
 import { autoSign } from './apps/autoSign.js'
 import { autoBbsCoin } from './apps/autoBbsCoin.js'
 import { TLDelCkHook } from './apps/delCkHook.js'
+import { srGachaLog } from './apps/srGachaLog.js'
 
 export {
   TL,
@@ -33,5 +34,6 @@ export {
   autoSign,
   autoBbsCoin,
   TLDelCkHook,
+  srGachaLog,
 }
 

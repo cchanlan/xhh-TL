@@ -311,6 +311,23 @@ export function buildHelpGroups() {
       ],
     },
     {
+      group: '星铁 · 抽卡记录',
+      desc: '小程序同源接口 · 只有五星与垫抽',
+      color: 'purple',
+      list: [
+        {
+          icon: 'sr-卡芙卡.webp',
+          title: '*更新抽卡记录',
+          desc: '免抽卡链接，直接拉五星记录与垫抽，合并进本地记录不丢旧数据',
+        },
+        {
+          icon: 'sr-希儿.webp',
+          title: '*抽卡记录',
+          desc: '出图查看；加「全部」看全部池。四星统计仍需抽卡链接导入',
+        },
+      ],
+    },
+    {
       group: '原神 · 版本配置',
       desc: 'Nanoka 静态 · 不查个人成绩',
       color: 'orange',
