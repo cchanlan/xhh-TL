@@ -28,6 +28,7 @@ import { createUser } from '../utils/userBind.js'
 import { ensureRuntime } from '../utils/runtimePatch.js'
 import { config, pluginDir, getRenderScaleStyle } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
+import { parseImportFile } from '../utils/gachaImport.js'
 
 const BADGE_LOGIN = 'https://api-takumi.mihoyo.com/common/badge/v1/login/account'
 const GACHA_BASE = 'https://act-api-takumi.mihoyo.com/event/rpg_gacha_record'
@@ -463,6 +464,172 @@ async function prepareCookie(e, uid, user) {
 
 /** 数字 gacha_type → 小程序里的池名 */
 const POOL_LABEL = Object.fromEntries(POOLS.map(p => [p.type, p.name]))
+POOL_LABEL['1'] = '常驻跃迁'
+
+/** 从消息里的文件段或链接取出导入文件 */
+async function fetchImportFile(e) {
+  let url = ''
+  let name = ''
+  if (e.file) {
+    name = e.file.name || ''
+    url = e.file.url || ''
+    if (!/^https?:\/\//.test(url) && e.file.fid) {
+      url = (await e.group?.getFileUrl?.(e.file.fid)) || (await e.friend?.getFileUrl?.(e.file.fid)) || ''
+    }
+  }
+  if (!/^https?:\/\//.test(url)) {
+    url = String(e.msg || '').match(/https?:\/\/[^\s]+/i)?.[0]?.replace(/[)>】」』"'，。！？；;]+$/g, '') || ''
+    if (url && !name) {
+      try {
+        name = decodeURIComponent(path.basename(new URL(url).pathname || ''))
+      } catch (_) {}
+    }
+  }
+  if (!/^https?:\/\//.test(url)) return null
+
+  const res = await fetch(url, { headers: { 'User-Agent': UA }, timeout: 60000 })
+  if (!res.ok) throw new Error(`下载文件失败：HTTP ${res.status}`)
+  const buf = Buffer.from(await res.arrayBuffer())
+  if (!buf.length) throw new Error('下载到的文件是空的')
+  if (buf.length > 40 * 1024 * 1024) throw new Error('文件太大（超过 40MB）')
+  return { buf, name }
+}
+
+/** 按 id 倒序（新的在前），和 genshin 写入的顺序保持一致 */
+function byIdDesc(a, b) {
+  const x = big(a.id)
+  const y = big(b.id)
+  return y > x ? 1 : y < x ? -1 : 0
+}
+
+/** Excel 之类不带 id 的记录：按时间造一个可排序的伪 id，打 xhh_fid 标记 */
+function assignIds(records) {
+  const times = records.map(r => Date.parse(String(r.time).replace(/-/g, '/'))).filter(Boolean)
+  // 文件里可能是旧→新，统一翻成新→旧，保证同一秒内的顺序不乱
+  if (times.length > 1 && times[0] < times[times.length - 1]) records.reverse()
+
+  const seq = new Map()
+  let made = 0
+  for (const r of records) {
+    if (r.id) continue
+    const ms = Date.parse(String(r.time).replace(/-/g, '/'))
+    if (!ms) continue
+    const sec = Math.floor(ms / 1000)
+    const n = seq.has(sec) ? seq.get(sec) - 1 : 999999999
+    seq.set(sec, n)
+    r.id = String(BigInt(sec) * 1000000000n + BigInt(n))
+    r.xhh_fid = 1
+    made++
+  }
+  return made
+}
+
+/**
+ * 导入的记录并进本地库。
+ * 导入进来的是真实（通常是完整逐抽）记录，所以：旧占位全部丢弃、
+ * 落在导入范围内的小程序五星让位给真实记录，避免同一抽被算两遍。
+ */
+function mergeImport(userId, uid, records) {
+  const byType = new Map()
+  for (const r of records) {
+    const t = String(r.gacha_type)
+    if (!byType.has(t)) byType.set(t, [])
+    byType.get(t).push({ ...r, uid: String(uid) })
+  }
+
+  const stat = { added: 0, skipped: 0, dropMini: 0, dropPh: 0, pools: [] }
+  for (const [type, list] of byType) {
+    const local = readLocal(userId, uid, type)
+    const localReal = local.filter(r => !r.xhh_ph)
+    const dropPh = local.length - localReal.length
+
+    const ids = new Set(localReal.map(r => String(r.id)))
+    const keyOf = r => `${r.time}|${r.name}`
+    const keyCount = new Map()
+    for (const r of localReal) keyCount.set(keyOf(r), (keyCount.get(keyOf(r)) || 0) + 1)
+
+    const add = []
+    for (const r of list) {
+      if (r.id && ids.has(String(r.id))) {
+        stat.skipped++
+        continue
+      }
+      const k = keyOf(r)
+      if (keyCount.get(k) > 0) {
+        keyCount.set(k, keyCount.get(k) - 1)
+        stat.skipped++
+        continue
+      }
+      add.push(r)
+      if (r.id) ids.add(String(r.id))
+    }
+
+    // 只有真的并进了新记录，才动本地：让同一个五星的小程序记录退位、顺带重建占位。
+    // 全是重复的时候一个字节都不改，免得白清掉占位丢了垫抽进度。
+    if (!add.length) {
+      stat.skipped += 0
+      continue
+    }
+
+    const coverKeys = new Set()
+    for (const r of add) {
+      coverKeys.add(`b:${r.item_id}@${String(r.id).slice(0, 10)}`)
+      if (r.time) coverKeys.add(`d:${r.item_id}@${String(r.time).slice(0, 10)}`)
+    }
+    let dropMini = 0
+    const kept = localReal.filter(r => {
+      if (r.xhh_src !== 'mini') return true
+      // 小程序的 id 与游戏内导出前 10 位（批次时间戳）一致，Excel 的伪 id 只能按日期对
+      const covered =
+        coverKeys.has(`b:${r.item_id}@${String(r.id).slice(0, 10)}`) ||
+        (r.time && coverKeys.has(`d:${r.item_id}@${String(r.time).slice(0, 10)}`))
+      if (covered) {
+        dropMini++
+        return false
+      }
+      return true
+    })
+
+    // 只有当真实记录顶掉了小程序五星，占位才失去意义（它们是挂在那些五星上的）；
+    // 否则原样留着，别让一次小规模导入把垫抽进度清光
+    const phKept = dropMini ? [] : local.filter(r => r.xhh_ph)
+    writeLocal(userId, uid, type, [...add, ...kept, ...phKept].sort(byIdDesc))
+    stat.added += add.length
+    stat.dropPh += dropMini ? dropPh : 0
+    stat.dropMini += dropMini
+    stat.pools.push(`${POOL_LABEL[type] || type} +${add.length}`)
+  }
+  return stat
+}
+
+/** 记录缺 name / 星级 / 类型时，用 miao 的星铁元数据按名字或 item_id 补齐 */
+async function fillMeta(records) {
+  let models
+  try {
+    // 不能写 '#miao.models'：xhh-TL 自己带 package.json，Node 会在本插件里找 imports 字段而解析失败
+    models = await import('../../miao-plugin/models/index.js')
+  } catch (err) {
+    logger?.debug?.(`[xhh-TL][抽卡记录] 载入 miao 元数据失败，跳过补齐：${err.message}`)
+    return 0
+  }
+  const { Character, Weapon } = models
+  let filled = 0
+  for (const r of records) {
+    if (r.name && r.rank_type && r.item_type) continue
+    const key = r.name || Number(r.item_id) || ''
+    if (!key) continue
+    const isChar = r.item_type === '角色' || String(r.item_id).length === 4
+    const meta = isChar ? Character?.get?.(key, 'sr') : Weapon?.get?.(key, 'sr')
+    if (!meta) continue
+    r.name = r.name || meta.name || ''
+    r.item_type = r.item_type || (isChar ? '角色' : '光锥')
+    r.rank_type = r.rank_type || String(meta.star || meta.rank || '')
+    r.item_id = r.item_id || String(meta.id || '')
+    filled++
+  }
+  return filled
+}
+
 /** 顶部 tab 固定这三个，当前池不在其中时顶掉第三个 */
 const TAB_TYPES = ['11', '12', '21']
 
@@ -531,6 +698,11 @@ export class srGachaLog extends plugin {
       priority: -Infinity,
       rule: [
         { reg: '^\\s*#?星铁(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
+        {
+          // 允许「*导入记录」后面直接跟文件直链，也支持只发指令+附件
+          reg: '^\\s*#?星铁(?:强制)?导入(?:抽卡)?记录(?:json|excel|xlsx)?(?:\\s+\\S+)?\\s*$',
+          fnc: 'importLog',
+        },
         // 单个卡池的记录都走小程序风格新图；「全部」系列（*全部记录 / *全部抽卡记录）
         // 故意不匹配，留给 genshin 的四合一模板
         {
@@ -603,6 +775,72 @@ export class srGachaLog extends plugin {
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
       await this.reply(`崩铁抽卡记录更新失败：${err.message}`, false, { at: true })
+    }
+    return true
+  }
+
+  /** *导入记录 —— 支持 SRGF v1.0 / UIGF v2.x / UIGF v4.x / Excel(xlsx) */
+  async importLog() {
+    this.e.isSr = true
+    if (this.e.isGroup && !/强制/.test(this.e.msg)) {
+      await this.reply('导入的文件里有你的抽卡记录，建议私聊导入；确认要在群里导入请发【*强制导入记录】', false, {
+        at: true,
+      })
+      return true
+    }
+    let file
+    try {
+      file = await fetchImportFile(this.e)
+    } catch (err) {
+      await this.reply(`取文件失败：${err.message}`, false, { at: true })
+      return true
+    }
+    if (!file) {
+      await this.reply(
+        '把导出的文件（SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或 Excel .xlsx）连同这条指令一起发给我，或者附上文件直链',
+        false,
+        { at: true },
+      )
+      return true
+    }
+
+    try {
+      const parsed = parseImportFile(file.buf, file.name)
+      if (!parsed.records.length) throw new Error('文件里没有解析出任何记录')
+
+      const { uid: localUid } = await resolveSrUid(this.e)
+      const uid = parsed.uid || localUid
+      if (!uid) throw new Error('文件里没有 UID，你也还没绑定星铁 UID')
+      if (parsed.uids?.length > 1) {
+        logger?.info?.(`[xhh-TL][抽卡记录] 导入文件含多个 UID：${parsed.uids.join(',')}，只用 ${uid}`)
+      }
+
+      await fillMeta(parsed.records)
+      const faked = assignIds(parsed.records)
+      const stat = mergeImport(this.e.user_id, uid, parsed.records)
+
+      const detail = [
+        `${parsed.format} 导入完成`,
+        `新增 ${stat.added} 条`,
+        stat.skipped ? `重复跳过 ${stat.skipped} 条` : '',
+        stat.dropMini ? `${stat.dropMini} 条小程序五星已被真实记录替换` : '',
+        stat.dropPh ? `清理占位 ${stat.dropPh} 条` : '',
+        faked ? `${faked} 条无 id 记录按时间补了序号` : '',
+        stat.pools.length ? stat.pools.join('、') : '',
+      ]
+        .filter(Boolean)
+        .join('；')
+      await this.reply(`${detail}。`, false, { at: true })
+      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${detail}`)
+      if (stat.dropPh) {
+        await this.reply('占位记录已随导入清掉，想恢复小程序侧的垫抽进度再发一次 *更新抽卡记录', false, {
+          at: true,
+        })
+      }
+      await this.renderMini()
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][抽卡记录] 导入失败：${err.stack || err.message}`)
+      await this.reply(`导入失败：${err.message}`, false, { at: true })
     }
     return true
   }

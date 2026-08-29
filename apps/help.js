@@ -325,6 +325,11 @@ export function buildHelpGroups() {
           title: '*抽卡记录 *武器记录',
           desc: '仿小程序「跃迁记录统计」出图，各池分开看；*全部记录 仍是四合一老图',
         },
+        {
+          icon: 'sr-灵砂.webp',
+          title: '*导入记录',
+          desc: '附上文件：SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或导出的 Excel',
+        },
       ],
     },
     {
