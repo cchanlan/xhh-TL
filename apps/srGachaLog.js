@@ -63,17 +63,28 @@ function readPoolCache() {
   return {}
 }
 
-function savePoolCache(uid, type, cards) {
+function savePoolCache(uid, type, cards, pity) {
   const all = readPoolCache()
   const key = String(uid)
   all[key] = all[key] || {}
-  all[key][String(type)] = { at: Date.now(), cards: cards || [] }
+  const prev = all[key][String(type)] || {}
+  all[key][String(type)] = {
+    at: Date.now(),
+    cards: cards || prev.cards || [],
+    // 接口给的当前垫抽。本地记录里的四星三星是缺的，出图时靠它兜底
+    pity: pity === undefined ? prev.pity || 0 : Number(pity) || 0,
+  }
   try {
     fs.mkdirSync(path.dirname(POOL_CACHE), { recursive: true })
     fs.writeFileSync(POOL_CACHE, JSON.stringify(all, null, 1))
   } catch (err) {
     logger?.debug?.(`[xhh-TL][抽卡记录] 卡池缓存写入失败：${err.message}`)
   }
+}
+
+/** 取某池缓存下来的接口垫抽数 */
+function cachedPity(uid, type) {
+  return Number(readPoolCache()[String(uid)]?.[String(type)]?.pity) || 0
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -677,7 +688,7 @@ async function buildViewData(e, uid) {
   const list = readLocal(e.user_id, uid, type)
   if (!list.length) return null
 
-  const stat = analyse(list, type)
+  const stat = analyse(list, type, cachedPity(uid, type))
   const max = poolMax(type)
   const pct = n => Math.max(6, Math.min(100, (Number(n) / max) * 100))
 
@@ -739,7 +750,7 @@ async function buildAllViewData(e, uid) {
   for (const type of ['11', '12', '21', '22', '1', '2']) {
     const list = readLocal(e.user_id, uid, type)
     if (!list.length) continue
-    const stat = analyse(list, type)
+    const stat = analyse(list, type, cachedPity(uid, type))
     const five = []
     for (const it of stat.fiveLog) {
       five.push({
@@ -1176,7 +1187,7 @@ export class srGachaLog extends plugin {
     for (const pool of POOLS) {
       const remote = await fetchFiveStars(gachaCookie, pool.key)
       const poolStat = await fetchPoolStat(gachaCookie, pool.key)
-      savePoolCache(uid, pool.type, poolStat.cards)
+      savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
       const res = mergePool(userId, uid, pool.type, remote, poolStat)
 
       added5 += res.added5
