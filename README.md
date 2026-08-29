@@ -125,10 +125,14 @@ GT-Manual）。米游币覆盖三个版块，做满约 +20~22 币/账号/天。
 
 ## 安装
 
+在**云崽根目录**执行：
+
 ```bash
-cd Yunzai/plugins
-git clone https://github.com/cchanlan/xhh-TL.git   # 或 https://gitcode.com/ccxhan/xhh-TL.git
-cd xhh-TL && npm install --no-save
+git clone --depth=1 https://github.com/cchanlan/xhh-TL.git ./plugins/xhh-TL
+# 国内直连更快：https://gitcode.com/ccxhan/xhh-TL.git
+
+pnpm install --filter=xhh-TL
+# 没用 pnpm 的话：npm install --no-save --prefix ./plugins/xhh-TL
 ```
 
 重启生效。首次启动会从 `config/default_config.yaml` 生成 `config/config.yaml`。
