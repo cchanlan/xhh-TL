@@ -29,6 +29,7 @@ import { ensureRuntime } from '../utils/runtimePatch.js'
 import { config, pluginDir, getRenderScaleStyle } from '../utils/pluginConfig.js'
 import { extractRenderBuffer } from '../utils/renderImage.js'
 import { parseImportFile } from '../utils/gachaImport.js'
+import { analyse, buildLine, getIcon, poolMax } from '../utils/gachaStat.js'
 
 const BADGE_LOGIN = 'https://api-takumi.mihoyo.com/common/badge/v1/login/account'
 const GACHA_BASE = 'https://act-api-takumi.mihoyo.com/event/rpg_gacha_record'
@@ -633,20 +634,48 @@ async function fillMeta(records) {
 /** 顶部 tab 固定这三个，当前池不在其中时顶掉第三个 */
 const TAB_TYPES = ['11', '12', '21']
 
-/** 组装小程序风格出图所需数据，全部取自 genshin 的抽卡记录库 */
-async function buildViewData(e, uid) {
-  const { default: GachaLog } = await import('../../genshin/model/gachaLog.js')
-  const data = await new GachaLog(e).getLogData()
-  if (!data) return null
+/** 指令里的池名 → gacha_type（原来靠 genshin 的 getPool 解析，现在自己来） */
+function parsePoolType(msg = '') {
+  const key = String(msg)
+    .replace(/#|星铁|崩坏星穹铁道|铁道|抽卡|抽奖|记录|祈愿|分析|池|全部|\s/g, '')
+    .trim()
+  switch (key) {
+    case '常驻':
+      return '1'
+    case '新手':
+      return '2'
+    case '武器':
+    case '光锥':
+      return '12'
+    case '角色联动':
+      return '21'
+    case '武器联动':
+    case '光锥联动':
+      return '22'
+    default:
+      // 抽卡 / 抽奖 / 角色 / up / 空
+      return '11'
+  }
+}
 
-  const type = String(data.type)
-  const max = Number(data.max) || 90
-  const pity = Number(data.line?.[0]?.[0]?.num) || 0
+/** 组装小程序风格出图所需数据。只读本地记录自己算，不依赖 genshin 插件 */
+async function buildViewData(e, uid) {
+  if (!uid) return null
+  const type = parsePoolType(e.msg)
+  const list = readLocal(e.user_id, uid, type)
+  if (!list.length) return null
+
+  const stat = analyse(list, type)
+  const max = poolMax(type)
   const pct = n => Math.max(6, Math.min(100, (Number(n) / max) * 100))
 
-  const fiveLog = data.fiveLog || []
-  const list = [
-    { placeholder: true, name: '已跃迁', num: pity, pct: pct(pity) },
+  const fiveLog = []
+  for (const it of stat.fiveLog) {
+    fiveLog.push({ ...it, icon: await getIcon(it.name, it.item_type) })
+  }
+
+  const rows = [
+    { placeholder: true, name: '已跃迁', num: stat.noFiveNum, pct: pct(stat.noFiveNum) },
     ...fiveLog.map(x => ({
       icon: x.icon,
       name: x.name,
@@ -656,34 +685,37 @@ async function buildViewData(e, uid) {
     })),
   ]
 
-  const cards = (readPoolCache()[String(data.uid || uid)]?.[type]?.cards || []).slice(0, 3)
-  const poolCards = cards.map(c => ({
-    poolName: c.pool_name || '未知卡池',
-    version: c.version ? `v${String(c.version).split('.').slice(0, 2).join('.')}` : '',
-    total: c.total_count ?? 0,
-    upCount: c.up_count ?? 0,
-    upName: c.up_item?.name || '',
-    icon: c.up_item?.name
-      ? GachaLog.getIcon(c.up_item.name, ITEM_TYPE[c.up_item.item_type] || '角色', 'sr') || ''
-      : '',
-  }))
+  const cards = (readPoolCache()[String(uid)]?.[type]?.cards || []).slice(0, 3)
+  const poolCards = []
+  for (const c of cards) {
+    poolCards.push({
+      poolName: c.pool_name || '未知卡池',
+      version: c.version ? `v${String(c.version).split('.').slice(0, 2).join('.')}` : '',
+      total: c.total_count ?? 0,
+      upCount: c.up_count ?? 0,
+      upName: c.up_item?.name || '',
+      icon: c.up_item?.name
+        ? await getIcon(c.up_item.name, ITEM_TYPE[c.up_item.item_type] || '角色')
+        : '',
+    })
+  }
 
   const tabs = TAB_TYPES.slice()
   if (!tabs.includes(type)) tabs[2] = type
 
   return {
-    uid: data.uid,
-    poolName: POOL_LABEL[type] || `${data.typeName}跃迁`,
+    uid: String(uid),
+    poolName: POOL_LABEL[type] || `${type} 号池`,
     tabs: tabs.map(t => ({ name: POOL_LABEL[t] || t, active: t === type })),
     // 本地有多少五星就渲染多少，不截断
     recent5: fiveLog,
     poolCards,
-    list,
-    stats: data.line || [],
-    allNum: data.allNum,
+    list: rows,
+    stats: buildLine(stat, type),
+    allNum: stat.allNum,
     fiveNum: fiveLog.length,
-    firstTime: data.firstTime,
-    lastTime: data.lastTime,
+    firstTime: stat.firstTime,
+    lastTime: stat.lastTime,
     updatedAt: moment().format('MM-DD HH:mm'),
   }
 }
