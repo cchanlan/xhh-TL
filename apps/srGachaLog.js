@@ -26,6 +26,8 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { getstoken, stokenToCookie, findStokenEntry, cookiePart } from '../utils/auth.js'
 import { createUser } from '../utils/userBind.js'
 import { ensureRuntime } from '../utils/runtimePatch.js'
+import { config, pluginDir, getRenderScaleStyle } from '../utils/pluginConfig.js'
+import { extractRenderBuffer } from '../utils/renderImage.js'
 
 const BADGE_LOGIN = 'https://api-takumi.mihoyo.com/common/badge/v1/login/account'
 const GACHA_BASE = 'https://act-api-takumi.mihoyo.com/event/rpg_gacha_record'
@@ -48,6 +50,29 @@ const ITEM_TYPE = { ItemType_Avatar: '角色', ItemType_Equipment: '光锥' }
 const PLACEHOLDER = { item_id: '20006', name: '智库', item_type: '光锥' }
 
 const SR_JSON_DIR = path.join(process.cwd(), 'data', 'srJson')
+
+/** 卡池期次统计的落盘缓存：更新时顺手存下来，出图时不必再请求接口 */
+const POOL_CACHE = path.join(pluginDir, 'data', 'sr_gacha_pools.json')
+
+function readPoolCache() {
+  try {
+    if (fs.existsSync(POOL_CACHE)) return JSON.parse(fs.readFileSync(POOL_CACHE, 'utf8')) || {}
+  } catch (_) {}
+  return {}
+}
+
+function savePoolCache(uid, type, cards) {
+  const all = readPoolCache()
+  const key = String(uid)
+  all[key] = all[key] || {}
+  all[key][String(type)] = { at: Date.now(), cards: cards || [] }
+  try {
+    fs.mkdirSync(path.dirname(POOL_CACHE), { recursive: true })
+    fs.writeFileSync(POOL_CACHE, JSON.stringify(all, null, 1))
+  } catch (err) {
+    logger?.debug?.(`[xhh-TL][抽卡记录] 卡池缓存写入失败：${err.message}`)
+  }
+}
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
@@ -436,6 +461,67 @@ async function prepareCookie(e, uid, user) {
 }
 
 
+/** 数字 gacha_type → 小程序里的池名 */
+const POOL_LABEL = Object.fromEntries(POOLS.map(p => [p.type, p.name]))
+/** 顶部 tab 固定这三个，当前池不在其中时顶掉第三个 */
+const TAB_TYPES = ['11', '12', '21']
+
+/** 组装小程序风格出图所需数据，全部取自 genshin 的抽卡记录库 */
+async function buildViewData(e, uid) {
+  const { default: GachaLog } = await import('../../genshin/model/gachaLog.js')
+  const data = await new GachaLog(e).getLogData()
+  if (!data) return null
+
+  const type = String(data.type)
+  const max = Number(data.max) || 90
+  const pity = Number(data.line?.[0]?.[0]?.num) || 0
+  const pct = n => Math.max(6, Math.min(100, (Number(n) / max) * 100))
+
+  const fiveLog = data.fiveLog || []
+  const list = [
+    { placeholder: true, name: '已跃迁', num: pity, pct: pct(pity) },
+    ...fiveLog.map(x => ({
+      icon: x.icon,
+      name: x.name,
+      num: x.num,
+      isUp: x.isUp,
+      pct: pct(x.num),
+    })),
+  ]
+
+  const cards = (readPoolCache()[String(data.uid || uid)]?.[type]?.cards || []).slice(0, 3)
+  const poolCards = cards.map(c => ({
+    poolName: c.pool_name || '未知卡池',
+    version: c.version ? `v${String(c.version).split('.').slice(0, 2).join('.')}` : '',
+    total: c.total_count ?? 0,
+    upCount: c.up_count ?? 0,
+    upName: c.up_item?.name || '',
+    icon: c.up_item?.name
+      ? GachaLog.getIcon(c.up_item.name, ITEM_TYPE[c.up_item.item_type] || '角色', 'sr') || ''
+      : '',
+  }))
+
+  const tabs = TAB_TYPES.slice()
+  if (!tabs.includes(type)) tabs[2] = type
+
+  return {
+    uid: data.uid,
+    poolName: POOL_LABEL[type] || `${data.typeName}跃迁`,
+    tabs: tabs.map(t => ({ name: POOL_LABEL[t] || t, active: t === type })),
+    recent5: fiveLog.slice(0, 15),
+    recentMore: Math.max(0, fiveLog.length - 15),
+    poolCards,
+    list: list.slice(0, 13),
+    listMore: Math.max(0, list.length - 13),
+    stats: data.line || [],
+    allNum: data.allNum,
+    fiveNum: fiveLog.length,
+    firstTime: data.firstTime,
+    lastTime: data.lastTime,
+    updatedAt: moment().format('MM-DD HH:mm'),
+  }
+}
+
 export class srGachaLog extends plugin {
   constructor() {
     super({
@@ -457,13 +543,50 @@ export class srGachaLog extends plugin {
     this.e.isAll = /全部/.test(this.e.msg)
     // 出图走 e.runtime.render；正常事件链上一定有，这里只是兜住被别处转发来的 e
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
-    // 懒加载：没装 genshin 插件时不至于让整个 xhh-TL 载入失败
-    const { default: GachaLog } = await import('../../genshin/model/gachaLog.js')
-    const data = await new GachaLog(this.e).getLogData()
-    if (!data) return true
-    const tpl = this.e.isAll ? 'html/gacha/gacha-all-log' : 'html/gacha/gacha-log'
-    const img = await this.renderImg('genshin', tpl, data, { retType: 'base64' })
-    if (img) await this.reply(img)
+
+    // *全部记录 保持原样交给 genshin 的模板，只有 *抽卡记录 走小程序风格的新图
+    if (this.e.isAll) {
+      const { default: GachaLog } = await import('../../genshin/model/gachaLog.js')
+      const data = await new GachaLog(this.e).getLogData()
+      if (!data) return true
+      const img = await this.renderImg('genshin', 'html/gacha/gacha-all-log', data, {
+        retType: 'base64',
+      })
+      if (img) await this.reply(img)
+      return true
+    }
+    return this.renderMini()
+  }
+
+  /** 小程序「跃迁记录统计」风格出图 */
+  async renderMini() {
+    if (!this.e.runtime?.render) await ensureRuntime(this.e)
+    const { uid } = await resolveSrUid(this.e)
+    const data = await buildViewData(this.e, uid)
+    if (!data) {
+      await this.reply('还没有抽卡记录，先发 *更新抽卡记录 试试', false, { at: true })
+      return true
+    }
+    const tplFile = path.join(pluginDir, 'resources/gachaLog/gachaLog.html')
+    const renderScale = getRenderScaleStyle(config(), 1.4)
+    const res = await this.e.runtime.render('xhh-TL', 'gachaLog', data, {
+      retType: 'base64',
+      imgType: 'jpeg',
+      beforeRender: ({ data: d }) => ({
+        ...d,
+        imgType: 'jpeg',
+        sys: { scale: renderScale },
+        ppath: '../../../../plugins/xhh-TL/resources/',
+        tplFile,
+        saveId: `gachaLog-${data.uid}-${data.poolName}`,
+      }),
+    })
+    const img = extractRenderBuffer(res)
+    if (!img) {
+      await this.reply('抽卡记录出图失败，请稍后重试', false, { at: true })
+      return true
+    }
+    await this.reply(segment.image(img))
     return true
   }
 
@@ -475,11 +598,13 @@ export class srGachaLog extends plugin {
       await this.reply('没找到你的星铁 UID，先绑定账号再更新哦', false, { at: true })
       return true
     }
-    await this.reply('崩铁五星抽卡记录更新中，请稍等...', false, { at: true })
+    await this.reply('崩铁抽卡记录更新中，请稍等...', false, { at: true })
     try {
       const { cookie, region } = await prepareCookie(this.e, uid, user)
       const gachaCookie = await badgeLogin(cookie, uid, region)
-      await this.reply(await this.runUpdate(uid, gachaCookie), false, { at: true })
+      // 更新完不发文案，统计只落日志，直接出图
+      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${await this.runUpdate(uid, gachaCookie)}`)
+      await this.renderMini()
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
       await this.reply(`崩铁抽卡记录更新失败：${err.message}`, false, { at: true })
@@ -501,6 +626,7 @@ export class srGachaLog extends plugin {
     for (const pool of POOLS) {
       const remote = await fetchFiveStars(gachaCookie, pool.key)
       const poolStat = await fetchPoolStat(gachaCookie, pool.key)
+      savePoolCache(uid, pool.type, poolStat.cards)
       const res = mergePool(userId, uid, pool.type, remote, poolStat)
 
       added5 += res.added5
@@ -509,34 +635,20 @@ export class srGachaLog extends plugin {
       remoteTotal += remote.list.length
       notes.push(...res.notes)
       if (remote.pity > 0) pityParts.push(`${pool.name}${remote.pity}抽`)
-
-      if (remote.list.length) {
-        const shown = remote.list.slice(0, 10)
-        const items = shown.map(
-          s => `${s.item.name} ${s.gacha_count}抽 ${s.is_up ? 'UP' : '非UP'}`,
-        )
-        const more = remote.list.length - shown.length
-        lines.push(`【${pool.name}】${items.join('；')}${more > 0 ? ` …等共 ${remote.list.length} 条` : ''}`)
-      } else {
-        lines.push(`【${pool.name}】暂无五星记录`)
-      }
+      lines.push(`${pool.name} 五星${remote.list.length}条`)
       await sleep(400)
     }
 
-    const head =
-      `崩铁五星抽卡记录更新完成，新增五星 ${added5} 条，接口共给出 ${remoteTotal} 条。` +
-      (pityParts.length ? `当前垫抽：${pityParts.join('、')}。` : '')
-    const tail =
-      [
-        '仅包含五星记录和当前垫抽状态，不是完整逐抽历史，不含四星记录（所以「未出四星」一栏会偏大）。',
-        `已写入 ${added5} 条五星、${addedPh} 条占位（占位仅补总抽数，不计入四/五星统计）`,
-        skipped ? `${skipped} 条五星本地已有记录，跳过` : '',
-        ...notes,
-      ]
-        .filter(Boolean)
-        .join('；') + '。可用 *抽卡记录 查看。'
-
-    return [head, ...lines, tail].join('\n')
+    // 结果直接出图，这段只进日志，方便回查合并细节
+    return [
+      `新增五星 ${added5} 条（接口给出 ${remoteTotal} 条，${skipped} 条本地已有）`,
+      `占位 ${addedPh} 条`,
+      pityParts.length ? `垫抽 ${pityParts.join('/')}` : '',
+      lines.join(' '),
+      ...notes,
+    ]
+      .filter(Boolean)
+      .join('；')
   }
 }
 

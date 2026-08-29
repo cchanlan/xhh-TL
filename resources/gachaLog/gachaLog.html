@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @font-face {
+      font-family: 'NotoSansSC';
+      src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+    html, body { width: 900px; background: #0d0b0a; }
+    body {
+      font-family: 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #23201d;
+      transform-origin: 0 0;
+    }
+    .page { width: 900px; padding-bottom: 1px; background: #f2f3f5; }
+
+    /* ---------- 顶部深色区 ---------- */
+    .hero {
+      position: relative;
+      padding: 34px 34px 30px;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 236, 200, 0.16), transparent 42%),
+        radial-gradient(circle at 88% 8%, rgba(160, 190, 255, 0.12), transparent 40%),
+        linear-gradient(165deg, #241c17 0%, #1a1512 48%, #120f0d 100%);
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(1.6px 1.6px at 18% 30%, rgba(255,255,255,.55), transparent),
+        radial-gradient(1.4px 1.4px at 72% 22%, rgba(255,255,255,.42), transparent),
+        radial-gradient(1.8px 1.8px at 46% 12%, rgba(255,255,255,.38), transparent),
+        radial-gradient(1.3px 1.3px at 88% 46%, rgba(255,255,255,.34), transparent),
+        radial-gradient(1.5px 1.5px at 30% 62%, rgba(255,255,255,.28), transparent);
+    }
+    .hero-title {
+      position: relative; z-index: 2;
+      text-align: center;
+      font-size: 34px; font-weight: 700; letter-spacing: 3px;
+      color: #fdf7ee;
+    }
+    .hero-sub {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 22px 2px 20px;
+      font-size: 19px; color: #b8ada2;
+    }
+    .hero-sub .pill {
+      padding: 7px 18px; border-radius: 20px;
+      background: rgba(255, 255, 255, .1);
+      color: #ecdfd0; font-size: 17px;
+    }
+
+    /* 最近获取 5 星汇总 */
+    .recent {
+      position: relative; z-index: 2;
+      padding: 16px 18px 18px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fffdf8 0%, #f3ece1 100%);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+    }
+    .recent-head {
+      display: flex; align-items: baseline; gap: 10px;
+      margin-bottom: 14px;
+      font-size: 21px; font-weight: 700; color: #2c2620;
+    }
+    .recent-head i { font-style: normal; font-size: 15px; font-weight: 400; color: #9a8f83; }
+    .recent-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .rc {
+      position: relative;
+      width: 88px; height: 88px;
+      border-radius: 10px; overflow: hidden;
+      background: linear-gradient(160deg, #d9b070, #b98a4a);
+      padding: 3px;
+    }
+    .rc.up { background: linear-gradient(160deg, #ffca7a, #e8952f); }
+    .rc img { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; display: block; }
+    .rc .tag {
+      position: absolute; top: 0; left: 0;
+      padding: 1px 7px 2px;
+      border-radius: 8px 0 8px 0;
+      background: #ef8a26; color: #fff;
+      font-size: 13px; font-weight: 700;
+    }
+
+    /* ---------- tab ---------- */
+    .tabs { display: flex; gap: 14px; padding: 22px 30px 4px; }
+    .tab {
+      flex: 1;
+      padding: 15px 0;
+      border-radius: 10px 10px 0 0;
+      text-align: center;
+      font-size: 21px; font-weight: 700;
+      background: #e5e8ec; color: #7d858e;
+    }
+    .tab.on { background: #2f2a26; color: #fdf3e6; }
+
+    /* ---------- 白色卡片 ---------- */
+    .card {
+      margin: 18px 30px 0;
+      padding: 22px 24px 24px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(30, 28, 25, .07);
+    }
+    .card-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 25px; font-weight: 700; color: #26221e;
+    }
+    .card-title::before {
+      content: ''; width: 5px; height: 22px; border-radius: 3px;
+      background: linear-gradient(180deg, #ffb054, #ef8a26);
+    }
+    .card-desc { margin: 8px 0 18px 15px; font-size: 17px; color: #9aa0a8; }
+
+    /* 卡池期次卡片 */
+    .pools { display: flex; gap: 16px; }
+    .pool {
+      position: relative; flex: 1;
+      padding: 14px 16px 16px;
+      border-radius: 12px; overflow: hidden;
+      background: linear-gradient(105deg, #fbf6ee 0%, #f1e6d5 62%, #e6d7c0 100%);
+      background-repeat: no-repeat, no-repeat;
+      background-position: center center, right -18px center;
+      background-size: cover, 160px 160px;
+      min-height: 128px;
+    }
+    .pool-name {
+      display: inline-block;
+      padding: 3px 10px 4px;
+      border-radius: 6px;
+      background: rgba(70, 58, 46, .1);
+      font-size: 16px; color: #6b5c4c;
+    }
+    .pool-total { margin-top: 10px; font-size: 19px; color: #4a4137; }
+    .pool-total b { font-size: 31px; font-weight: 700; }
+    .pool-got { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 16px; color: #7b6c5c; }
+    .pool-got img { width: 30px; height: 30px; border-radius: 5px; object-fit: cover; }
+    .pool-ver {
+      position: absolute; top: 0; right: 0;
+      padding: 4px 10px 5px;
+      border-radius: 0 0 0 10px;
+      background: rgba(52, 44, 36, .78);
+      color: #f6e9d6; font-size: 15px; font-weight: 700;
+    }
+
+    /* 5 星获取记录条形图 */
+    .row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .row:last-child { margin-bottom: 0; }
+    .ava {
+      position: relative; flex: none;
+      width: 84px; height: 84px;
+      border-radius: 10px; overflow: hidden;
+      background: linear-gradient(160deg, #d9b070, #b3813f);
+      padding: 3px;
+    }
+    .ava.up { background: linear-gradient(160deg, #ffca7a, #e8952f); }
+    .ava.ph { background: #d6d9dd; display: flex; align-items: center; justify-content: center; }
+    .ava img { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; display: block; }
+    .ava .qm { font-size: 40px; font-weight: 700; color: #ffffff; }
+    .ava .tag {
+      position: absolute; top: 0; left: 0;
+      padding: 1px 7px 2px; border-radius: 8px 0 8px 0;
+      background: #ef8a26; color: #fff; font-size: 13px; font-weight: 700;
+    }
+    .info { flex: 1; min-width: 0; }
+    .info .nm {
+      font-size: 22px; font-weight: 700; color: #2b2620;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .track { margin-top: 8px; height: 40px; border-radius: 6px; background: #eef0f2; overflow: hidden; }
+    .bar {
+      position: relative; height: 100%;
+      display: flex; align-items: center;
+      padding-left: 12px;
+      border-radius: 6px;
+      background-image:
+        repeating-linear-gradient(115deg, rgba(255,255,255,.24) 0 8px, rgba(255,255,255,0) 8px 18px),
+        linear-gradient(90deg, #ffa73c, #f08a22);
+      color: #fff; font-size: 24px; font-weight: 700; font-style: italic;
+      text-shadow: 0 1px 2px rgba(150, 74, 0, .35);
+    }
+    .bar.ph {
+      background-image:
+        repeating-linear-gradient(115deg, rgba(255,255,255,.22) 0 8px, rgba(255,255,255,0) 8px 18px),
+        linear-gradient(90deg, #ffc06a, #f5a541);
+    }
+    .more { margin-top: 14px; text-align: center; font-size: 17px; color: #9aa0a8; }
+
+    /* ---------- 底部统计 ---------- */
+    .stats {
+      margin: 20px 30px 0;
+      padding: 22px 10px 24px;
+      border-radius: 16px;
+      background: linear-gradient(150deg, #262019 0%, #1b1613 100%);
+    }
+    .srow { display: flex; }
+    .srow + .srow { margin-top: 20px; }
+    .st { flex: 1; text-align: center; }
+    .st .v {
+      font-size: 33px; font-weight: 700; font-style: italic;
+      color: #fdf6ea; line-height: 1.1;
+    }
+    .st .v i { font-style: normal; font-size: 19px; font-weight: 400; margin-left: 1px; }
+    .st .l { margin-top: 7px; font-size: 17px; color: #a2988c; }
+
+    .foot {
+      padding: 20px 30px 22px;
+      display: flex; justify-content: space-between;
+      font-size: 16px; color: #9aa0a8;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <div class="hero-title">跃迁记录统计</div>
+    <div class="hero-sub">
+      <span>UID {{uid}} · 累计 {{allNum}} 抽 · 五星 {{fiveNum}} 个</span>
+      <span class="pill">更新于 {{updatedAt}}</span>
+    </div>
+    <div class="recent">
+      <div class="recent-head">最近获取 5 星汇总<i>最多 15 个{{if recentMore}} · 另有 {{recentMore}} 个更早记录{{/if}}</i></div>
+      <div class="recent-grid">
+        {{each recent5 it}}
+        <div class="rc {{if it.isUp}}up{{/if}}">
+          <img src="{{_miao_path}}{{it.icon}}" />
+          {{if it.isUp}}<span class="tag">UP</span>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    {{each tabs t}}<div class="tab {{if t.active}}on{{/if}}">{{t.name}}</div>{{/each}}
+  </div>
+
+  {{if poolCards.length}}
+  <div class="card">
+    <div class="card-title">跃迁次数统计</div>
+    <div class="card-desc">仅展示最近 {{poolCards.length}} 个卡池期次</div>
+    <div class="pools">
+      {{each poolCards p}}
+      <div class="pool"{{if p.icon}} style="background-image: linear-gradient(100deg, #fdfaf4 0%, #f4ecdf 44%, rgba(242,231,213,.62) 68%, rgba(235,221,199,.12) 100%), url('{{_miao_path}}{{p.icon}}');"{{/if}}>
+        <div class="pool-name">{{p.poolName}}</div>
+        <div class="pool-total">累计 <b>{{p.total}}</b> 抽</div>
+        {{if p.upCount}}
+        <div class="pool-got">
+          获得
+          {{if p.icon}}<img src="{{_miao_path}}{{p.icon}}" />{{/if}}
+          ×{{p.upCount}}
+        </div>
+        {{else}}
+        <div class="pool-got">本期还没出 UP</div>
+        {{/if}}
+        {{if p.version}}<div class="pool-ver">{{p.version}}</div>{{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  <div class="card">
+    <div class="card-title">5 星获取记录</div>
+    <div class="card-desc">{{poolName}} · 首抽 {{firstTime}} · 最近 {{lastTime}}</div>
+    {{each list it}}
+    <div class="row">
+      <div class="ava {{if it.placeholder}}ph{{/if}}{{if it.isUp}} up{{/if}}">
+        {{if it.placeholder}}<span class="qm">?</span>{{else}}<img src="{{_miao_path}}{{it.icon}}" />{{/if}}
+        {{if it.isUp}}<span class="tag">UP</span>{{/if}}
+      </div>
+      <div class="info">
+        <div class="nm">{{it.name}}</div>
+        <div class="track">
+          <div class="bar {{if it.placeholder}}ph{{/if}}" style="width:{{it.pct}}%">{{it.num}}</div>
+        </div>
+      </div>
+    </div>
+    {{/each}}
+    {{if listMore}}<div class="more">…另有 {{listMore}} 条更早的五星记录，发 *全部记录 查看完整统计</div>{{/if}}
+  </div>
+
+  <div class="stats">
+    {{each stats row}}
+    <div class="srow">
+      {{each row c}}
+      <div class="st">
+        <div class="v">{{c.num}}<i>{{c.unit}}</i></div>
+        <div class="l">{{c.lable}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="foot">
+    <span>xhh-TL × 米游社小程序跃迁记录</span>
+    <span>五星与垫抽来自小程序接口，四星统计需抽卡链接导入</span>
+  </div>
+</div>
+</body>
+</html>
