@@ -191,15 +191,17 @@
     }
     .more { margin-top: 14px; text-align: center; font-size: 17px; color: #9aa0a8; }
 
-    /* ---------- 底部统计 ---------- */
+    /* ---------- 统计条（放在头部、5 星汇总之上） ---------- */
     .stats {
-      margin: 20px 30px 0;
-      padding: 22px 10px 24px;
-      border-radius: 16px;
-      background: linear-gradient(150deg, #262019 0%, #1b1613 100%);
+      position: relative; z-index: 2;
+      margin: 0 0 18px;
+      padding: 18px 8px 20px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .055);
+      border: 1px solid rgba(255, 255, 255, .085);
     }
     .srow { display: flex; }
-    .srow + .srow { margin-top: 20px; }
+    .srow + .srow { margin-top: 18px; }
     .st { flex: 1; text-align: center; }
     .st .v {
       font-size: 33px; font-weight: 700; font-style: italic;
@@ -215,13 +217,25 @@
     }
   </style>
 </head>
-<body>
+<body {{sys.scale}}>
 <div class="page">
   <div class="hero">
     <div class="hero-title">跃迁记录统计</div>
     <div class="hero-sub">
       <span>UID {{uid}} · 累计 {{allNum}} 抽 · 五星 {{fiveNum}} 个</span>
       <span class="pill">更新于 {{updatedAt}}</span>
+    </div>
+    <div class="stats">
+      {{each stats row}}
+      <div class="srow">
+        {{each row c}}
+        <div class="st">
+          <div class="v">{{c.num}}<i>{{c.unit}}</i></div>
+          <div class="l">{{c.lable}}</div>
+        </div>
+        {{/each}}
+      </div>
+      {{/each}}
     </div>
     <div class="recent">
       <div class="recent-head">最近获取 5 星汇总<i>最多 15 个{{if recentMore}} · 另有 {{recentMore}} 个更早记录{{/if}}</i></div>
@@ -283,19 +297,6 @@
     </div>
     {{/each}}
     {{if listMore}}<div class="more">…另有 {{listMore}} 条更早的五星记录，发 *全部记录 查看完整统计</div>{{/if}}
-  </div>
-
-  <div class="stats">
-    {{each stats row}}
-    <div class="srow">
-      {{each row c}}
-      <div class="st">
-        <div class="v">{{c.num}}<i>{{c.unit}}</i></div>
-        <div class="l">{{c.lable}}</div>
-      </div>
-      {{/each}}
-    </div>
-    {{/each}}
   </div>
 
   <div class="foot">

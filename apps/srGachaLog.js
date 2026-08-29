@@ -568,7 +568,8 @@ export class srGachaLog extends plugin {
       return true
     }
     const tplFile = path.join(pluginDir, 'resources/gachaLog/gachaLog.html')
-    const renderScale = getRenderScaleStyle(config(), 1.4)
+    // 1 倍图在手机上看着糊，这里放大渲染再压 jpeg
+    const renderScale = getRenderScaleStyle(config(), 1.6)
     const res = await this.e.runtime.render('xhh-TL', 'gachaLog', data, {
       retType: 'base64',
       imgType: 'jpeg',
