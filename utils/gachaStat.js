@@ -132,6 +132,8 @@ export function analyse(list, type) {
         item_id: row.item_id,
         num: 0,
         isUp,
+        // 小程序接口直接给的抽数，比数占位可靠（占位受 id 空间限制可能补不满）
+        pity: Number(row.xhh_pity) || 0,
       })
     }
     fiveLogNum++
@@ -139,6 +141,8 @@ export function analyse(list, type) {
 
   if (fiveLog.length > 0) {
     fiveLog[fiveLog.length - 1].num = fiveLogNum
+    // 有接口原值的一律以它为准
+    for (const it of fiveLog) if (it.pity > 0) it.num = it.pity
     // 上一个五星是不是常驻（小保底标记）
     fiveLog.forEach((it, i) => {
       const prev = fiveLog[i + 1]
@@ -149,6 +153,8 @@ export function analyse(list, type) {
         it.minimum = false
       }
     })
+    // 占位没补满时记录数会偏少，用五星抽数之和把总抽数校正回来
+    allNum = Math.max(allNum, fiveLog.reduce((n, x) => n + x.num, 0) + noFiveNum)
   } else {
     noFiveNum = allNum
   }

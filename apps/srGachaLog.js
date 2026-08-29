@@ -208,6 +208,8 @@ function toRecord(uid, type, node, gachaId) {
     rank_type: String(item.rarity || 5),
     id: String(node.id),
     xhh_src: 'mini',
+    // 接口直接给的「这一发花了多少抽」，出图时优先用它，不靠数占位
+    xhh_pity: String(node.gacha_count || ''),
   }
 }
 
@@ -266,11 +268,6 @@ function mergePool(userId, uid, type, remote, poolStat) {
   const local = readLocal(userId, uid, type)
   const real = local.filter(r => !r.xhh_ph)
   const usedIds = new Set(real.map(r => String(r.id)))
-  // 「已导入区间」只由完整逐抽来源（抽卡链接导入、导入 json）界定。
-  // 我们自己写进去的 mini 五星不算，否则第二次更新会把区间误判成完整、不再重建占位
-  const maxFullId = real
-    .filter(r => r.xhh_src !== 'mini')
-    .reduce((m, r) => (big(r.id) > m ? big(r.id) : m), 0n)
 
   // 本地五星按判重键分桶，接口里的同键记录逐个抵扣
   const buckets = new Map()
@@ -287,19 +284,27 @@ function mergePool(userId, uid, type, remote, poolStat) {
   let added5 = 0
   let addedPh = 0
   let skipped = 0
+  let patched = 0
+
+  // 完整逐抽来源（抽卡链接 / 导入）的 id，用来判断某段区间是不是已经有真实记录了。
+  // 不能只比「最大 id」——真实记录只覆盖最近几个月时，更早的五星区间其实是空的，
+  // 拿最大 id 一比会全判成「已有记录」，那些五星的抽数就会缩成 1
+  const fullIds = real
+    .filter(r => r.xhh_src !== 'mini' && !r.xhh_fid)
+    .map(r => big(r.id))
+    .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+  const hasFullIn = (lo, hi) => fullIds.some(id => id > lo && id < hi)
 
   /** 给某个五星补它之前的垫抽占位。anchorId 是这条五星在本地的 id */
   const fillGap = (s, i, anchorId, gachaId) => {
     const gap = Number(s.gacha_count) - 1
     if (gap <= 0) return
     const prevId = stars[i + 1] ? big(stars[i + 1].id) : 0n
-    // 垫抽区间是 (prevId, anchorId)。完整记录若落在区间内，这段本来就有真实数据，
-    // 再补占位等于把抽数算两遍
-    if (maxFullId > prevId && maxFullId < anchorId) {
-      notes.push(`${s.item.name}(${s.gacha_count}抽) 的垫抽跨入已导入区间，未补占位以避免重复计数`)
+    // 这段区间里已经有真实逐抽记录，再补占位就把抽数算两遍了
+    if (hasFullIn(prevId, anchorId)) {
+      notes.push(`${s.item.name}(${s.gacha_count}抽) 的区间已有完整记录，未补占位`)
       return
     }
-    if (maxFullId >= anchorId) return
     const phs = buildPlaceholders(uid, type, anchorId, prevId, gap, usedIds, idToTime(s.id), gachaId)
     added.push(...phs)
     addedPh += phs.length
@@ -313,8 +318,15 @@ function mergePool(userId, uid, type, remote, poolStat) {
     const hit = buckets.get(k)?.shift()
     if (hit) {
       skipped++
-      // 上一轮就是我们写进去的，它的占位刚被清掉，要按同样规则重建
-      if (hit.xhh_src === 'mini') fillGap(s, i, big(hit.id), gachaId)
+      if (hit.xhh_src === 'mini') {
+        // 老版本写进去的 mini 记录没有 xhh_pity，顺手补上（出图的抽数以它为准）
+        if (String(hit.xhh_pity || '') !== String(s.gacha_count)) {
+          hit.xhh_pity = String(s.gacha_count)
+          patched++
+        }
+        // 上一轮就是我们写进去的，它的占位刚被清掉，要按同样规则重建
+        fillGap(s, i, big(hit.id), gachaId)
+      }
       continue
     }
     added.push(toRecord(uid, type, s, gachaId))
@@ -326,10 +338,10 @@ function mergePool(userId, uid, type, remote, poolStat) {
   // 当前垫抽：最新五星之后又抽了 pity 抽还没出货
   if (remote.pity > 0) {
     const lastStarId = stars[0] ? big(stars[0].id) : 0n
-    if (maxFullId > lastStarId) {
-      notes.push(`当前垫抽 ${remote.pity} 抽跨入已导入区间，未补占位`)
+    const nowId = BigInt(Math.floor(Date.now() / 1000)) * 1000000000n
+    if (hasFullIn(lastStarId, nowId)) {
+      notes.push(`当前垫抽 ${remote.pity} 抽的区间已有完整记录，未补占位`)
     } else {
-      const nowId = BigInt(Math.floor(Date.now() / 1000)) * 1000000000n
       const phs = buildPlaceholders(
         uid,
         type,
@@ -345,7 +357,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
     }
   }
 
-  const changed = added.length > 0 || local.length !== real.length
+  const changed = added.length > 0 || patched > 0 || local.length !== real.length
   if (changed) {
     const merged = [...added, ...real].sort((a, b) => {
       const x = big(a.id)
@@ -353,9 +365,9 @@ function mergePool(userId, uid, type, remote, poolStat) {
       return y > x ? 1 : y < x ? -1 : 0
     })
     writeLocal(userId, uid, type, merged)
-    return { added5, addedPh, skipped, notes, changed, total: merged.length }
+    return { added5, addedPh, skipped, patched, notes, changed, total: merged.length }
   }
-  return { added5, addedPh, skipped, notes, changed, total: local.length }
+  return { added5, addedPh, skipped, patched, notes, changed, total: local.length }
 }
 
 /** 星铁 UID：绑定库 → redis → 已有记录目录 */
@@ -1158,6 +1170,7 @@ export class srGachaLog extends plugin {
     let added5 = 0
     let addedPh = 0
     let skipped = 0
+    let patchedTotal = 0
     let remoteTotal = 0
 
     for (const pool of POOLS) {
@@ -1169,6 +1182,7 @@ export class srGachaLog extends plugin {
       added5 += res.added5
       addedPh += res.addedPh
       skipped += res.skipped
+      patchedTotal += res.patched || 0
       remoteTotal += remote.list.length
       notes.push(...res.notes)
       if (remote.pity > 0) pityParts.push(`${pool.name}${remote.pity}抽`)
@@ -1180,6 +1194,7 @@ export class srGachaLog extends plugin {
     return [
       `新增五星 ${added5} 条（接口给出 ${remoteTotal} 条，${skipped} 条本地已有）`,
       `占位 ${addedPh} 条`,
+      patchedTotal ? `补齐 ${patchedTotal} 条记录的接口抽数` : '',
       pityParts.length ? `垫抽 ${pityParts.join('/')}` : '',
       lines.join(' '),
       ...notes,
