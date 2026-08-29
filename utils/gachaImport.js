@@ -66,6 +66,36 @@ function normalize(list, ctx = {}) {
   return out
 }
 
+/**
+ * 兜底：在任意 JSON 里递归找「看起来是抽卡记录」的数组。
+ * 各家小程序 / 网页工具的自有格式五花八门，只要每条带 gacha_type 且有 item_id 或 name 就能认。
+ */
+function findRecordArray(node, depth = 0) {
+  if (!node || depth > 6) return null
+  if (Array.isArray(node)) {
+    const sample = node.find(x => x && typeof x === 'object' && !Array.isArray(x))
+    if (
+      sample &&
+      ('gacha_type' in sample || 'uigf_gacha_type' in sample) &&
+      ('item_id' in sample || 'name' in sample)
+    ) {
+      return node
+    }
+    for (const it of node) {
+      const hit = findRecordArray(it, depth + 1)
+      if (hit) return hit
+    }
+    return null
+  }
+  if (typeof node === 'object') {
+    for (const v of Object.values(node)) {
+      const hit = findRecordArray(v, depth + 1)
+      if (hit) return hit
+    }
+  }
+  return null
+}
+
 function parseJson(text) {
   let json
   try {
@@ -112,7 +142,19 @@ function parseJson(text) {
       records: normalize(json.list, { uid: info.uid, lang: info.lang }),
     }
   }
-  throw new Error('不认识的 JSON 结构，需要 SRGF v1.0 / UIGF v2.x / UIGF v4.x')
+  // 已知结构都不匹配：在整个 JSON 里捞一遍，能捞到记录数组就照样导
+  const loose = findRecordArray(json)
+  if (loose?.length) {
+    return {
+      format: '未知结构（已自动识别记录数组）',
+      uid: String(info.uid || json.uid || ''),
+      records: normalize(loose, { uid: info.uid || json.uid, lang: info.lang }),
+    }
+  }
+  const keys = Object.keys(json).slice(0, 8).join(', ')
+  throw new Error(
+    `不认识的 JSON 结构（顶层字段：${keys || '空'}），支持 SRGF v1.0 / UIGF v2.x / UIGF v4.x / Excel`,
+  )
 }
 
 function parseExcel(buf) {
