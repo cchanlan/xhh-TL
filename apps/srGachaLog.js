@@ -1281,7 +1281,7 @@ export class srGachaLog extends plugin {
         saveId: `gachaAll-${data.uid}`,
       }),
     })
-    const img = await toWebp(await toWebp(extractRenderBuffer(res)))
+    const img = await toWebp(extractRenderBuffer(res))
     if (!img) {
       await this.reply('总览出图失败，请稍后重试', false, { at: true })
       return true
@@ -1318,7 +1318,7 @@ export class srGachaLog extends plugin {
         saveId: `gachaLog-${data.uid}-${data.poolName}`,
       }),
     })
-    const img = await toWebp(await toWebp(extractRenderBuffer(res)))
+    const img = await toWebp(extractRenderBuffer(res))
     if (!img) {
       await this.reply('抽卡记录出图失败，请稍后重试', false, { at: true })
       return true

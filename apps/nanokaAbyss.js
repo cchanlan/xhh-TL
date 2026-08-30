@@ -22,6 +22,7 @@ import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
 import { getRenderScaleStyle, config as cfg, pluginDir } from '../utils/pluginConfig.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
+import { toWebp } from '../utils/renderImage.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
 const STATIC = 'https://static.nanoka.cc'
@@ -2444,14 +2445,8 @@ export class nanokaAbyss extends plugin {
     }
     if (!buf) return null
 
-    try {
-      buf = await sharp(buf)
-        .png({ compressionLevel: 9, adaptiveFiltering: true })
-        .toBuffer()
-    } catch (err) {
-      logger?.debug?.(`[xhh-TL][nanokaAbyss] compress skip: ${err.message}`)
-    }
-    return buf
+    // 与其余出图点统一：png 只是渲染器的中间产物，发出去的是 webp（体积约为 png 的 1/5）
+    return await toWebp(buf)
   }
 
   async sendImage(e, buf) {
