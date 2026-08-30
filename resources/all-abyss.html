@@ -12,7 +12,7 @@
 }
 
 body, .container {
-  width: 1700px;
+  width: {{pageWidth}}px;
   padding: 0;
   background: #0a0e1a;
   transform-origin: 0 0;
@@ -26,7 +26,7 @@ body, .container {
 }
 
 .all-abyss-body {
-  width: 1700px;
+  width: {{pageWidth}}px;
   padding: 20px 12px 8px;
   color: #eef5ff;
   font-family: "SR", "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
@@ -811,11 +811,11 @@ body, .container {
     <div class="all-abyss-title">UID: {{uid}} 的全部深渊数据</div>
   </div>
 
-  <!-- 四列布局 -->
-  <div class="all-abyss-columns" style="{{if !peakData}}justify-content: center;{{/if}}">
+  <!-- 四列布局：画布宽度按实际有数据的模式数算，没打的模式整列不渲染 -->
+  <div class="all-abyss-columns">
     <!-- 左侧：混沌回忆 -->
+    {{if chaosData}}
     <div class="all-abyss-col">
-      {{if chaosData}}
       <div class="story-body">
         <div class="story-header">
           <div class="story-head-left">
@@ -935,12 +935,12 @@ body, .container {
         </div>
         {{/each}}
       </div>
-      {{/if}}
     </div>
+    {{/if}}
 
     <!-- 中间：末日幻影 -->
+    {{if bossData}}
     <div class="all-abyss-col">
-      {{if bossData}}
       <div class="story-body">
         <div class="story-header">
           <div class="story-head-left">
@@ -1084,12 +1084,12 @@ body, .container {
         </div>
         {{/each}}
       </div>
-      {{/if}}
     </div>
+    {{/if}}
 
     <!-- 右侧：虚构叙事 -->
+    {{if storyData}}
     <div class="all-abyss-col">
-      {{if storyData}}
       <div class="story-body">
         <div class="story-header">
           <div class="story-head-left">
@@ -1223,8 +1223,8 @@ body, .container {
         </div>
         {{/each}}
       </div>
-      {{/if}}
     </div>
+    {{/if}}
 
     <!-- 右2：异相仲裁 -->
     {{if peakData}}

@@ -379,11 +379,21 @@ export async function allAbyss(e) {
       const renderScale = getRenderScaleStyle(config(), isMobile ? 2.0 : 1.2);
       const tplFile = pluginDir + `/resources/${templateName}.html`;
       const ppath = '../../../../plugins/xhh-TL/resources/';
+      // 桌面版是横向等宽多列：没数据的模式整列不渲染，画布宽度也得跟着缩，
+      // 否则 flex:1 会把剩下的列拉宽、卡片变形。单列宽度取四列满配时的实测值。
+      const COL_WIDTH = 411.5;
+      const COL_GAP = 10;
+      const BODY_PADDING = 24; // .all-abyss-body 左右 padding 各 12
+      const colCount = [chaosData, bossData, storyData, peakData].filter(Boolean).length;
+      const pageWidth = Math.round(
+        BODY_PADDING + colCount * COL_WIDTH + Math.max(0, colCount - 1) * COL_GAP
+      );
       const renderData = {
         chaosData,
         storyData,
         bossData,
         peakData,
+        pageWidth,
         avatars: avatarData,
         save_id: uid,
         uid,
