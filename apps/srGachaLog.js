@@ -503,7 +503,7 @@ async function fetchCookieToken(stuid, stoken, mid) {
         'User-Agent': 'okhttp/4.9.3',
         Cookie: `stuid=${stuid};stoken=${stoken}${mid ? `;mid=${mid}` : ''}`,
       },
-      timeout: 15000,
+      signal: AbortSignal.timeout(15000),
     },
   )
   const json = await res.json().catch(() => null)
@@ -620,7 +620,10 @@ async function fetchImportFile(e) {
   }
   if (!/^https?:\/\//.test(url)) return null
 
-  const res = await fetch(url, { headers: { 'User-Agent': UA }, timeout: 60000 })
+  const res = await fetch(url, {
+    headers: { 'User-Agent': UA },
+    signal: AbortSignal.timeout(60000),
+  })
   if (!res.ok) throw new Error(`下载文件失败：HTTP ${res.status}`)
   const buf = Buffer.from(await res.arrayBuffer())
   if (!buf.length) throw new Error('下载到的文件是空的')
@@ -968,10 +971,24 @@ async function fetchGachaPage(params, gachaType, endId) {
     size: '20',
     end_id: String(endId || 0),
   })
-  const res = await fetch(`${cn ? LOG_HOST_CN : LOG_HOST_OS}/common/gacha_record/api/${ep}?${q}`, {
-    headers: { 'User-Agent': UA },
-    timeout: 20000,
-  })
+  let res
+  try {
+    res = await fetch(`${cn ? LOG_HOST_CN : LOG_HOST_OS}/common/gacha_record/api/${ep}?${q}`, {
+      headers: { 'User-Agent': UA },
+      signal: AbortSignal.timeout(20000),
+    })
+  } catch (err) {
+    // 请求层面的失败（超时、断网）：原文是英文的，只进日志
+    logger?.warn?.(
+      `[xhh-TL][抽卡记录] 池 ${gachaType} end_id=${endId} 请求失败：${err.name} ${err.message}`,
+    )
+    const wrapped = new Error(
+      /Abort|Timeout/i.test(err.name) ? '接口一直没响应，稍后再试' : '连不上米哈游接口，稍后再试',
+    )
+    // 网络抖动值得重试，交给 fetchGachaPageRetry
+    wrapped.retriable = true
+    throw wrapped
+  }
   if (!res.ok) throw new Error(`接口 HTTP ${res.status}`)
   const json = await res.json().catch(() => null)
   if (!json) throw new Error('接口没返回 JSON')
@@ -987,7 +1004,7 @@ async function fetchGachaPage(params, gachaType, endId) {
     } else if (json.retcode === -110) {
       // 官方限流（visit too frequently），等一会儿重试就好，不是链接的问题
       err = new Error('米哈游那边限流了，稍等一会儿再试')
-      err.rateLimited = true
+      err.retriable = true
     } else {
       err = new Error('米哈游接口没给记录，稍后再试一次')
     }
@@ -996,7 +1013,7 @@ async function fetchGachaPage(params, gachaType, endId) {
   return json.data || {}
 }
 
-/** 限流（-110）时退避重试；退避时长逐次加长，全失败才把错抛出去 */
+/** 限流或网络抖动时退避重试；退避时长逐次加长，全失败才把错抛出去 */
 const RETRY_WAITS = [5000, 15000, 30000, 60000]
 
 async function fetchGachaPageRetry(params, gachaType, endId) {
@@ -1004,10 +1021,10 @@ async function fetchGachaPageRetry(params, gachaType, endId) {
     try {
       return await fetchGachaPage(params, gachaType, endId)
     } catch (err) {
-      if (!err.rateLimited || i >= RETRY_WAITS.length) throw err
+      if (!err.retriable || i >= RETRY_WAITS.length) throw err
       logger?.info?.(
-        `[xhh-TL][抽卡记录] 池 ${gachaType} 被限流，等 ${RETRY_WAITS[i] / 1000}s 后重试` +
-          `（第 ${i + 1}/${RETRY_WAITS.length} 次）`,
+        `[xhh-TL][抽卡记录] 池 ${gachaType} 拉取受阻（${err.message}），` +
+          `等 ${RETRY_WAITS[i] / 1000}s 后重试（第 ${i + 1}/${RETRY_WAITS.length} 次）`,
       )
       await sleep(RETRY_WAITS[i])
     }
