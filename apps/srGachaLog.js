@@ -1331,20 +1331,58 @@ export class srGachaLog extends plugin {
 
   /** 真正的解析 + 合并 */
   async doImport(file) {
+    const recall = this.e.isGroup ? '，记得把文件撤回哦' : ''
+    // 跟收链接一个规矩：只收已绑定号的记录。没绑就不用解析文件了
+    const bound = await boundSrUids(this.e)
+    if (!bound.length) {
+      await this.reply(
+        `你还没绑定星铁 UID，先发【#星铁绑定uid+你的UID】绑好再来导入哦${recall}`,
+        false,
+        { at: true },
+      )
+      return true
+    }
+
     try {
       const parsed = parseImportFile(file.buf, file.name)
       if (!parsed.records.length) throw new Error('文件里没有解析出任何记录')
 
-      const { uid: localUid } = await resolveSrUid(this.e)
-      const uid = parsed.uid || localUid
-      if (!uid) throw new Error('文件里没有 UID，你也还没绑定星铁 UID')
-      if (parsed.uids?.length > 1) {
-        logger?.info?.(`[xhh-TL][抽卡记录] 导入文件含多个 UID：${parsed.uids.join(',')}，只用 ${uid}`)
+      // 文件里出现过的 UID：UIGF v4 多包记在 uids，其余格式记在 uid，逐条记录也各自带
+      const fileUids = [
+        ...new Set(
+          [...(parsed.uids || []), parsed.uid || '', ...parsed.records.map(r => r.uid || '')]
+            .map(String)
+            .filter(u => /^\d+$/.test(u)),
+        ),
+      ]
+      // 绑定列表里主号排在最前，所以 find 天然优先主号
+      const uid = fileUids.length ? bound.find(u => fileUids.includes(u)) : bound[0]
+      if (!uid) {
+        logger?.info?.(
+          `[xhh-TL][抽卡记录] ${this.e.user_id} 导入的文件是 ${fileUids.join('、')} 的，` +
+            `已绑定 ${bound.join('、')}，拒收`,
+        )
+        await this.reply(
+          `这份文件是 ${fileUids.join('、')} 的，你绑定的是 ${bound.join('、')}，` +
+            `只收已绑定那个号的记录哦${recall}`,
+          false,
+          { at: true },
+        )
+        return true
       }
 
-      await fillMeta(parsed.records)
-      const faked = assignIds(parsed.records)
-      const stat = mergeImport(this.e.user_id, uid, parsed.records)
+      // 一份文件里混了几个号时，别的号的记录直接丢掉
+      const records = fileUids.length
+        ? parsed.records.filter(r => !r.uid || String(r.uid) === uid)
+        : parsed.records
+      const dropped = parsed.records.length - records.length
+      if (!records.length) throw new Error(`文件里没有 ${uid} 的记录`)
+      // Excel / csv 不带 UID，只能按主号存，多绑了几个号时得让用户知道存进了哪个
+      const guessed = !fileUids.length && bound.length > 1 ? uid : ''
+
+      await fillMeta(records)
+      const faked = assignIds(records)
+      const stat = mergeImport(this.e.user_id, uid, records)
 
       // 细节只进日志，群里只回一句
       logger?.info?.(
@@ -1353,10 +1391,14 @@ export class srGachaLog extends plugin {
           `${stat.dropMini ? `，替换小程序五星 ${stat.dropMini} 条` : ''}` +
           `${stat.dropPh ? `，清理占位 ${stat.dropPh} 条` : ''}` +
           `${faked ? `，补序号 ${faked} 条` : ''}` +
+          `${dropped ? `，丢弃别的号 ${dropped} 条` : ''}` +
           `${stat.pools.length ? `（${stat.pools.join('、')}）` : ''}`,
       )
       await this.reply(
-        `导入完成，新增 ${stat.added} 条${this.e.isGroup ? '，记得把文件撤回哦' : ''}`,
+        `导入完成，新增 ${stat.added} 条` +
+          `${guessed ? `，存进了 ${guessed}` : ''}` +
+          `${dropped ? `，另外 ${dropped} 条不是这个号的没要` : ''}` +
+          recall,
         false,
         { at: true },
       )
