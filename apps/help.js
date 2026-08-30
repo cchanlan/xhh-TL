@@ -6,7 +6,7 @@ import path from 'path'
 import fs from 'fs'
 import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { getRenderScaleStyle, pickHelpBgImage, config, pluginDir } from '../utils/pluginConfig.js'
 
 /** 帮助图标目录（相对插件 resources，渲染时拼到 ppath） */
@@ -491,7 +491,7 @@ export class help extends plugin {
         },
       })
 
-      const image = extractRenderBuffer(renderResult)
+      const image = await toWebp(extractRenderBuffer(renderResult))
       if (!image) {
         return e.reply('帮助图渲染失败，请稍后重试', true)
       }

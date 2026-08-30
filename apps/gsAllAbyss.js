@@ -13,7 +13,7 @@ import lodash from 'lodash'
 import { Character, MysApi, Player, HardChallenge } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
 import { getRenderScaleStyle, config, pluginDir } from '../utils/pluginConfig.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 import { resolveTargetQq, resolveDisplayName, faceUrl, pickGsBgImage } from '../utils/gsHelper.js'
 
@@ -700,7 +700,7 @@ export class gsAllAbyss extends plugin {
           }
         },
       })
-      const image = extractRenderBuffer(renderResult)
+      const image = await toWebp(extractRenderBuffer(renderResult))
       if (!image) throw new Error('渲染结果中没有图片数据')
       return replyQuote(e, segment.image(image))
     } catch (err) {

@@ -8,7 +8,7 @@ import { createUser } from '../utils/userBind.js';
 import { getstoken, cookiePart } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
 import { getRenderScaleStyle, config, pluginDir, pickCharacterPortrait, pickPortraitBg, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
-import { extractRenderBuffer } from '../utils/renderImage.js';
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js';
 import { replyQuote, replyForward } from '../utils/replyHelper.js';
 import { prepareMysContext, resolveAuth } from '../utils/runtimePatch.js';
 import LiteMysApi from '../utils/mysClient.js';
@@ -562,7 +562,7 @@ export class TL extends plugin {
         };
       },
     });
-    return extractRenderBuffer(renderResult);
+    return await toWebp(extractRenderBuffer(renderResult));
   }
 
   /** 按游戏列表出多张图（每张图可含 1 个或多个 UID） */
@@ -1365,7 +1365,7 @@ export class TL extends plugin {
         };
       },
     });
-    const image = extractRenderBuffer(renderResult);
+    const image = await toWebp(extractRenderBuffer(renderResult));
     return image ? segment.image(image) : null;
   }
 
@@ -1408,7 +1408,7 @@ export class TL extends plugin {
         };
       },
     });
-    const image = extractRenderBuffer(renderResult);
+    const image = await toWebp(extractRenderBuffer(renderResult));
     return image ? segment.image(image) : null;
   }
 

@@ -25,7 +25,7 @@ import { resolveAuth } from '../utils/runtimePatch.js'
 import { signOne, GAME_LABEL } from '../utils/signClient.js'
 import { runBbsVerify } from '../utils/mysVerify.js'
 import LiteMysApi from '../utils/mysClient.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { config, pluginDir, getRenderScaleStyle, pickHelpBgImage, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
@@ -523,7 +523,7 @@ export class autoSign extends plugin {
           }
         },
       })
-      const image = extractRenderBuffer(renderResult)
+      const image = await toWebp(extractRenderBuffer(renderResult))
       if (!image) throw new Error('渲染结果中没有图片数据')
       return image
     } catch (err) {

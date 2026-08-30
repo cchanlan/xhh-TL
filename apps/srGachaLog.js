@@ -27,7 +27,7 @@ import { getstoken, stokenToCookie, findStokenEntry, cookiePart } from '../utils
 import { createUser } from '../utils/userBind.js'
 import { ensureRuntime } from '../utils/runtimePatch.js'
 import { config, pluginDir, getRenderScaleStyle } from '../utils/pluginConfig.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { parseImportFile } from '../utils/gachaImport.js'
 import { analyse, buildLine, getIcon, poolMax } from '../utils/gachaStat.js'
 
@@ -1271,17 +1271,17 @@ export class srGachaLog extends plugin {
     const renderScale = getRenderScaleStyle(config(), 1.6)
     const res = await this.e.runtime.render('xhh-TL', 'gachaLog', data, {
       retType: 'base64',
-      imgType: 'jpeg',
+      imgType: 'png',
       beforeRender: ({ data: d }) => ({
         ...d,
-        imgType: 'jpeg',
+        imgType: 'png',
         sys: { scale: renderScale },
         ppath: '../../../../plugins/xhh-TL/resources/',
         tplFile,
         saveId: `gachaAll-${data.uid}`,
       }),
     })
-    const img = extractRenderBuffer(res)
+    const img = await toWebp(await toWebp(extractRenderBuffer(res)))
     if (!img) {
       await this.reply('总览出图失败，请稍后重试', false, { at: true })
       return true
@@ -1308,17 +1308,17 @@ export class srGachaLog extends plugin {
     const renderScale = getRenderScaleStyle(config(), 1.6)
     const res = await this.e.runtime.render('xhh-TL', 'gachaLog', data, {
       retType: 'base64',
-      imgType: 'jpeg',
+      imgType: 'png',
       beforeRender: ({ data: d }) => ({
         ...d,
-        imgType: 'jpeg',
+        imgType: 'png',
         sys: { scale: renderScale },
         ppath: '../../../../plugins/xhh-TL/resources/',
         tplFile,
         saveId: `gachaLog-${data.uid}-${data.poolName}`,
       }),
     })
-    const img = extractRenderBuffer(res)
+    const img = await toWebp(await toWebp(extractRenderBuffer(res)))
     if (!img) {
       await this.reply('抽卡记录出图失败，请稍后重试', false, { at: true })
       return true

@@ -26,7 +26,7 @@ import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
 import Runtime from '../../../lib/plugins/runtime.js'
 import { runCoinTask, queryCoin, listBbsAccounts, FORUMS } from '../utils/bbsCoinClient.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import {
   config,
   pluginDir,
@@ -489,7 +489,7 @@ export class autoBbsCoin extends plugin {
           }
         },
       })
-      const image = extractRenderBuffer(renderResult)
+      const image = await toWebp(extractRenderBuffer(renderResult))
       if (!image) throw new Error('渲染结果中没有图片数据')
       return image
     } catch (err) {

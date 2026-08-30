@@ -9,7 +9,7 @@ import lodash from 'lodash';
 
 import { prepareMysContext } from '../utils/runtimePatch.js';
 import { getRenderScaleStyle, config, pluginDir } from '../utils/pluginConfig.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { replyQuote } from '../utils/replyHelper.js'
 
 // miao-plugin 模块（动态导入）
@@ -409,7 +409,7 @@ export async function allAbyss(e) {
             };
           }
         });
-        const image = extractRenderBuffer(renderResult);
+        const image = await toWebp(extractRenderBuffer(renderResult));
         if (image) return replyQuote(e, segment.image(image));
         throw new Error('渲染结果中没有图片数据');
       } catch (err) {

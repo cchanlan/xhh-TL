@@ -10,7 +10,7 @@ import lodash from 'lodash'
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js'
 import { prepareMysContext } from '../utils/runtimePatch.js'
 import { getRenderScaleStyle, config, pluginDir } from '../utils/pluginConfig.js'
-import { extractRenderBuffer } from '../utils/renderImage.js'
+import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { replyProgress, replyQuote } from '../utils/replyHelper.js'
 import { faceUrl, pickGsBgImage } from '../utils/gsHelper.js'
 
@@ -371,7 +371,7 @@ export class miniRoleCombat extends plugin {
           }
         },
       })
-      const image = extractRenderBuffer(renderResult)
+      const image = await toWebp(extractRenderBuffer(renderResult))
       if (image) return replyQuote(e, segment.image(image))
       return e.reply('渲染失败，请稍后再试')
     } catch (err) {
