@@ -86,8 +86,16 @@ export async function getIcon(name, itemType) {
   return icon && !icon.startsWith('/') ? `/${icon}` : icon
 }
 
-/** 单池保底上限：光锥池 80，其余 90 */
-export const poolMax = type => (['12', '22', 12, 22].includes(type) ? 80 : 90)
+/**
+ * 单池保底上限：光锥池 80、新手池 50（始发跃迁总共只能抽 50 次且 50 抽内必出五星）、其余 90。
+ * 这个数是出图进度条的分母，给错了条形长度就不对
+ */
+export const poolMax = type => {
+  const t = String(type)
+  if (t === '12' || t === '22') return 80
+  if (t === '2') return 50
+  return 90
+}
 
 /**
  * 统计一个池。list 是 srJson 里的原始数组（新→旧）
@@ -107,6 +115,9 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
   let fourLogNum = 0
   let noFiveNum = 0
   let noFourNum = 0
+  // 「最新一条就是四星」时 noFourNum 该是 0，用 flag 判首次而不是判 noFourNum===0，
+  // 否则会被下一段间隔顶掉（genshin 原版就是这个写法，这里按正确的算）
+  let fourSeen = false
   let wai = 0
   let weaponNum = 0
   let weaponFourNum = 0
@@ -117,7 +128,10 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
     const rank = String(row.rank_type)
     if (rank === '4') {
       fourNum++
-      if (noFourNum === 0) noFourNum = fourLogNum
+      if (!fourSeen) {
+        noFourNum = fourLogNum
+        fourSeen = true
+      }
       fourLogNum = 0
       fourLog[row.name] = (fourLog[row.name] || 0) + 1
       if (row.item_type === '光锥' || row.item_type === '武器') weaponFourNum++
@@ -136,6 +150,10 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
         else wai++
       } else {
         weaponNum++
+        // 光锥也标 UP：期次映射里就有当期限定光锥的名字（3135 → 你将起身歌唱这种）。
+        // 拿不到映射时保持不标，不猜；wai 只统计角色池的歪，光锥不计入
+        const ups = upByGachaId?.get?.(String(row.gacha_id || ''))
+        if (ups?.length) isUp = ups.includes(row.name)
       }
       fiveLog.push({
         name: row.name,
@@ -225,6 +243,10 @@ export function buildLine(data, type) {
   const maxValue = nums.length ? Math.max(...nums) : 0
   const minValue = nums.length ? Math.min(...nums) : 0
   const t = String(type)
+  // 只有小程序接口来的数据时本地一条四星记录都没有，四星那几项算出来全是 0，
+  // 显示成「未出四星 0 抽」会让人以为刚出过四星。这种情况一律显示占位符
+  const hasFour = data.fourNum > 0
+  const four = (num, unit = '') => (hasFour ? { num, unit } : { num: '—', unit: '' })
 
   // 角色池（含联动角色）：关心歪不歪
   if (['11', '21'].includes(t)) {
@@ -237,7 +259,7 @@ export function buildLine(data, type) {
         { lable: '最非', num: maxValue, unit: '抽' },
       ],
       [
-        { lable: '未出四星', num: data.noFourNum, unit: '抽' },
+        { lable: '未出四星', ...four(data.noFourNum, '抽') },
         { lable: '五星常驻', num: data.wai, unit: '个' },
         { lable: 'UP平均', num: data.isvalidNum, unit: '抽' },
         { lable: 'UP花费星琼', num: data.upYs, unit: '' },
@@ -247,19 +269,22 @@ export function buildLine(data, type) {
   }
 
   // 光锥池、常驻池、新手池：没有 UP 概念，改看四星
+  const fiveWeapon = t === '1' || t === '2'
   return [
     [
       { lable: '未出五星', num: data.noFiveNum, unit: '抽' },
       { lable: '五星', num: data.fiveNum, unit: '个' },
       { lable: '五星平均', num: data.fiveAvg, unit: '抽' },
-      { lable: t === '1' || t === '2' ? '五星光锥' : '四星光锥', num: t === '1' || t === '2' ? data.weaponNum : data.weaponFourNum, unit: '个' },
+      fiveWeapon
+        ? { lable: '五星光锥', num: data.weaponNum, unit: '个' }
+        : { lable: '四星光锥', ...four(data.weaponFourNum, '个') },
       { lable: '最非', num: maxValue, unit: '抽' },
     ],
     [
-      { lable: '未出四星', num: data.noFourNum, unit: '抽' },
-      { lable: '四星', num: data.fourNum, unit: '个' },
-      { lable: '四星平均', num: data.fourAvg, unit: '抽' },
-      { lable: '四星最多', num: data.maxFour.num, unit: data.maxFour.name.slice(0, 4) },
+      { lable: '未出四星', ...four(data.noFourNum, '抽') },
+      { lable: '四星', ...four(data.fourNum, '个') },
+      { lable: '四星平均', ...four(data.fourAvg, '抽') },
+      { lable: '四星最多', ...(hasFour ? { num: data.maxFour.num, unit: data.maxFour.name.slice(0, 4) } : { num: '—', unit: '' }) },
       { lable: '最欧', num: minValue, unit: '抽' },
     ],
   ]
