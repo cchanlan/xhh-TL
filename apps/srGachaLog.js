@@ -793,15 +793,32 @@ function parsePoolType(msg = '') {
   }
 }
 
+/**
+ * 惰性共享抽卡 cookie：*全部记录 要刷六个池的垫抽，
+ * 原来每池都重新 prepareCookie + badgeLogin，首次出图会连打十几个米游社请求。
+ * 包一层只在真的需要刷新时登录一次，之后各池复用同一个 promise
+ */
+function lazyGachaCookie(e, uid) {
+  let pending = null
+  return () => {
+    if (!pending) {
+      pending = (async () => {
+        const { cookie, region } = await prepareCookie(e, uid, null)
+        return badgeLogin(cookie, uid, region)
+      })()
+    }
+    return pending
+  }
+}
+
 /** 出图前顺手把当前池的垫抽刷新一下（缓存超过 10 分钟才动，失败就沿用旧值） */
-async function refreshPity(e, uid, type) {
+async function refreshPity(e, uid, type, getCookie) {
   const pool = POOLS.find(p => p.type === String(type))
   if (!pool) return // 常驻池接口不给，本地算得出来
   const entry = readPoolCache()[String(uid)]?.[String(type)]
   if (entry?.at && Date.now() - entry.at < 10 * 60 * 1000) return
   try {
-    const { cookie, region } = await prepareCookie(e, uid, null)
-    const gachaCookie = await badgeLogin(cookie, uid, region)
+    const gachaCookie = await (getCookie || lazyGachaCookie(e, uid))()
     const q = new URLSearchParams({ gacha_type: pool.key, version_id: '0', max_id: '0' })
     const { json } = await api(`${GACHA_BASE}/five_star_list?${q}`, { cookie: gachaCookie })
     if (json?.retcode !== 0) return
@@ -888,10 +905,12 @@ async function buildAllViewData(e, uid) {
   let newestAt = 0
   // 六个池共用一份映射，别每池都去读一次缓存文件
   const upMap = upMapFromCache()
+  // 也共用一次登录：真有池要刷垫抽时才会去换凭证
+  const getCookie = lazyGachaCookie(e, uid)
   for (const type of ['11', '12', '21', '22', '1', '2']) {
     const list = readLocal(e.user_id, uid, type)
     if (!list.length) continue
-    await refreshPity(e, uid, type)
+    await refreshPity(e, uid, type, getCookie)
     const entry = readPoolCache()[String(uid)]?.[String(type)]
     if (entry?.at > newestAt) newestAt = entry.at
     const stat = analyse(list, type, Number(entry?.pity) || 0, upMap)
