@@ -87,6 +87,29 @@ function cachedPity(uid, type) {
   return Number(readPoolCache()[String(uid)]?.[String(type)]?.pity) || 0
 }
 
+/**
+ * 「期次编号 → 该期 UP 名单」，汇总所有账号缓存下来的 pool_stat。
+ * 卡池期次是全服一样的，所以谁更新过都能给别人用；这份映射比手工维护的
+ * UP 期间表准，判歪时优先走它（见 gachaStat 的 isUpRole）
+ */
+function upMapFromCache() {
+  const map = new Map()
+  const all = readPoolCache()
+  for (const byType of Object.values(all)) {
+    for (const entry of Object.values(byType || {})) {
+      for (const c of entry?.cards || []) {
+        const gid = String(c.gacha_id || '')
+        const name = c.up_item?.name || ''
+        if (!gid || !name) continue
+        const arr = map.get(gid) || []
+        if (!arr.includes(name)) arr.push(name)
+        map.set(gid, arr)
+      }
+    }
+  }
+  return map
+}
+
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 /** id 前 10 位是秒级时间戳（是卡池批次时间，不是精确抽卡时刻，误差在小时级） */
@@ -797,7 +820,7 @@ async function buildViewData(e, uid) {
 
   await refreshPity(e, uid, type)
   const entry = readPoolCache()[String(uid)]?.[String(type)]
-  const stat = analyse(list, type, Number(entry?.pity) || 0)
+  const stat = analyse(list, type, Number(entry?.pity) || 0, upMapFromCache())
   const max = poolMax(type)
   const pct = n => Math.max(6, Math.min(100, (Number(n) / max) * 100))
 
@@ -860,13 +883,15 @@ async function buildAllViewData(e, uid) {
   if (!uid) return null
   const pools = []
   let newestAt = 0
+  // 六个池共用一份映射，别每池都去读一次缓存文件
+  const upMap = upMapFromCache()
   for (const type of ['11', '12', '21', '22', '1', '2']) {
     const list = readLocal(e.user_id, uid, type)
     if (!list.length) continue
     await refreshPity(e, uid, type)
     const entry = readPoolCache()[String(uid)]?.[String(type)]
     if (entry?.at > newestAt) newestAt = entry.at
-    const stat = analyse(list, type, Number(entry?.pity) || 0)
+    const stat = analyse(list, type, Number(entry?.pity) || 0, upMap)
     const five = []
     for (const it of stat.fiveLog) {
       five.push({

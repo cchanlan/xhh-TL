@@ -45,8 +45,15 @@ const UP_PERIODS = {
 
 const ts = s => Date.parse(String(s).replace(/-/g, '/'))
 
-/** 这一条五星角色记录是不是当期 UP */
-function isUpRole(row) {
+/**
+ * 这一条五星角色记录是不是当期 UP。
+ * upByGachaId 是接口权威的「期次编号 → 该期 UP 名单」（来自 pool_stat 落盘缓存），
+ * 有就直接对名字，比手工维护的时间表准；拿不到才回退到下面的常驻名单 + UP 期间表。
+ * 注意名字要精确比较：新形态角色叫「姬子•启行」「千冶•刃」，跟常驻的「姬子」「刃」是两个人
+ */
+function isUpRole(row, upByGachaId) {
+  const ups = upByGachaId?.get?.(String(row.gacha_id || ''))
+  if (ups?.length) return ups.includes(row.name)
   if (STANDARD_5.includes(row.name)) return false
   const periods = UP_PERIODS[row.name]
   if (!periods) return true
@@ -85,9 +92,10 @@ export const poolMax = type => (['12', '22', 12, 22].includes(type) ? 80 : 90)
 /**
  * 统计一个池。list 是 srJson 里的原始数组（新→旧）
  * apiPity 是小程序接口给的当前垫抽——本地缺四星三星记录时靠它兜底
+ * upByGachaId 是「期次编号 → 该期 UP 名单」，判歪优先用它（见 isUpRole）
  * 返回值字段名与 genshin analyse() 保持一致，方便对照
  */
-export function analyse(list, type, apiPity = 0) {
+export function analyse(list, type, apiPity = 0, upByGachaId = null) {
   const all = Array.isArray(list) ? list : []
   // 占位是为了凑抽数造的假记录，时间不可信，统计时间范围时要绕开
   const real = all.filter(r => !r.xhh_ph)
@@ -124,7 +132,7 @@ export function analyse(list, type, apiPity = 0) {
 
       let isUp = false
       if (row.item_type === '角色') {
-        if (isUpRole(row)) isUp = true
+        if (isUpRole(row, upByGachaId)) isUp = true
         else wai++
       } else {
         weaponNum++
