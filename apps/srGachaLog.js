@@ -395,12 +395,61 @@ async function resolveSrUid(e) {
     if (v) return { uid: String(v), user: null }
   } catch (_) {}
   try {
-    const subs = fs
-      .readdirSync(path.join(SR_JSON_DIR, String(e.user_id)))
-      .filter(d => /^\d+$/.test(d))
+    const dir = path.join(SR_JSON_DIR, String(e.user_id))
+    const subs = fs.readdirSync(dir).filter(d => /^\d+$/.test(d))
     if (subs.length === 1) return { uid: subs[0], user: null }
+    // 多个 uid 目录时取最近写过的那个：刚更新完的号就是用户正在看的号
+    if (subs.length > 1) {
+      const newest = subs
+        .map(d => ({ d, at: mtimeOf(path.join(dir, d)) }))
+        .sort((a, b) => b.at - a.at)[0]
+      if (newest?.at) return { uid: newest.d, user: null }
+    }
   } catch (_) {}
   return { uid: '', user: null }
+}
+
+/** 目录下最新一个 json 的修改时间（目录自身的 mtime 不随文件内容改变而更新） */
+function mtimeOf(dir) {
+  try {
+    return fs
+      .readdirSync(dir)
+      .filter(f => f.endsWith('.json'))
+      .reduce((m, f) => Math.max(m, fs.statSync(path.join(dir, f)).mtimeMs), 0)
+  } catch (_) {
+    return 0
+  }
+}
+
+/**
+ * 用户真正绑好的星铁 UID 列表。只认绑定，不看本地记录目录 ——
+ * 链接是别人的号也能拉出记录来，所以收链接前必须拿这个把关
+ */
+async function boundSrUids(e) {
+  try {
+    const user = await createUser(e.user_id, e)
+    const list = user?.getUidList?.('sr') || []
+    return list.map(x => String(x?.uid ?? x)).filter(u => /^\d+$/.test(u))
+  } catch (err) {
+    logger?.debug?.(`[xhh-TL][抽卡记录] 读绑定列表失败：${err.message}`)
+    return []
+  }
+}
+
+/**
+ * 拉全量之前先探一页，问出这条链接属于哪个 UID。
+ * authkey 链接本身不带 UID，只能从接口响应里取；角色池最可能有记录，常驻和光锥兜底
+ */
+async function probeLinkUid(params) {
+  for (const pool of ['11', '1', '12']) {
+    const data = await fetchGachaPageRetry(params, pool, '0')
+    if (data.region && !params.region) params.region = data.region
+    const uid = data.list?.[0]?.uid
+    // 探完紧接着就是几十页的正式拉取，这里也要留间隔，别自己把限流踩出来
+    await sleep(700)
+    if (uid) return String(uid)
+  }
+  return ''
 }
 
 /** 星铁 region 按 UID 首位推断。yaml 里的 region 常常是原神的（cn_gf01），直接拿来用会被判 -1002 */
@@ -902,12 +951,42 @@ async function fetchGachaPage(params, gachaType, endId) {
   const json = await res.json().catch(() => null)
   if (!json) throw new Error('接口没返回 JSON')
   if (json.retcode !== 0) {
-    const expired = [-100, -101, -111].includes(json.retcode)
-    throw new Error(
-      `${json.message || '未知错误'}（${json.retcode}）${expired ? '，链接大概过期了，去游戏里重新复制一次' : ''}`,
+    // 细节只进日志，抛给用户的是人话
+    logger?.warn?.(
+      `[xhh-TL][抽卡记录] 池 ${gachaType} end_id=${endId} 接口返回 ` +
+        `${json.retcode}：${json.message || ''}`,
     )
+    let err
+    if ([-100, -101, -111].includes(json.retcode)) {
+      err = new Error('链接大概过期了，去游戏里重新复制一次')
+    } else if (json.retcode === -110) {
+      // 官方限流（visit too frequently），等一会儿重试就好，不是链接的问题
+      err = new Error('米哈游那边限流了，稍等一会儿再试')
+      err.rateLimited = true
+    } else {
+      err = new Error('米哈游接口没给记录，稍后再试一次')
+    }
+    throw err
   }
   return json.data || {}
+}
+
+/** 限流（-110）时退避重试；退避时长逐次加长，全失败才把错抛出去 */
+const RETRY_WAITS = [5000, 15000, 30000, 60000]
+
+async function fetchGachaPageRetry(params, gachaType, endId) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fetchGachaPage(params, gachaType, endId)
+    } catch (err) {
+      if (!err.rateLimited || i >= RETRY_WAITS.length) throw err
+      logger?.info?.(
+        `[xhh-TL][抽卡记录] 池 ${gachaType} 被限流，等 ${RETRY_WAITS[i] / 1000}s 后重试` +
+          `（第 ${i + 1}/${RETRY_WAITS.length} 次）`,
+      )
+      await sleep(RETRY_WAITS[i])
+    }
+  }
 }
 
 /**
@@ -918,54 +997,60 @@ async function fetchAllByAuthkey(params, userId, { full = false, onPool } = {}) 
   const records = []
   let uid = ''
   let stopId = new Map()
-  for (const pool of [...POOLS.map(p => p.type), '1']) {
-    let endId = '0'
-    let got = 0
-    let reachedOld = false
-    for (let i = 0; i < 120 && !reachedOld; i++) {
-      const data = await fetchGachaPage(params, pool, endId)
-      if (data.region && !params.region) params.region = data.region
-      const list = data.list || []
+  try {
+    for (const pool of [...POOLS.map(p => p.type), '1']) {
+      let endId = '0'
+      let got = 0
+      let reachedOld = false
+      for (let i = 0; i < 120 && !reachedOld; i++) {
+        const data = await fetchGachaPageRetry(params, pool, endId)
+        if (data.region && !params.region) params.region = data.region
+        const list = data.list || []
 
-      // 第一页拿到 uid 后才能读本地，算出这个池的增量下界
-      if (!uid && list[0]?.uid) uid = String(list[0].uid)
-      if (!full && uid && !stopId.has(pool)) {
-        const local = readLocal(userId, uid, pool)
-        stopId.set(
-          pool,
-          local
-            .filter(r => !r.xhh_src && !r.xhh_fid)
-            .reduce((m, r) => (big(r.id) > m ? big(r.id) : m), 0n),
-        )
-      }
-      const floor = stopId.get(pool) || 0n
-
-      for (const r of list) {
-        if (!full && floor > 0n && big(r.id) <= floor) {
-          reachedOld = true
-          break
+        // 第一页拿到 uid 后才能读本地，算出这个池的增量下界
+        if (!uid && list[0]?.uid) uid = String(list[0].uid)
+        if (!full && uid && !stopId.has(pool)) {
+          const local = readLocal(userId, uid, pool)
+          stopId.set(
+            pool,
+            local
+              .filter(r => !r.xhh_src && !r.xhh_fid)
+              .reduce((m, r) => (big(r.id) > m ? big(r.id) : m), 0n),
+          )
         }
-        records.push({
-          uid: String(r.uid || uid || ''),
-          gacha_id: String(r.gacha_id || ''),
-          gacha_type: String(r.gacha_type || pool),
-          item_id: String(r.item_id || ''),
-          count: String(r.count || '1'),
-          time: String(r.time || ''),
-          name: String(r.name || ''),
-          lang: String(r.lang || 'zh-cn'),
-          item_type: String(r.item_type || ''),
-          rank_type: String(r.rank_type || ''),
-          id: String(r.id || ''),
-        })
-        got++
+        const floor = stopId.get(pool) || 0n
+
+        for (const r of list) {
+          if (!full && floor > 0n && big(r.id) <= floor) {
+            reachedOld = true
+            break
+          }
+          records.push({
+            uid: String(r.uid || uid || ''),
+            gacha_id: String(r.gacha_id || ''),
+            gacha_type: String(r.gacha_type || pool),
+            item_id: String(r.item_id || ''),
+            count: String(r.count || '1'),
+            time: String(r.time || ''),
+            name: String(r.name || ''),
+            lang: String(r.lang || 'zh-cn'),
+            item_type: String(r.item_type || ''),
+            rank_type: String(r.rank_type || ''),
+            id: String(r.id || ''),
+          })
+          got++
+        }
+        if (list.length < 20) break
+        endId = list[list.length - 1].id
+        await sleep(700)
       }
-      if (list.length < 20) break
-      endId = list[list.length - 1].id
-      await sleep(400)
+      onPool?.(pool, got)
+      await sleep(500)
     }
-    onPool?.(pool, got)
-    await sleep(200)
+  } catch (err) {
+    // 半路失败也别浪费已经翻到的页：挂在错误上，让上层先落盘
+    err.partial = { records, uid }
+    throw err
   }
   return { records, uid }
 }
@@ -1017,6 +1102,43 @@ export class srGachaLog extends plugin {
     this.e.isSr = true
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
     const full = /全量|强制/.test(this.e.msg)
+    const recall = this.e.isGroup ? '，记得把链接撤回哦' : ''
+
+    // 只收已绑定那个号的链接：先查绑定（本地、不花请求），再探链接属于谁
+    const bound = await boundSrUids(this.e)
+    if (!bound.length) {
+      await this.reply(
+        `你还没绑定星铁 UID，先发【#星铁绑定uid+你的UID】绑好再来发链接哦${recall}`,
+        false,
+        { at: true },
+      )
+      return true
+    }
+
+    let linkUid = ''
+    try {
+      linkUid = await probeLinkUid(params)
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][抽卡记录] 链接探测失败：${err.stack || err.message}`)
+      await this.reply(`这条链接用不了：${err.message}${recall}`, false, { at: true })
+      return true
+    }
+    if (!linkUid) {
+      await this.reply(`这条链接里没查到抽卡记录${recall}`, false, { at: true })
+      return true
+    }
+    if (!bound.includes(linkUid)) {
+      logger?.info?.(
+        `[xhh-TL][抽卡记录] ${this.e.user_id} 发来 ${linkUid} 的链接，已绑定 ${bound.join('、')}，拒收`,
+      )
+      await this.reply(
+        `这条链接是 ${linkUid} 的，你绑定的是 ${bound.join('、')}，只收已绑定那个号的链接哦${recall}`,
+        false,
+        { at: true },
+      )
+      return true
+    }
+
     await this.reply(
       `收到星铁抽卡链接，正在${full ? '全量' : '增量'}拉取记录，这一步比较慢…`,
       false,
@@ -1025,15 +1147,14 @@ export class srGachaLog extends plugin {
 
     try {
       const perPool = []
-      const { records, uid: linkUid } = await fetchAllByAuthkey(params, this.e.user_id, {
+      const { records } = await fetchAllByAuthkey(params, this.e.user_id, {
         full,
         onPool: (pool, got) => perPool.push(`${POOL_LABEL[pool] || pool} ${got}`),
       })
-      const uid = linkUid || (await resolveSrUid(this.e)).uid
-      if (!uid) throw new Error('链接里没有 UID，也没查到你的绑定')
+      const uid = linkUid
       if (!records.length) {
         await this.reply('拉完了，没有新记录', false, { at: true })
-        await this.renderMini()
+        await this.renderMini(uid)
         return true
       }
 
@@ -1047,15 +1168,28 @@ export class srGachaLog extends plugin {
           `${stat.dropPh ? `，清理占位 ${stat.dropPh} 条` : ''}` +
           `（${perPool.join('、')}）`,
       )
+      await this.reply(`更新完成，新增 ${stat.added} 条${recall}`, false, { at: true })
+      await this.renderMini(uid)
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
+      // 中断前已经翻到的记录先存下来，下次发链接会从这里接着拉
+      let saved = 0
+      const part = err.partial?.records || []
+      if (part.length) {
+        try {
+          assignIds(part)
+          saved = mergeImport(this.e.user_id, linkUid, part).added
+          logger?.info?.(`[xhh-TL][抽卡记录] ${linkUid} 中断前已保存 ${saved} 条`)
+        } catch (e2) {
+          logger?.error?.(`[xhh-TL][抽卡记录] 部分记录保存失败：${e2.stack || e2.message}`)
+        }
+      }
       await this.reply(
-        `更新完成，新增 ${stat.added} 条${this.e.isGroup ? '，记得把链接撤回哦' : ''}`,
+        `没拉完就中断了：${err.message}` +
+          (saved ? `。已经拿到的 ${saved} 条存好了，再发一次链接会接着拉` : ''),
         false,
         { at: true },
       )
-      await this.renderMini()
-    } catch (err) {
-      logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
-      await this.reply(`抽卡链接更新失败：${err.message}`, false, { at: true })
     }
     return true
   }
@@ -1093,13 +1227,17 @@ export class srGachaLog extends plugin {
     return true
   }
 
-  /** 小程序「跃迁记录统计」风格出图 */
-  async renderMini() {
+  /** 小程序「跃迁记录统计」风格出图。preferUid：刚更新/导入完的那个号，优先用它 */
+  async renderMini(preferUid) {
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
-    const { uid } = await resolveSrUid(this.e)
+    const uid = String(preferUid || '') || (await resolveSrUid(this.e)).uid
     const data = await buildViewData(this.e, uid)
     if (!data) {
-      await this.reply('还没有抽卡记录，先发 *更新抽卡记录 试试', false, { at: true })
+      await this.reply(
+        uid ? '这个池还没有记录哦' : '还没有抽卡记录，先发 *更新抽卡记录 试试',
+        false,
+        { at: true },
+      )
       return true
     }
     const tplFile = path.join(pluginDir, 'resources/gachaLog/gachaLog.html')
@@ -1140,7 +1278,7 @@ export class srGachaLog extends plugin {
       const gachaCookie = await badgeLogin(cookie, uid, region)
       // 更新完不发文案，统计只落日志，直接出图
       logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${await this.runUpdate(uid, gachaCookie)}`)
-      await this.renderMini()
+      await this.renderMini(uid)
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
       await this.reply(`崩铁抽卡记录更新失败：${err.message}`, false, { at: true })
@@ -1222,7 +1360,7 @@ export class srGachaLog extends plugin {
         false,
         { at: true },
       )
-      await this.renderMini()
+      await this.renderMini(uid)
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 导入失败：${err.stack || err.message}`)
       await this.reply(`导入失败：${err.message}`, false, { at: true })
