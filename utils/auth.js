@@ -76,11 +76,11 @@ export async function stokenToCookie(entry) {
     }
     const cookieRes = await fetch(
       `https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoBySToken?stoken=${encodeURIComponent(stoken)}&uid=${encodeURIComponent(stuid)}`,
-      { method: 'GET', headers, timeout: 12000 },
+      { method: 'GET', headers, signal: AbortSignal.timeout(12000) },
     ).then((r) => r.json())
     const ltokenRes = await fetch(
       'https://passport-api.mihoyo.com/account/auth/api/getLTokenBySToken',
-      { method: 'GET', headers: { ...headers, DS: makeAppDs() }, timeout: 12000 },
+      { method: 'GET', headers: { ...headers, DS: makeAppDs() }, signal: AbortSignal.timeout(12000) },
     ).then((r) => r.json())
 
     const cookieToken = cookieRes?.data?.cookie_token

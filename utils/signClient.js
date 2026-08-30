@@ -129,7 +129,7 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
     const infoRes = await fetch(infoUrl, {
       method: 'GET',
       headers: buildSignHeaders(cookie, device, deviceFp, game),
-      timeout: 12000,
+      signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
 
     if ([-100, -101, 10001, -10001].includes(Number(infoRes?.retcode))) {
@@ -153,7 +153,7 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
       method: 'POST',
       headers: buildSignHeaders(cookie, device, deviceFp, game),
       body,
-      timeout: 12000,
+      signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
     return { rc: Number(res?.retcode), res }
   }

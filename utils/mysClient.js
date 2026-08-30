@@ -270,7 +270,8 @@ export default class LiteMysApi {
       }
     } catch (_) {}
 
-    const param = { headers, timeout: 12000, method: body ? 'post' : 'get' }
+    // node-fetch v3 不认 timeout 选项（v2 才有），超时必须走 AbortSignal
+    const param = { headers, signal: AbortSignal.timeout(12000), method: body ? 'post' : 'get' }
     if (body) param.body = body
 
     const start = Date.now()

@@ -25,7 +25,7 @@ const CACHE_MS = 60 * 60 * 1000
 /** 拉取原神深渊统计（含使用率 has_list + 配队 result[3]） */
 export async function getAbyssRank({ force = false } = {}) {
   if (!force && _cache && Date.now() - _cacheAt < CACHE_MS) return _cache
-  const res = await fetch(ABYSS_RANK_URL, { headers: { 'User-Agent': UA }, timeout: 15000 })
+  const res = await fetch(ABYSS_RANK_URL, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`yshelper HTTP ${res.status}`)
   const data = await res.json()
   if (!data || !data.result || !Array.isArray(data.result)) {
@@ -39,7 +39,7 @@ export async function getAbyssRank({ force = false } = {}) {
 /** 拉取幽境危战统计（含使用率 has_list + 配队 result[3]，配队含 up/mid/down 三半区） */
 export async function getHardRank({ force = false } = {}) {
   if (!force && _hardCache && Date.now() - _hardCacheAt < CACHE_MS) return _hardCache
-  const res = await fetch(HARD_RANK_URL, { headers: { 'User-Agent': UA }, timeout: 15000 })
+  const res = await fetch(HARD_RANK_URL, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`yshelper HTTP ${res.status}`)
   const data = await res.json()
   if (!data || !data.result || !Array.isArray(data.result)) {

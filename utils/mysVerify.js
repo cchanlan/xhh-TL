@@ -68,7 +68,7 @@ async function createVerification(cookie, device, deviceFp, game) {
     const res = await fetch(url, {
       method: 'GET',
       headers: buildBbsHeaders(cookie, device, deviceFp, game, query, ''),
-      timeout: 12000,
+      signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
     if (res?.retcode !== 0 || !res?.data?.challenge) {
       log.debug(`[xhh-TL][verify] createVerification 失败: retcode=${res?.retcode} msg=${res?.message}`)
@@ -104,7 +104,7 @@ async function submitVerification(cookie, device, deviceFp, game, validate) {
         'Content-Type': 'application/json;charset=UTF-8',
       },
       body,
-      timeout: 12000,
+      signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
     log.mark(
       `[xhh-TL][verify] verifyVerification 回执: retcode=${res?.retcode} msg=${res?.message}`,
@@ -137,7 +137,7 @@ async function solveGeetest(e, { uid, create, verifyAddr, polls = 80, intervalMs
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uid, ...create }),
-      timeout: 12000,
+      signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
   } catch (err) {
     log.error(`[xhh-TL][verify] 打码服务不可用: ${err?.message}`)
@@ -155,7 +155,7 @@ async function solveGeetest(e, { uid, create, verifyAddr, polls = 80, intervalMs
   let loggedShape = false
   for (let i = 0; i < polls; i++) {
     try {
-      const r = await fetch(reg.data.result, { timeout: 10000 }).then((x) => x.json())
+      const r = await fetch(reg.data.result, { signal: AbortSignal.timeout(10000) }).then((x) => x.json())
       // 结果可能包在 data 里，也可能直接在顶层；两处都找
       const d = r?.data && typeof r.data === 'object' ? r.data : r
       const validate = d?.geetest_validate || d?.validate

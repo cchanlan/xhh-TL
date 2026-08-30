@@ -155,7 +155,7 @@ async function req(url, { cookie, device, deviceFp, body = null }) {
   const headers = buildHeaders(cookie, device, deviceFp, {
     ds2Body: isPost ? bodyStr : null,
   })
-  const param = { method: isPost ? 'POST' : 'GET', headers, timeout: 12000 }
+  const param = { method: isPost ? 'POST' : 'GET', headers, signal: AbortSignal.timeout(12000) }
   if (isPost) {
     param.body = bodyStr
     headers['Content-Type'] = 'application/json;charset=UTF-8'
@@ -348,7 +348,7 @@ async function stokenLiveAtPassport(stuid, cookie) {
       }
     : {}
   try {
-    const res = await fetch(url, { headers, timeout: 10000 })
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(10000) })
     if (!res.ok) return false
     const j = await res.json()
     return Number(j?.retcode) === 0
