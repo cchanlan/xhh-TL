@@ -8,6 +8,7 @@
  */
 
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { pathToFileURL, fileURLToPath } from 'url'
 import YAML from 'yaml'
@@ -27,6 +28,19 @@ export const DEFAULT_STOKEN_DIRS = [
   'plugins/xhh/data/Stoken',
   'plugins/xiaoyao-cvs-plugin/data/yaml',
   'plugins/xhh-TL/data/Stoken',
+]
+
+/**
+ * gsuid_core 数据库的默认探测位置（按顺序取第一个存在的）。
+ * 前两条是 Linux 上的常见装法；后两条不带平台假设 —— gsuid_core 跟 Yunzai 并排装、
+ * 或者装在家目录下时，Windows / macOS 用户也能自动找到，不必手动填配置。
+ * 找不到时仍可用配置项 bbs_coin_gsuid_db 指定。
+ */
+export const DEFAULT_GSUID_DB_CANDIDATES = [
+  '/opt/gsuid_core/data/GsData.db',
+  '/root/gsuid_core/data/GsData.db',
+  path.join(process.cwd(), '..', 'gsuid_core', 'data', 'GsData.db'),
+  path.join(os.homedir(), 'gsuid_core', 'data', 'GsData.db'),
 ]
 
 let _cache = null

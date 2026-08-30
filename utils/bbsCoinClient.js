@@ -31,7 +31,7 @@ import { runBbsVerify } from './mysVerify.js'
 import { cookiePart } from './auth.js'
 import { createUser, getAliveMysIds, hasRuntimeBinding } from './userBind.js'
 import { getDeletedMap, fingerprintStoken, removeDeleted } from './deletedCk.js'
-import { getStokenCandidateFiles, config, resolveConfiguredPaths } from './pluginConfig.js'
+import { getStokenCandidateFiles, config, resolveConfiguredPaths, DEFAULT_GSUID_DB_CANDIDATES } from './pluginConfig.js'
 import { withReadonlyDb, getSqliteDriver, sqliteUnavailableMessage } from './sqlite.js'
 
 const log = {
@@ -551,11 +551,8 @@ function readYaml(file) {
   return {}
 }
 
-/** gsuid_core 数据库默认位置（按顺序探测，取存在且能读的） */
-const GSUID_DB_CANDIDATES = [
-  '/opt/gsuid_core/data/GsData.db',
-  '/root/gsuid_core/data/GsData.db',
-]
+/** gsuid_core 数据库默认位置（按顺序探测，取存在且能读的；含跨平台候选，见 pluginConfig） */
+const GSUID_DB_CANDIDATES = DEFAULT_GSUID_DB_CANDIDATES
 
 function gsuidDbPaths() {
   const custom = config()?.bbs_coin_gsuid_db || ''

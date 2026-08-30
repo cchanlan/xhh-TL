@@ -10,14 +10,11 @@
  */
 
 import fs from 'fs'
-import { config, resolveConfiguredPaths } from './pluginConfig.js'
+import { config, resolveConfiguredPaths, DEFAULT_GSUID_DB_CANDIDATES } from './pluginConfig.js'
 import { withReadonlyDb, getSqliteDriver, sqliteUnavailableMessage, isBusyError } from './sqlite.js'
 
-/** core 数据库默认位置（按顺序探测，取第一个存在的） */
-const GSUID_DB_CANDIDATES = [
-  '/opt/gsuid_core/data/GsData.db',
-  '/root/gsuid_core/data/GsData.db',
-]
+/** core 数据库默认位置（按顺序探测，取第一个存在的；含跨平台候选，见 pluginConfig） */
+const GSUID_DB_CANDIDATES = DEFAULT_GSUID_DB_CANDIDATES
 
 /** 库街区接口（与 XutheringWavesUID 的 api.py 保持一致） */
 const MAIN_URL = 'https://api.kurobbs.com'
