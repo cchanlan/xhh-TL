@@ -89,6 +89,8 @@ export const poolMax = type => (['12', '22', 12, 22].includes(type) ? 80 : 90)
  */
 export function analyse(list, type, apiPity = 0) {
   const all = Array.isArray(list) ? list : []
+  // 占位是为了凑抽数造的假记录，时间不可信，统计时间范围时要绕开
+  const real = all.filter(r => !r.xhh_ph)
   const fiveLog = []
   const fourLog = {}
   let fiveNum = 0
@@ -203,8 +205,9 @@ export function analyse(list, type, apiPity = 0) {
     fiveLog,
     upYs,
     noWaiRate,
-    firstTime: all[all.length - 1]?.time?.substring(0, 16) || '',
-    lastTime: all[0]?.time?.substring(0, 16) || '',
+    // 时间只看真实记录：当前垫抽的占位 time 是写入时刻，拿它当「最后一抽」会显示成更新时间
+    firstTime: (real[real.length - 1] || all[all.length - 1])?.time?.substring(0, 16) || '',
+    lastTime: (real[0] || all[0])?.time?.substring(0, 16) || '',
   }
 }
 

@@ -1002,7 +1002,9 @@ async function fetchAllByAuthkey(params, userId, { full = false, onPool } = {}) 
       let endId = '0'
       let got = 0
       let reachedOld = false
-      for (let i = 0; i < 120 && !reachedOld; i++) {
+      // 页数上限按最重的号留余量：实测重氪角色池能到 2500+ 条（125 页），
+      // 原来卡在 120 页会把最早的记录悄悄截掉
+      for (let i = 0; i < 400 && !reachedOld; i++) {
         const data = await fetchGachaPageRetry(params, pool, endId)
         if (data.region && !params.region) params.region = data.region
         const list = data.list || []
@@ -1311,6 +1313,11 @@ export class srGachaLog extends plugin {
 
   /** 等文件的上下文回调 */
   async importFile() {
+    // 抽卡链接不是导入文件：交回 logUrl，别拿去当 json 下载
+    if (/authkey=/.test(this.e.msg || '')) {
+      this.finish('importFile', false)
+      return 'continue'
+    }
     // 不是文件也不是链接就别打断，交回给其它插件处理
     if (!this.e.file && !/https?:\/\/\S+/.test(this.e.msg || '')) return 'continue'
     this.finish('importFile', false)
