@@ -303,6 +303,24 @@ function mergePool(userId, uid, type, remote, poolStat) {
   const real = local.filter(r => !r.xhh_ph)
   const usedIds = new Set(real.map(r => String(r.id)))
 
+  // 清占位**之前**先量一下每个五星在本地的间隔（含占位）。老版本写进去的 mini 记录没存
+  // xhh_pity，抽数全靠占位数体现；占位一清、接口这轮又没回这条五星（只给最近 12 个月），
+  // 就再也算不回来了。这份快照是那种记录的兜底抽数
+  // 口径要跟 analyse 一致：一条五星的抽数 = 它到**更旧**那条五星之间的记录数（含自己）
+  const localGap = new Map()
+  let seen = 0
+  let prevFive = ''
+  for (const r of local) {
+    if (String(r.rank_type) === '5') {
+      if (prevFive) localGap.set(prevFive, seen)
+      prevFive = String(r.id)
+      seen = 0
+    }
+    seen++
+  }
+  // 最旧那条五星：它之前的记录本来就不在本地（authkey 只给最近 6 个月），拿剩下的记录数兜底
+  if (prevFive) localGap.set(prevFive, seen)
+
   // 本地五星按判重键分桶，接口里的同键记录逐个抵扣
   const buckets = new Map()
   for (const r of real) {
@@ -320,60 +338,98 @@ function mergePool(userId, uid, type, remote, poolStat) {
   let skipped = 0
   let patched = 0
 
-  // 完整逐抽来源（抽卡链接 / 导入）的 id，用来判断某段区间是不是已经有真实记录了。
+  // 完整逐抽来源（抽卡链接 / 导入）的 id，用来判断某段区间里已经有多少条真实记录了。
   // 不能只比「最大 id」——真实记录只覆盖最近几个月时，更早的五星区间其实是空的，
-  // 拿最大 id 一比会全判成「已有记录」，那些五星的抽数就会缩成 1
+  // 拿最大 id 一比会全判成「已有记录」，那些五星的抽数就会缩成 1。
+  // 也不能只判「有没有」：authkey 只给最近 6 个月，真实记录段最早那一批本身是被官方截断的，
+  // 跨在边界上的那个五星区间里会有几条真实记录、但离它实际花的抽数差一大截（实测 76 抽显示成 10）
   const fullIds = real
     .filter(r => r.xhh_src !== 'mini' && !r.xhh_fid)
     .map(r => big(r.id))
     .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
-  const hasFullIn = (lo, hi) => fullIds.some(id => id > lo && id < hi)
+  const countFullIn = (lo, hi) => fullIds.reduce((n, id) => (id > lo && id < hi ? n + 1 : n), 0)
 
-  /** 给某个五星补它之前的垫抽占位。anchorId 是这条五星在本地的 id */
-  const fillGap = (s, i, anchorId, gachaId) => {
-    const gap = Number(s.gacha_count) - 1
+  /**
+   * 给某个五星补它之前的垫抽占位。anchorId 必须是这条五星在**本地**的 id：
+   * 两套 id 后 9 位各编各的，拿接口 id 当区间边界会把同批次的真实记录数错
+   */
+  const fillGap = ({ name, count, anchorId, prevId, gachaId, time }) => {
+    const gap = Number(count) - 1
     if (gap <= 0) return
-    const prevId = stars[i + 1] ? big(stars[i + 1].id) : 0n
-    // 这段区间里已经有真实逐抽记录，再补占位就把抽数算两遍了
-    if (hasFullIn(prevId, anchorId)) {
-      notes.push(`${s.item.name}(${s.gacha_count}抽) 的区间已有完整记录，未补占位`)
+    // 区间里已有的真实逐抽记录要抵扣掉，否则同一抽被算两遍
+    const need = gap - countFullIn(prevId, anchorId)
+    if (need <= 0) {
+      notes.push(`${name}(${count}抽) 的区间已有完整记录，未补占位`)
       return
     }
-    const phs = buildPlaceholders(uid, type, anchorId, prevId, gap, usedIds, idToTime(s.id), gachaId)
+    const phs = buildPlaceholders(uid, type, anchorId, prevId, need, usedIds, time, gachaId)
     added.push(...phs)
     addedPh += phs.length
-    if (phs.length < gap) notes.push(`${s.item.name} 的占位只补到 ${phs.length}/${gap} 条`)
+    if (phs.length < need) notes.push(`${name} 的占位只补到 ${phs.length}/${need} 条`)
   }
 
+  // 先把接口五星逐条对上本地记录，拿到每条在本地的锚点 id；
+  // 占位要在第二轮才补——补某条五星的占位得先知道更旧那条落在本地哪个 id 上
+  const anchors = stars.map(s => {
+    const hit = buckets.get(dupKey(s.item.item_id, s.id))?.shift()
+    return { hit, anchorId: hit ? big(hit.id) : big(s.id) }
+  })
+
+  const claimed = new Set(anchors.map(a => a.hit).filter(Boolean))
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i]
-    const k = dupKey(s.item.item_id, s.id)
+    const { hit } = anchors[i]
     const gachaId = poolStat.byUpItem.get(String(s.item.item_id)) || ''
-    const hit = buckets.get(k)?.shift()
     if (hit) {
       skipped++
-      if (hit.xhh_src === 'mini') {
-        // 老版本写进去的 mini 记录没有 xhh_pity，顺手补上（出图的抽数以它为准）
-        if (String(hit.xhh_pity || '') !== String(s.gacha_count)) {
-          hit.xhh_pity = String(s.gacha_count)
-          patched++
-        }
-        // 上一轮就是我们写进去的，它的占位刚被清掉，要按同样规则重建
-        fillGap(s, i, big(hit.id), gachaId)
+      // 抽数一律以接口为准：mini 记录是老版本写的、没存过这个字段；
+      // 真实记录（抽卡链接/导入）的本地间隔在记录被截断处会偏小，接口给的才是官方口径
+      if (String(hit.xhh_pity || '') !== String(s.gacha_count)) {
+        hit.xhh_pity = String(s.gacha_count)
+        patched++
       }
-      continue
+    } else {
+      added.push(toRecord(uid, type, s, gachaId))
+      usedIds.add(String(s.id))
+      added5++
     }
-    added.push(toRecord(uid, type, s, gachaId))
-    usedIds.add(String(s.id))
-    added5++
-    fillGap(s, i, big(s.id), gachaId)
+  }
+
+  // 占位每轮全清重建，但接口只回最近 12 个月的五星 —— 只按接口那份重建的话，
+  // 滑出窗口的老五星占位就没人管了，抽数会缩成 1。本地存过官方抽数（xhh_pity）的
+  // 五星一并纳入锚点，按 id 降序连成一条链，各自补自己那段
+  const legacy = real
+    .filter(r => String(r.rank_type) === '5' && !claimed.has(r))
+    // 只管靠占位撑抽数的那些（小程序来源）：真实逐抽记录不需要占位，
+    // 它们的间隔本来就是真的，countFullIn 也会把区间里的真实记录抵扣掉
+    .filter(r => r.xhh_src === 'mini' || Number(r.xhh_pity) > 0)
+    .map(r => ({
+      name: r.name,
+      count: Number(r.xhh_pity) || localGap.get(String(r.id)) || 0,
+      anchorId: big(r.id),
+      gachaId: r.gacha_id || '',
+      time: r.time,
+    }))
+  const chain = [
+    ...stars.map((s, i) => ({
+      name: s.item.name,
+      count: Number(s.gacha_count),
+      anchorId: anchors[i].anchorId,
+      gachaId: poolStat.byUpItem.get(String(s.item.item_id)) || '',
+      time: idToTime(s.id),
+    })),
+    ...legacy,
+  ].sort((a, b) => (b.anchorId > a.anchorId ? 1 : b.anchorId < a.anchorId ? -1 : 0))
+  for (let i = 0; i < chain.length; i++) {
+    fillGap({ ...chain[i], prevId: chain[i + 1]?.anchorId ?? 0n })
   }
 
   // 当前垫抽：最新五星之后又抽了 pity 抽还没出货
   if (remote.pity > 0) {
-    const lastStarId = stars[0] ? big(stars[0].id) : 0n
+    const lastStarId = chain[0]?.anchorId ?? 0n
     const nowId = BigInt(Math.floor(Date.now() / 1000)) * 1000000000n
-    if (hasFullIn(lastStarId, nowId)) {
+    const need = remote.pity - countFullIn(lastStarId, nowId)
+    if (need <= 0) {
       notes.push(`当前垫抽 ${remote.pity} 抽的区间已有完整记录，未补占位`)
     } else {
       const phs = buildPlaceholders(
@@ -381,7 +437,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
         type,
         nowId,
         lastStarId,
-        remote.pity,
+        need,
         usedIds,
         moment().format('YYYY-MM-DD HH:mm:ss'),
         '',
@@ -679,10 +735,15 @@ function mergeImport(userId, uid, records) {
     const localReal = local.filter(r => !r.xhh_ph)
     const dropPh = local.length - localReal.length
 
-    const ids = new Set(localReal.map(r => String(r.id)))
+    // 判重只看非 mini 的记录：mini 五星本来就是等着被真实记录顶替的（见下面 dropMini），
+    // 让它参与判重的话，同一发的真实记录会被当成重复挡在门外，mini 就永远顶不掉了。
+    // mini 的 time 是 id 前 10 位（批次水位，通常是整分钟）反解出来的，跟官方 time 多数差几十秒，
+    // 所以这个坑平时不发作——碰巧相等时才会漏，属于藏得比较深的那种
+    const localNonMini = localReal.filter(r => r.xhh_src !== 'mini')
+    const ids = new Set(localNonMini.map(r => String(r.id)))
     const keyOf = r => `${r.time}|${r.name}`
     const keyCount = new Map()
-    for (const r of localReal) keyCount.set(keyOf(r), (keyCount.get(keyOf(r)) || 0) + 1)
+    for (const r of localNonMini) keyCount.set(keyOf(r), (keyCount.get(keyOf(r)) || 0) + 1)
 
     const add = []
     for (const r of list) {
@@ -713,13 +774,26 @@ function mergeImport(userId, uid, records) {
       if (r.time) coverKeys.add(`d:${r.item_id}@${String(r.time).slice(0, 10)}`)
     }
     let dropMini = 0
+    // 顶替之前先把 mini 记录上的官方抽数（xhh_pity）交给接班的真实记录：
+    // authkey 只给最近 6 个月，跨在截断边界上的那个五星本地间隔算不准，
+    // 丢了这个字段就只能等下一次 *更新抽卡记录 才补回来
+    const addFive = new Map()
+    for (const r of add) {
+      if (String(r.rank_type) !== '5') continue
+      const bk = `b:${r.item_id}@${String(r.id).slice(0, 10)}`
+      const dk = r.time ? `d:${r.item_id}@${String(r.time).slice(0, 10)}` : ''
+      if (!addFive.has(bk)) addFive.set(bk, r)
+      if (dk && !addFive.has(dk)) addFive.set(dk, r)
+    }
     const kept = localReal.filter(r => {
       if (r.xhh_src !== 'mini') return true
       // 小程序的 id 与游戏内导出前 10 位（批次时间戳）一致，Excel 的伪 id 只能按日期对
-      const covered =
-        coverKeys.has(`b:${r.item_id}@${String(r.id).slice(0, 10)}`) ||
-        (r.time && coverKeys.has(`d:${r.item_id}@${String(r.time).slice(0, 10)}`))
+      const bk = `b:${r.item_id}@${String(r.id).slice(0, 10)}`
+      const dk = r.time ? `d:${r.item_id}@${String(r.time).slice(0, 10)}` : ''
+      const covered = coverKeys.has(bk) || (dk && coverKeys.has(dk))
       if (covered) {
+        const heir = addFive.get(bk) || (dk ? addFive.get(dk) : null)
+        if (heir && r.xhh_pity && !heir.xhh_pity) heir.xhh_pity = String(r.xhh_pity)
         dropMini++
         return false
       }
