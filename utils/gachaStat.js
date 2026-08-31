@@ -170,8 +170,9 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
 
   if (fiveLog.length > 0) {
     fiveLog[fiveLog.length - 1].num = fiveLogNum
-    // 有接口原值的一律以它为准
-    for (const it of fiveLog) if (it.pity > 0) it.num = it.pity
+    // 接口原值和本地间隔取更全的一方：两个来源各有缺口——接口不含四星/逐抽，
+    // authkey 只给最近 6 个月（跨在截断边界上的五星间隔会偏小）。偏小的一定是被截断的那份
+    for (const it of fiveLog) if (it.pity > it.num) it.num = it.pity
     // 最新五星之后的抽数：接口知道、但那些四星三星记录本地没有，取大的那个
     noFiveNum = Math.max(noFiveNum, Number(apiPity) || 0)
     // 上一个五星是不是常驻（小保底标记）

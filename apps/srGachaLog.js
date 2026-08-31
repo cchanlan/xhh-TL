@@ -376,16 +376,24 @@ function mergePool(userId, uid, type, remote, poolStat) {
   })
 
   const claimed = new Set(anchors.map(a => a.hit).filter(Boolean))
+  // 每条五星最终认定的抽数，占位补齐要按它算（跟出图用的 xhh_pity 必须同一口径）
+  const finalCount = new Array(stars.length)
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i]
     const { hit } = anchors[i]
     const gachaId = poolStat.byUpItem.get(String(s.item.item_id)) || ''
+    finalCount[i] = Number(s.gacha_count) || 0
     if (hit) {
       skipped++
-      // 抽数一律以接口为准：mini 记录是老版本写的、没存过这个字段；
-      // 真实记录（抽卡链接/导入）的本地间隔在记录被截断处会偏小，接口给的才是官方口径
-      if (String(hit.xhh_pity || '') !== String(s.gacha_count)) {
-        hit.xhh_pity = String(s.gacha_count)
+      // 抽数取「接口值」和「本地间隔」更大的那个 —— 两个来源各有各的缺口，谁都不能无条件盖对方：
+      //   接口（five_star_list）：五星历史全（约 12 个月），但不含四星/逐抽
+      //   authkey（getGachaLog）：逐抽全，但只给最近 6 个月，跨在截断边界上的五星间隔会偏小
+      // 取大的一方等价于「保留更全的那份」，偏小的那份一定是被截断的
+      const localNum = Number(localGap.get(String(hit.id))) || 0
+      finalCount[i] = Math.max(Number(s.gacha_count) || 0, localNum)
+      const fuller = String(finalCount[i])
+      if (String(hit.xhh_pity || '') !== fuller) {
+        hit.xhh_pity = fuller
         patched++
       }
     } else {
@@ -405,7 +413,8 @@ function mergePool(userId, uid, type, remote, poolStat) {
     .filter(r => r.xhh_src === 'mini' || Number(r.xhh_pity) > 0)
     .map(r => ({
       name: r.name,
-      count: Number(r.xhh_pity) || localGap.get(String(r.id)) || 0,
+      // 同样取更全的一方：存过的官方抽数 vs 本地间隔
+      count: Math.max(Number(r.xhh_pity) || 0, Number(localGap.get(String(r.id))) || 0),
       anchorId: big(r.id),
       gachaId: r.gacha_id || '',
       time: r.time,
@@ -413,7 +422,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
   const chain = [
     ...stars.map((s, i) => ({
       name: s.item.name,
-      count: Number(s.gacha_count),
+      count: finalCount[i],
       anchorId: anchors[i].anchorId,
       gachaId: poolStat.byUpItem.get(String(s.item.item_id)) || '',
       time: idToTime(s.id),
