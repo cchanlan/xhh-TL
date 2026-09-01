@@ -178,7 +178,7 @@
       </div>
       <div class="act-list">
         {{each actions action}}
-        <span class="act">{{action}}</span>
+        <span class="act {{if action.indexOf('等待') > -1}}wait{{/if}}">{{action}}</span>
         {{/each}}
       </div>
     </div>

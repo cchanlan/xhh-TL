@@ -30,7 +30,17 @@
  *      省略则沿用上一个角色，所以 [1,'e','q'] 表示 1 号角色 E 接 Q。
  *    - 技能码：`q`、`e`（默认 E）、`e1` 短按 E、`e2` 长按 E、`zj` 重击、
  *      `a1`…`aN` 普攻第 N 段（N 上限见返回的 custom[].skill 里 combo_num）。
- *    - 非法码（'a' 裸写 / 'A' 大写 / 'zj2' / 'e9'）会让服务端 500 且返回**空 body**，
+ *    - **等待动作是嵌套数组** `['==', 秒数]`（不是字符串码）：`[1,'e',['==',0.5],'q']`
+ *      → combo_intro 回 `玛薇卡E,等待0.5s,Q`。踩过的坑（都实测过）：
+ *        · 秒数必须是 **number**，写成字符串 '0.5' 会被判成非法值 → 「暂不支持该队伍伤害计算」；
+ *        · 所有角色都能等，不是玛薇卡专属（虽然只有它的 custom 面板里声明了「等」这个技能）；
+ *        · 服务端不校验范围：0 / 负数 / 60 秒都收，等待会拉长轴长把 DPS 稀释
+ *          （同队 0.05s→68900、0.5s→52232、2s→34450、60s→3690），所以范围在本地卡；
+ *        · 时长只在轴上按档位生效，0.1 与 0.5 有时算出同一个数；
+ *        · 可以放在开头、可以连着写、跨角色后归属新角色；数组第三个元素被忽略。
+ *    - 弓系角色的重击码：custom 面板里声明成 `gzj`（如夜兰），但**实际传 `gzj` 会被拒**，
+ *      照常传 `zj` 才算得出来 —— 别照着面板字段改。
+ *    - 非法码（'a' 裸写 / 'A' 大写 / 'zj2' / 'e9' / 'wait'）会让服务端 500 且返回**空 body**，
  *      所以这里在本地先把码规范化 + 校验，见 normalizeSkillCode()。
  *    - 只传 1 个动作时服务端会忽略自定义、回落默认手法，需要 ≥2 个动作。
  *    - 不传 custom_combo 就是服务端自带的推荐手法（返回 combo_intro 里）。
@@ -173,8 +183,11 @@ export async function requestTeamDamage(body, timeout = 20000) {
  * - `a1`…`a9` 里的数字是普攻**第几段**（小助手语义），不是次数
  * - `zj` / `q` 后面的数字是**次数**（这两个动作没有段位概念，`重击5` 就是连点 5 次重击）
  * - `e1` 短按 / `e2` 长按
+ * - `等0.5` 是**等待秒数**，出来的码是数组 `['==', 0.5]`（详见文件头第 3 条）
  */
 const ACTION_PATTERNS = [
+  // 等待放最前：中文「等/等待」不会和别的动作写法撞
+  [/^等(?:待)?\s*(\d+(?:\.\d+)?)\s*(?:[sS]|秒)?/, (m) => waitCode(m[1])],
   [/^(?:长按?|大)[eE]/, () => ['e2']],
   [/^(?:短按?|点|小)[eE]/, () => ['e1']],
   [/^(?:重击|蓄力攻击|蓄力|[zZ][jJ])\s*([1-9]\d?)?/, (m) => repeat('zj', m[1])],
@@ -186,6 +199,22 @@ const ACTION_PATTERNS = [
 
 const MAX_REPEAT = 20
 
+/** 等待时长的本地限制（服务端不校验，0 和负数、60 秒都收，只会把结果算成没意义的数） */
+export const WAIT_MIN = 0.1
+export const WAIT_MAX = 20
+
+/** 等待码：`['==', 秒数]`，秒数必须是 number（字符串会被服务端判非法） */
+function waitCode(rawSec) {
+  const sec = Math.round(Number(rawSec) * 100) / 100
+  if (!Number.isFinite(sec) || sec < WAIT_MIN || sec > WAIT_MAX) return null
+  return [['==', sec]]
+}
+
+/** 是不是等待码 */
+export function isWaitCode(code) {
+  return Array.isArray(code) && code[0] === '=='
+}
+
 function repeat(code, countRaw) {
   const n = countRaw ? Number(countRaw) : 1
   if (!Number.isFinite(n) || n < 1 || n > MAX_REPEAT) return null
@@ -195,7 +224,8 @@ function repeat(code, countRaw) {
 /**
  * 把一段动作文本拆成技能码序列，非法返回 null
  * 支持：单个动作（`e` / `长E` / `a3` / `重击`）、连写（`eq` / `a1a2` / `ezj`）、
- *      次数（`重击5` / `q2` / `a1*3` / `e2x2` / `q3次`）
+ *      次数（`重击5` / `q2` / `a1*3` / `e2x2` / `q3次`）、等待（`等0.5` / `等待0.5s`）
+ * @returns {(string|['==', number])[] | null}
  */
 export function expandActionCodes(raw) {
   const text = String(raw || '').trim()
@@ -231,15 +261,17 @@ export function expandActionCodes(raw) {
 
 /**
  * 规范化单个技能码：兼容大小写与中文写法，非法或含多个动作时返回 ''
- * 合法输出：q / e / e1 / e2 / zj / a1..a9
+ * 合法输出：q / e / e1 / e2 / zj / a1..a9（等待码是数组，不从这里出，走 expandActionCodes）
  */
 export function normalizeSkillCode(raw) {
   const codes = expandActionCodes(raw)
-  return codes?.length === 1 ? codes[0] : ''
+  const only = codes?.length === 1 ? codes[0] : ''
+  return typeof only === 'string' ? only : ''
 }
 
 /** 技能码 → 展示名（本地兜底用，正常走接口返回的 combo_intro） */
 export function skillCodeLabel(code) {
+  if (isWaitCode(code)) return `等待${code[1]}s`
   if (code === 'q') return 'Q'
   if (code === 'e') return 'E'
   if (code === 'e1') return '短E'
@@ -252,17 +284,18 @@ export function skillCodeLabel(code) {
 /**
  * 解析手法 token 列表
  * token 形如：班尼特e / 希诺宁e / a1 / q / 火神q / 钟离长E / 香菱重击 /
- *            班尼特eq（连写） / 重击5（次数） / a1*3
+ *            班尼特eq（连写） / 重击5（次数） / a1*3 / 等0.5（等待）
  * 省略角色名时沿用上一个角色（和小程序、图里的写法一致）
  *
  * @param {string[]} tokens
  * @param {{name: string, no: number}[]} team role_data 顺序（no 为 1-based）
- * @returns {{combo: (string|number)[], actions: string[], error?: string}}
+ * @returns {{combo: (string|number|['==', number])[], actions: string[], error?: string}}
  */
 export function parseCombo(tokens, team) {
   const combo = []
   const actions = []
   let cur = 0
+  let realActions = 0
 
   const findNo = (name) => {
     const char = Character.get(name)
@@ -275,7 +308,7 @@ export function parseCombo(tokens, team) {
     const raw = String(token || '').trim()
     if (!raw) continue
 
-    // 先整体当动作试一次（纯 a1 / q / 重击5 / eq 这类）
+    // 先整体当动作试一次（纯 a1 / q / 重击5 / eq / 等0.5 这类）
     let codes = expandActionCodes(raw)
     let roleName = ''
     if (!codes) {
@@ -290,7 +323,17 @@ export function parseCombo(tokens, team) {
         break
       }
     }
-    if (!codes) return { combo: [], actions: [], error: `手法里的「${raw}」看不懂` }
+    if (!codes) {
+      // 「等xx」写了但超范围时单独说清楚，不然只会得到一句「看不懂」
+      if (/^等(?:待)?\s*\d/.test(raw)) {
+        return {
+          combo: [],
+          actions: [],
+          error: `等待时间只能写 ${WAIT_MIN} ~ ${WAIT_MAX} 秒，比如 等0.5`,
+        }
+      }
+      return { combo: [], actions: [], error: `手法里的「${raw}」看不懂` }
+    }
 
     if (roleName) {
       const no = findNo(roleName)
@@ -306,11 +349,15 @@ export function parseCombo(tokens, team) {
     }
     for (const code of codes) {
       combo.push(code)
+      if (!isWaitCode(code)) realActions++
       actions.push(`${team[cur - 1]?.name || ''}${skillCodeLabel(code)}`)
     }
   }
 
   if (!combo.length) return { combo: [], actions: [] }
+  if (!realActions) {
+    return { combo: [], actions: [], error: '手法里只有等待，还得写上要放的技能才行' }
+  }
   if (actions.length < 2) {
     return { combo: [], actions: [], error: '自定义手法至少要写 2 个动作，只写 1 个的话小助手会忽略' }
   }

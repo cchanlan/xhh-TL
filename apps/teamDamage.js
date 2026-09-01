@@ -360,12 +360,14 @@ const HELP_DATA = {
     { code: 'q', mean: '元素爆发', tip: '也可写 大招 / 爆发' },
     { code: '重击 / zj', mean: '重击（蓄力攻击）', tip: '也可写 蓄力' },
     { code: 'a1 ~ a6', mean: '普攻第 N 段', tip: 'aN 的 N 是段位，不是次数；裸写 a = a1' },
+    { code: '等0.5', mean: '等 0.5 秒再接下一个动作', tip: '也可写 等待0.5s；范围 0.1~20 秒' },
   ],
   actionRules: [
     '手法写在队伍后面，用空格或逗号隔开：<b>#队伍伤害 钟离,班尼特,香菱,行秋 钟离长e,班尼特q,香菱q,e</b>',
     '<b>不写角色名就沿用上一个角色</b>：<b>香菱q,e</b> = 香菱 Q 接 香菱 E',
     '同一个角色可以<b>连写</b>：<b>班尼特eq</b> = 班尼特 E 接 Q；<b>玛薇卡qa1</b> = Q 接普攻一段',
     '带<b>次数</b>：<b>重击5</b>（重击 5 次）、<b>q2</b>（Q 两次）、<b>a1*3</b> / <b>a1x3</b> / <b>a1 3次</b>',
+    '要<b>卡时间</b>就插等待：<b>玛薇卡e,等0.5,q</b> = E 之后停 0.5 秒再放 Q，等待也能连着写',
     '⚠️ 只有 <b>重击 / q</b> 后面的数字是次数，<b>aN 的 N 是普攻第几段</b>，<b>e1 / e2</b> 是短按 / 长按',
     '至少要写 2 个动作；某角色用不了的动作（普攻段数超了之类）小助手会罢工，会提示你换写法',
   ],
@@ -470,6 +472,7 @@ export class teamDamage extends plugin {
         [
           '用法：#队伍伤害 角色1,角色2,角色3,角色4',
           '自定义手法：#队伍伤害 钟离,班尼特,香菱,行秋 钟离e,班尼特q,香菱q,行秋q,行秋e',
+          '手法里能插等待：#队伍伤害 玛薇卡,班尼特 玛薇卡e,等0.5,q',
           '换装模拟：#队伍伤害 香菱换六命换精5换天赋101313,行秋换讨龙换4千岩',
           '加「详情」出逐条伤害表：#队伍伤害详情 ...',
           '全部写法看 #队伍伤害帮助',
@@ -572,7 +575,8 @@ export class teamDamage extends plugin {
         await e.reply(
           `${parsed.error}\n` +
             '手法写法：角色名+动作，动作可写 e / 长e / 短e / q / 重击(zj) / a1~a6（普攻第N段）\n' +
-            '同一角色连招可省略名字，也能连写或带次数：班尼特eq、重击5、a1*3',
+            '同一角色连招可省略名字，也能连写或带次数：班尼特eq、重击5、a1*3\n' +
+            '要等一下再放技能就写 等0.5（也可写 等待0.5s）',
           true,
         )
         return true
@@ -584,7 +588,9 @@ export class teamDamage extends plugin {
     if (custom?.length) requestBody.custom_combo = custom
 
     logger.info(
-      `[xhh][teamDamage] UID${uid} ${team.map((t) => t.name).join('|')}${custom ? ` 手法:${custom.join(' ')}` : ''}`,
+      `[xhh][teamDamage] UID${uid} ${team.map((t) => t.name).join('|')}${
+        custom ? ` 手法:${custom.map((c) => (Array.isArray(c) ? `等${c[1]}s` : c)).join(' ')}` : ''
+      }`,
     )
 
     const res = await requestTeamDamage(requestBody, (config().team_damage_timeout ?? 20) * 1000)
