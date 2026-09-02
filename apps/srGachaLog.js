@@ -497,6 +497,22 @@ async function resolveSrUid(e) {
   return { uid: '', user: null }
 }
 
+/**
+ * 本地是否已经有这个号的抽卡记录 —— 用来判断这次是不是「第一次」更新/导入。
+ * 只看文件大小不解析内容：空池写进去是 `[]`（2 字节），比它大就算有记录
+ */
+function hasLocalRecords(userId, uid) {
+  if (!uid) return false
+  try {
+    const dir = path.join(SR_JSON_DIR, String(userId), String(uid))
+    return fs
+      .readdirSync(dir)
+      .some(f => f.endsWith('.json') && fs.statSync(path.join(dir, f)).size > 2)
+  } catch (_) {
+    return false
+  }
+}
+
 /** 目录下最新一个 json 的修改时间（目录自身的 mtime 不随文件内容改变而更新） */
 function mtimeOf(dir) {
   try {
@@ -1291,6 +1307,8 @@ export class srGachaLog extends plugin {
       { at: true },
     )
 
+    // 第一次导入（本地一条记录都没有）出总览图，之后照旧出单池图
+    const first = !hasLocalRecords(this.e.user_id, linkUid)
     try {
       const perPool = []
       const { records } = await fetchAllByAuthkey(params, this.e.user_id, {
@@ -1300,7 +1318,7 @@ export class srGachaLog extends plugin {
       const uid = linkUid
       if (!records.length) {
         await this.reply('拉完了，没有新记录', false, { at: true })
-        await this.renderMini(uid)
+        await (first ? this.renderAll(uid) : this.renderMini(uid))
         return true
       }
 
@@ -1315,7 +1333,7 @@ export class srGachaLog extends plugin {
           `（${perPool.join('、')}）`,
       )
       await this.reply(`更新完成，新增 ${stat.added} 条${recall}`, false, { at: true })
-      await this.renderMini(uid)
+      await (first ? this.renderAll(uid) : this.renderMini(uid))
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
       // 中断前已经翻到的记录先存下来，下次发链接会从这里接着拉
@@ -1344,7 +1362,13 @@ export class srGachaLog extends plugin {
   async viewAll() {
     this.e.isSr = true
     if (!this.e.runtime?.render) await ensureRuntime(this.e)
-    const { uid } = await resolveSrUid(this.e)
+    return this.renderAll()
+  }
+
+  /** 总览出图。preferUid：刚更新/导入完的那个号，优先用它 */
+  async renderAll(preferUid) {
+    if (!this.e.runtime?.render) await ensureRuntime(this.e)
+    const uid = String(preferUid || '') || (await resolveSrUid(this.e)).uid
     const data = await buildAllViewData(this.e, uid)
     if (!data) {
       await this.reply('还没有抽卡记录，先发 *更新抽卡记录 或 *导入记录', false, { at: true })
@@ -1419,12 +1443,14 @@ export class srGachaLog extends plugin {
       return true
     }
     await this.reply('崩铁抽卡记录更新中，请稍等...', false, { at: true })
+    // 第一次更新（本地一条记录都没有）出总览图，让人一眼看到所有池；之后照旧出单池图
+    const first = !hasLocalRecords(this.e.user_id, uid)
     try {
       const { cookie, region } = await prepareCookie(this.e, uid, user)
       const gachaCookie = await badgeLogin(cookie, uid, region)
       // 更新完不发文案，统计只落日志，直接出图
       logger?.info?.(`[xhh-TL][抽卡记录] ${uid} ${await this.runUpdate(uid, gachaCookie)}`)
-      await this.renderMini(uid)
+      await (first ? this.renderAll(uid) : this.renderMini(uid))
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
       await this.reply(`崩铁抽卡记录更新失败：${err.message}`, false, { at: true })
@@ -1533,6 +1559,8 @@ export class srGachaLog extends plugin {
 
       await fillMeta(records)
       const faked = assignIds(records)
+      // 第一次导入（本地一条记录都没有）出总览图，之后照旧出单池图
+      const first = !hasLocalRecords(this.e.user_id, uid)
       const stat = mergeImport(this.e.user_id, uid, records)
 
       // 细节只进日志，群里只回一句
@@ -1553,7 +1581,7 @@ export class srGachaLog extends plugin {
         false,
         { at: true },
       )
-      await this.renderMini(uid)
+      await (first ? this.renderAll(uid) : this.renderMini(uid))
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 导入失败：${err.stack || err.message}`)
       await this.reply(`导入失败：${err.message}`, false, { at: true })
