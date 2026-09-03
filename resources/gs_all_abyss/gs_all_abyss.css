@@ -2083,3 +2083,15 @@ body.theme-dark .filler-row b { color: #f0f2f6; }
 .tile.abyss-floor.floor-split .rooms-wrap .room-meta { margin-bottom: 2px; }
 .tile.abyss-floor.floor-split .rooms-wrap .room-avatars { flex: 1 1 0; min-height: 0; align-items: center; }
 .tile.abyss-floor.floor-split .rooms-wrap .room-av { max-width: 42px; max-height: 100%; }
+
+/* —— 队伍居中，别在格子里靠左堆着 —— */
+/* 剧诗：四张卡居中，顺带比原来放大一点 */
+.tile.mode-role .team.mcard-team { justify-content: center; gap: 12px; padding: 6px 8px 8px; }
+.tile.mode-role .team.mcard-team > .mcard { flex: 0 0 auto; width: 84px; max-width: 84px; }
+.tile.mode-role .team.mcard-team .mcard-face,
+.tile.mode-role .team.mcard-team .mcard-face img { width: 50px; height: 50px; }
+.tile.mode-role .team-n1 > .mcard { width: 104px; max-width: 104px; }
+.tile.mode-role .team-n2 > .mcard { width: 96px; max-width: 96px; }
+.tile.mode-role .team-n3 > .mcard { width: 90px; max-width: 90px; }
+/* 11 层各间阵容：上/下半区的小头像各自居中 */
+.tile.abyss-floor.floor-split .rooms-wrap .room-side { justify-content: center; }

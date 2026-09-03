@@ -522,14 +522,17 @@ function buildGsSections({ abyss, hard, role }) {
   const sections = []
 
   if (abyss?.ok) {
-    const tiles = []
-    if (abyss.stats?.length) tiles.push({ kind: 'stats', span: 6, stats: abyss.stats })
+    // 主人指定的排法：12 层的三个「间」竖着排在右列，
+    // 本期战绩和 11 层（主力阵容 / 各间阵容）排在左列。
+    const left = []
+    const right = []
+    if (abyss.stats?.length) left.push({ kind: 'stats', span: 6, stats: abyss.stats })
     for (const fl of abyss.floors || []) {
       if (fl.useSplitLineup) {
-        tiles.push({ kind: 'lineup8', span: 6, floor: fl })
-        if (fl.levels?.length) tiles.push({ kind: 'rooms', span: 6, floor: fl })
+        left.push({ kind: 'lineup8', span: 6, floor: fl })
+        if (fl.levels?.length) left.push({ kind: 'rooms', span: 6, floor: fl })
       } else {
-        for (const lv of fl.levels || []) tiles.push({ kind: 'room8', span: 6, floor: fl, level: lv })
+        for (const lv of fl.levels || []) right.push({ kind: 'room8', span: 6, floor: fl, level: lv })
       }
     }
     const lists = []
@@ -537,7 +540,28 @@ function buildGsSections({ abyss, hard, role }) {
       lists.push(fl.lineupUp, fl.lineupDown)
       for (const lv of fl.levels || []) lists.push(lv.up?.avatars, lv.down?.avatars)
     }
-    const need = (GS_SPAN - (lodash.sumBy(tiles, 'span') % GS_SPAN)) % GS_SPAN
+    // 哪一列短了，先用信息卡补，再用透明占位补，保证两列一样长
+    const spare = [
+      { kind: 'chars', title: '本模式出场', chars: gsCountAvatars(lists), span: 6, filler: true },
+      { kind: 'stat', title: '本期概况', span: 6, filler: true, rows: [
+        { k: '最高层', v: abyss.maxFloor || '-' },
+        { k: '总星数', v: `${abyss.totalStar || 0}` },
+        { k: '战斗次数', v: `${abyss.totalBattle || 0}` },
+        { k: '层数', v: `${abyss.floors?.length || 0} 层` }
+      ] }
+    ]
+    const pad = arr => {
+      while (arr.length < Math.max(left.length, right.length)) {
+        arr.push(spare.length ? spare.shift() : { gap: true, span: 6 })
+      }
+    }
+    pad(left)
+    pad(right)
+    const items = []
+    for (let i = 0; i < left.length; i++) {
+      items.push(left[i])
+      items.push(right[i])
+    }
     sections.push({
       key: 'abyss',
       name: '深境螺旋',
@@ -548,15 +572,7 @@ function buildGsSections({ abyss, hard, role }) {
         { k: '战斗', v: `${abyss.totalBattle || 0} 次` },
         abyss.onlyTop ? { k: '展示', v: '仅最高层' } : null
       ]),
-      items: gsLayout(tiles, gsFillers(need, 6, [
-        { kind: 'chars', title: '本模式出场', chars: gsCountAvatars(lists) },
-        { kind: 'stat', title: '本期概况', rows: [
-          { k: '最高层', v: abyss.maxFloor || '-' },
-          { k: '总星数', v: `${abyss.totalStar || 0}` },
-          { k: '战斗次数', v: `${abyss.totalBattle || 0}` },
-          { k: '层数', v: `${abyss.floors?.length || 0} 层` }
-        ] }
-      ]), 6)
+      items
     })
   }
 
