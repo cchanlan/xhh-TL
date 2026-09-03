@@ -801,6 +801,409 @@ body, .container {
 }
 
 .peak-mob-meta b { color: #f7dc74; }
+
+/* ==================== 模块网格 ====================
+ * 12 栅格，一格 = 一场战绩（4 个角色卡的宽度）。
+ * 每格 span 3 → 一行 4 格；格子的左右边界落在同一套栅格线上，
+ * 同一行的格子顶边、底边由 grid 行保证齐平 → 上下左右都对齐。
+ * 模式带横跨整行，把不同模式分段。
+ */
+.abyss-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.span-1 { grid-column: span 1; }
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+.span-4 { grid-column: span 4; }
+.span-6 { grid-column: span 6; }
+.span-12 { grid-column: span 12; }
+
+/* 模式带：跨整行的标题条 */
+.mode-band {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid rgba(172, 213, 255, 0.28);
+  border-radius: 0 20px 0 0;
+  background: linear-gradient(90deg, rgba(91, 69, 142, 0.95), rgba(39, 25, 48, 0.72) 62%, rgba(39, 25, 48, 0.5));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
+}
+
+.mode-band .mb-name {
+  flex-shrink: 0;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #f6e7bf;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.mode-band .mb-sub {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 3px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.mode-band .mb-star {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.mode-band .mb-star img { width: 20px; height: 20px; }
+.mode-band .mb-star .star-sep { height: 14px; }
+
+.mode-band .mb-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.mode-band .mb-meta b { color: #f8db6a; font-weight: 900; }
+.mode-band .mb-period { flex-shrink: 0; font-size: 10px; color: rgba(255, 255, 255, 0.5); }
+
+/* 各模式的主色：跨行也认得出是哪个模式 */
+.mode-chaos { --mode-c: 150, 120, 235; }
+.mode-boss { --mode-c: 96, 158, 232; }
+.mode-story { --mode-c: 232, 186, 92; }
+.mode-peak { --mode-c: 226, 112, 120; }
+
+.mode-band.mode-chaos { background: linear-gradient(90deg, rgba(91, 69, 142, 0.95), rgba(39, 25, 48, 0.7) 62%, rgba(39, 25, 48, 0.45)); }
+.mode-band.mode-boss { background: linear-gradient(90deg, rgba(44, 78, 130, 0.95), rgba(24, 34, 54, 0.7) 62%, rgba(24, 34, 54, 0.45)); }
+.mode-band.mode-story { background: linear-gradient(90deg, rgba(126, 96, 40, 0.95), rgba(44, 34, 24, 0.7) 62%, rgba(44, 34, 24, 0.45)); }
+.mode-band.mode-peak { background: linear-gradient(90deg, rgba(122, 48, 60, 0.95), rgba(44, 22, 28, 0.7) 62%, rgba(44, 22, 28, 0.45)); }
+
+/* 战绩格：所有格子同宽，同行等高（内容顶对齐，不拉伸） */
+.tile {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(var(--mode-c, 92, 145, 210), 0.5);
+  border-radius: 0 14px 0 0;
+  background: rgba(39, 25, 48, 0.7);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.tile-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  background: rgba(var(--mode-c, 92, 145, 210), 0.28);
+  border-bottom: 1px solid rgba(var(--mode-c, 92, 145, 210), 0.42);
+  border-top-right-radius: 14px;
+}
+
+/* 同一关卡的第一格加一条亮边，一眼看出关卡从哪开始 */
+.tile.tile-first .tile-head { box-shadow: inset 3px 0 0 rgba(var(--mode-c, 92, 145, 210), 0.95); }
+
+.th-floor {
+  flex-shrink: 0;
+  max-width: 130px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 900;
+  color: #eaf4ff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.th-node {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 3px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.th-star {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.th-star img { width: 13px; height: 13px; }
+.th-star .star-sep { height: 12px; margin: 0 1px; }
+
+.th-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.th-right b { color: #f7dc74; font-weight: 900; font-size: 11px; }
+
+.tile .avatar-row { padding: 8px 0; }
+.tile .buff-box { margin: 0 8px 8px; }
+
+/* 加宽的格子（比如异相仲裁那三个精英关平分整行）里，
+ * 让四张角色卡平分格子宽度、头像等比放大，别在格子里留一圈空白。
+ * 只放大头像和装备图，字号不动，图源分辨率够（face 160×188 / 遗器 256²）。
+ */
+.tile.span-4 .avatar-row,
+.tile.span-6 .avatar-row,
+.tile.span-12 .avatar-row {
+  gap: 6px;
+  padding: 8px 10px;
+  align-items: flex-start;
+}
+.tile.span-4 .avatar-card,
+.tile.span-6 .avatar-card,
+.tile.span-12 .avatar-card {
+  flex: 1 1 0;
+  width: auto;
+  max-width: 132px;
+}
+.tile.span-4 .avatar-inner,
+.tile.span-6 .avatar-inner,
+.tile.span-12 .avatar-inner {
+  height: auto;
+  aspect-ratio: 82 / 76;
+}
+.tile.span-4 .avatar-talent,
+.tile.span-6 .avatar-talent,
+.tile.span-12 .avatar-talent { padding: 3px 3px; }
+.tile.span-4 .talent-item,
+.tile.span-6 .talent-item,
+.tile.span-12 .talent-item { height: 17px; font-size: 12px; }
+.tile.span-4 .avatar-equip,
+.tile.span-6 .avatar-equip,
+.tile.span-12 .avatar-equip { min-height: 50px; }
+.tile.span-4 .equip-lc-bg, .tile.span-4 .relic-pair,
+.tile.span-6 .equip-lc-bg, .tile.span-6 .relic-pair,
+.tile.span-12 .equip-lc-bg, .tile.span-12 .relic-pair { width: 38px; height: 38px; }
+.tile.span-4 .equip-lc-icon,
+.tile.span-6 .equip-lc-icon,
+.tile.span-12 .equip-lc-icon { width: 34px; height: 34px; }
+.tile.span-4 .relic-img,
+.tile.span-6 .relic-img,
+.tile.span-12 .relic-img { width: 34px; height: 34px; }
+.tile.span-4 .avatar-level,
+.tile.span-6 .avatar-level,
+.tile.span-12 .avatar-level { font-size: 12px; }
+
+/* 填充格：把某个模式最后一行的空位补满，顺便多给点信息
+ * 关键：内容放在绝对定位的 .filler-body 里，所以填充格自己「没有高度」，
+ * 不会把整行的行高顶起来；行高由战绩格决定，填充格再被 grid 拉平、内容随之撑满。
+ */
+.tile-filler .tile-head { background: rgba(var(--mode-c, 92, 145, 210), 0.18); }
+/* 信息卡铺一层星云底图 + 模式色遮罩，别露出整张图的背景显得空 */
+.tile-filler {
+  min-height: 150px;
+  background-image:
+    linear-gradient(155deg, rgba(var(--mode-c, 92, 145, 210), 0.34), rgba(20, 14, 30, 0.58) 52%, rgba(20, 14, 30, 0.76)),
+    url("{{_miao_path}}stat/imgs/bg2.png");
+  background-size: cover, 190% auto;
+  background-position: center, center 14%;
+  background-repeat: no-repeat, no-repeat;
+}
+.filler-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.filler-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+/* 占位格：只为了让某一行不被后面的格子接上，本身不画任何东西 */
+.tile-gap { visibility: hidden; }
+
+/* 出场角色：按格子可用空间等分，头像跟着格子高度一起长 */
+.filler-chars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 5px 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+.filler-char {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  border: 1px solid rgba(130, 165, 210, 0.38);
+  border-radius: 3px 7px 5px 5px;
+  background: rgba(12, 17, 28, 0.42);
+}
+
+.filler-char img { display: block; flex: 1; width: 100%; min-height: 0; object-fit: cover; object-position: center top; }
+.filler-char .fc-n {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 17px;
+  height: 16px;
+  border-radius: 0 6px 0 4px;
+  background: rgba(0, 0, 0, 0.62);
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffd170;
+  text-align: center;
+  line-height: 16px;
+}
+.filler-char .fc-name {
+  padding: 1px 0;
+  background: rgba(15, 22, 36, 0.85);
+  font-size: 9px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* 战绩清单 */
+.filler-floors {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1px;
+}
+.ff-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 2px;
+  border-bottom: 1px dashed rgba(140, 165, 200, 0.18);
+}
+.ff-row:last-child { border-bottom: 0; }
+.ff-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.88);
+}
+.ff-name i { font-style: normal; color: #9ad2ff; }
+.ff-node {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.66);
+}
+.ff-star { display: flex; gap: 1px; flex-shrink: 0; min-width: 46px; }
+.ff-star img { width: 11px; height: 11px; }
+.ff-num { flex-shrink: 0; min-width: 48px; text-align: right; font-size: 9px; color: rgba(255, 255, 255, 0.5); }
+.ff-num b { font-size: 11px; font-weight: 900; color: #f7dc74; }
+
+.filler-bosses { display: flex; gap: 5px; flex: 1; }
+.filler-boss {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.32);
+}
+.filler-boss img { display: block; flex: 1; width: 100%; min-height: 0; object-fit: cover; }
+.filler-boss span {
+  display: block;
+  padding: 2px 0;
+  font-size: 10px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* 本期 Boss 大图：图源自带一圈透明边距，放大一点才不显得小 */
+.filler-bossimg {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 0;
+  overflow: hidden;
+}
+.filler-bossimg img {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  object-fit: contain;
+  transform: scale(1.34);
+}
+.fb-name { font-size: 13px; font-weight: 900; color: #fff; }
+.fb-star { display: flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 900; color: #f8db6a; }
+.fb-star img { width: 18px; height: 18px; }
+
+/* 本期概况 */
+.filler-period {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 0;
+}
+.fp-big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+}
+.fp-big img { width: 26px; height: 26px; }
+.fp-big i { font-style: normal; font-size: 13px; color: #9ad2ff; }
+.fp-rows { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
+.fp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  border-bottom: 1px dashed rgba(140, 165, 200, 0.18);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.fp-row:last-child { border-bottom: 0; }
+.fp-row b { font-size: 11px; font-weight: 900; color: #fff; text-align: right; }
+.fp-time { font-size: 10px; text-align: center; color: rgba(255, 255, 255, 0.45); }
+
+
 </style>
 {{/block}}
 
@@ -811,590 +1214,200 @@ body, .container {
     <div class="all-abyss-title">UID: {{uid}} 的全部深渊数据</div>
   </div>
 
-  <!-- 四列布局：画布宽度按实际有数据的模式数算，没打的模式整列不渲染 -->
-  <div class="all-abyss-columns">
-    <!-- 左侧：混沌回忆 -->
-    {{if chaosData}}
-    <div class="all-abyss-col">
-      <div class="story-body">
-        <div class="story-header">
-          <div class="story-head-left">
-            <div class="story-title">忘却之庭挑战回顾</div>
-            <div class="story-time">统计周期：{{timeCalc(chaosData?.group?.begin_time)}} - {{timeCalc(chaosData?.group?.end_time)}}</div>
-          </div>
-          <div class="story-head-right">
-            <div>UID: {{uid}}</div>
-          </div>
-        </div>
+  <!--
+    模块网格：12 栅格，一格 = 一场战绩（4 个角色卡宽），一行 {{gridCols}} 格。
+    每个模式先来一条跨整行的模式带，再铺它的战绩格；
+    格数不够整行的用填充格补满，所以任何数据量下都不会出现半空的一行。
+    数据在 apps/allAbyssModule.js 的 buildSections() 里归一化，模板只负责摆格子。
+  -->
+  <div class="abyss-grid">
+    {{each sections sec}}
 
-        <div class="story-summary">
-          <div class="summary-title">混沌回忆挑战回顾</div>
-          <div class="summary-panel">
-            <div class="summary-cell summary-icon">
-              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-              <span>× {{chaosData.totalStar || 0}}</span>
+    <div class="mode-band mode-{{sec.key}}">
+      <div class="mb-name">{{sec.name}}</div>
+      <div class="mb-sub">{{sec.sub}}</div>
+      <div class="mb-star">
+        <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+        <span>×{{sec.star}}</span>
+        {{if sec.extraStar}}
+        <span class="star-sep"></span>
+        {{each Array(sec.extraStar) i}}
+        <img src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+        {{/each}}
+        {{/if}}
+      </div>
+      <div class="mb-meta">
+        {{if sec.best}}<span>最高关卡 <b>{{sec.best}}</b></span>{{/if}}
+        {{if sec.battle != null}}<span>挑战 <b>{{sec.battle}}</b> 次</span>{{/if}}
+        {{if sec.totalScore}}<span>总分 <b>{{sec.totalScore}}</b></span>{{/if}}
+        <span>{{sec.floorCount}} 关 · {{sec.tiles.length}} 场</span>
+      </div>
+      {{if sec.period}}<div class="mb-period">{{sec.period}}</div>{{/if}}
+    </div>
+
+    {{each sec.items it}}
+    {{if it.gap}}
+    <div class="tile-gap span-{{it.span || gridSpan}}"></div>
+    {{else if !it.filler}}
+    {{set t = it.tile}}
+    <div class="tile span-{{it.span || gridSpan}} mode-{{sec.key}} {{if t.first}}tile-first{{/if}}">
+      <div class="tile-head">
+        <span class="th-floor">{{t.floorName}}</span>
+        <span class="th-node">{{t.nodeLabel}}</span>
+        {{if t.first}}
+        <span class="th-star">
+          {{each Array(t.floorStar) i}}
+          <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+          {{/each}}
+          {{if t.floorExtraStar}}
+          <span class="star-sep"></span>
+          {{each Array(t.floorExtraStar) i}}
+          <img src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
+          {{/each}}
+          {{/if}}
+        </span>
+        {{/if}}
+        <span class="th-right">
+          {{if t.score}}<b>{{t.score}}</b>{{/if}}
+          {{if t.time}}<span>{{t.time}}</span>{{else if t.round != null}}<span>轮次 {{t.round}}</span>{{/if}}
+        </span>
+      </div>
+      <div class="avatar-row">
+        {{each t.avatars a}}
+        {{set av = avatars[a.id]}}
+        {{if av || a}}
+        <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
+          <div class="avatar-inner">
+            <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
+            {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
+            {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
+            <div class="avatar-bottom">
+              <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
             </div>
-            <div class="summary-cell summary-text">
-              <div><span>最高关卡：</span><b>{{chaosData.bestFloor}}</b></div>
-              <div><span>挑战次数：</span><b>{{chaosData.battleNum || '-'}}</b></div>
-            </div>
+            <div class="avatar-rarity-bar"></div>
           </div>
-        </div>
-
-        {{each chaosData.floors floor floorIndex}}
-        <div class="floor-card">
-          <div class="floor-head">
-            <div>
-              <div class="floor-name">{{floor.name}}</div>
-              <div class="floor-sub {{if floor.isFast}}floor-fast{{/if}}">{{if floor.isFast}}快速通关{{else}}使用轮次：{{floor.roundNum || 0}}{{/if}}</div>
-            </div>
-            <div class="floor-meta">
-              <div class="floor-stars">
-                {{each Array(floor.star || 0) i}}
-                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-                {{/each}}
-              </div>
-            </div>
+          {{if !mysFailed && av?.talent}}
+          <div class="avatar-talent">
+            {{each av.talent k idx}}
+            <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
+            {{/each}}
           </div>
-
-          {{set nodeList = floor.node3 && floor.node3.avatars && floor.node3.avatars.length ? [floor.node1, floor.node2, floor.node3] : [floor.node1, floor.node2]}}
-          {{each nodeList node nodeIndex}}
-          {{if node && node.avatars && node.avatars.length}}
-          <div class="node-card">
-            <div class="node-top">
-              <div>
-                <span class="node-name">节点{{nodeIndex + 1}}</span>
-                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
-              </div>
-            </div>
-
-            <div class="avatar-row">
-              {{each node.avatars a}}
-              {{set av = avatars[a.id]}}
-              {{if av || a}}
-              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
-                <div class="avatar-inner">
-                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
-                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
-                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
-                  <div class="avatar-bottom">
-                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
-                  </div>
-                  <div class="avatar-rarity-bar"></div>
-                </div>
-                {{if !mysFailed && av?.talent}}
-                <div class="avatar-talent">
-                  {{each av.talent k idx}}
-                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
-                  {{/each}}
-                </div>
-                {{/if}}
-                {{if !mysFailed}}
-                <div class="avatar-equip">
-                  {{if av?.weapon || av?.artisSet}}
-                  <div class="equip-lc">
-                    {{if av?.weapon && av.weapon.img}}
-                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
-                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
-                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
-                    </div>
-                    {{/if}}
-                  </div>
-                  <div class="equip-relic">
-                    <div class="relic-pair">
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
-                      {{/if}}
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
-                      {{/if}}
-                    </div>
-                  </div>
-                  {{else}}
-                  <div class="equip-empty"><span>暂无数据</span></div>
-                  {{/if}}
-                </div>
-                {{/if}}
+          {{/if}}
+          {{if !mysFailed}}
+          <div class="avatar-equip">
+            {{if av?.weapon || av?.artisSet}}
+            <div class="equip-lc">
+              {{if av?.weapon && av.weapon.img}}
+              <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
+                <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
+                <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
               </div>
               {{/if}}
-              {{/each}}
             </div>
-
-            {{if node.buff || node.maze_buff || node.buff_list}}
-            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
-            <div class="buff-box">
-              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
-              <div>
-                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
+            <div class="equip-relic">
+              <div class="relic-pair">
+                {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
+                <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
+                {{/if}}
+                {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
+                <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
+                {{/if}}
               </div>
             </div>
+            {{else}}
+            <div class="equip-empty"><span>暂无数据</span></div>
             {{/if}}
           </div>
           {{/if}}
-          {{/each}}
-        </div>
-        {{/each}}
-      </div>
-    </div>
-    {{/if}}
-
-    <!-- 中间：末日幻影 -->
-    {{if bossData}}
-    <div class="all-abyss-col">
-      <div class="story-body">
-        <div class="story-header">
-          <div class="story-head-left">
-            <div class="story-title">末日幻影挑战回顾</div>
-            <div class="story-time">统计周期：{{timeCalc(bossData?.group?.begin_time)}} - {{timeCalc(bossData?.group?.end_time)}}</div>
-          </div>
-          <div class="story-head-right">
-            <div>UID: {{uid}}</div>
-          </div>
-        </div>
-
-        <div class="story-summary">
-          <div class="summary-title">末日幻影挑战回顾</div>
-          <div class="summary-panel">
-            <div class="summary-cell summary-icon">
-              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-              <span>{{bossData.totalStar || 0}}</span>
-              {{if bossData.extraStar}}
-              <span class="star-sep"></span>
-              {{/if}}
-              {{each Array(bossData.extraStar || 0) i}}
-              <img class="summary-abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
-              {{/each}}
-            </div>
-            <div class="summary-cell summary-text">
-              <div><span>最高关卡：</span><b>{{bossData.bestFloor}}</b></div>
-              <div><span>挑战次数：</span><b>{{bossData.battleNum || '-'}}</b></div>
-            </div>
-          </div>
-          <div class="summary-boss-list">
-            {{if bossData?.group?.upper_boss}}
-            <div class="summary-boss-item"><span>节点1</span><img src="{{bossData.group.upper_boss.icon}}" alt=""></div>
-            {{/if}}
-            {{if bossData?.group?.lower_boss}}
-            <div class="summary-boss-item"><span>节点2</span><img src="{{bossData.group.lower_boss.icon}}" alt=""></div>
-            {{/if}}
-            {{if bossData?.group?.tierce_boss}}
-            <div class="summary-boss-item"><span>节点3</span><img src="{{bossData.group.tierce_boss.icon}}" alt=""></div>
-            {{/if}}
-          </div>
-        </div>
-
-        {{each bossData.floors floor floorIndex}}
-        <div class="floor-card">
-          <div class="floor-head">
-            <div>
-              <div class="floor-name">{{floor.name}}</div>
-            </div>
-            <div class="floor-meta">
-              <div class="floor-stars">
-                {{each Array(floor.star || 0) i}}
-                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-                {{/each}}
-                {{if floor.extraStar}}
-                <span class="star-sep"></span>
-                {{/if}}
-                {{each Array(floor.extraStar || 0) i}}
-                <img class="abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
-                {{/each}}
-               </div>
-              <div>总分：<b>{{floor.score || 0}}</b></div>
-            </div>
-          </div>
-
-          {{set nodeList = floor.node3 && floor.node3.avatars && floor.node3.avatars.length ? [floor.node1, floor.node2, floor.node3] : [floor.node1, floor.node2]}}
-          {{each nodeList node nodeIndex}}
-          {{if node && node.avatars && node.avatars.length}}
-          <div class="node-card">
-            <div class="node-top">
-              <div>
-                <span class="node-name">节点{{nodeIndex + 1}}</span>
-                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
-              </div>
-              <div class="node-score">积分：<b>{{node.score || 0}}</b></div>
-            </div>
-
-            <div class="avatar-row">
-              {{each node.avatars a}}
-              {{set av = avatars[a.id]}}
-              {{if av || a}}
-              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
-                <div class="avatar-inner">
-                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
-                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
-                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
-                  <div class="avatar-bottom">
-                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
-                  </div>
-                  <div class="avatar-rarity-bar"></div>
-                </div>
-                {{if !mysFailed && av?.talent}}
-                <div class="avatar-talent">
-                  {{each av.talent k idx}}
-                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
-                  {{/each}}
-                </div>
-                {{/if}}
-                {{if !mysFailed}}
-                <div class="avatar-equip">
-                  {{if av?.weapon || av?.artisSet}}
-                  <div class="equip-lc">
-                    {{if av?.weapon && av.weapon.img}}
-                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
-                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
-                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
-                    </div>
-                    {{/if}}
-                  </div>
-                  <div class="equip-relic">
-                    <div class="relic-pair">
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
-                      {{/if}}
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
-                      {{/if}}
-                    </div>
-                  </div>
-                  {{else}}
-                  <div class="equip-empty"><span>暂无数据</span></div>
-                  {{/if}}
-                </div>
-                {{/if}}
-              </div>
-              {{/if}}
-              {{/each}}
-            </div>
-
-            {{if node.buff || node.maze_buff || node.buff_list}}
-            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
-            <div class="buff-box">
-              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
-              <div>
-                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
-              </div>
-            </div>
-            {{/if}}
-          </div>
-          {{/if}}
-          {{/each}}
-        </div>
-        {{/each}}
-      </div>
-    </div>
-    {{/if}}
-
-    <!-- 右侧：虚构叙事 -->
-    {{if storyData}}
-    <div class="all-abyss-col">
-      <div class="story-body">
-        <div class="story-header">
-          <div class="story-head-left">
-            <div class="story-title">虚构叙事挑战回顾</div>
-            <div class="story-time">统计周期：{{timeCalc(storyData?.group?.begin_time)}} - {{timeCalc(storyData?.group?.end_time)}}</div>
-          </div>
-          <div class="story-head-right">
-            <div>UID: {{uid}}</div>
-          </div>
-        </div>
-
-        <div class="story-summary">
-          <div class="summary-title">虚构叙事挑战回顾</div>
-          <div class="summary-panel">
-            <div class="summary-cell summary-icon">
-              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-              <span>× {{storyData.totalStar || 0}}</span>
-              {{if storyData.extraStar}}
-              <span class="summary-star-sep"></span>
-              {{/if}}
-              {{each Array(storyData.extraStar || 0) i}}
-              <img class="summary-abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
-              {{/each}}
-            </div>
-            <div class="summary-cell summary-text">
-              <div><span>最高关卡：</span><b>{{storyData.bestFloor}}</b></div>
-              <div><span>挑战次数：</span><b>{{storyData.battleNum || '-'}}</b></div>
-            </div>
-          </div>
-        </div>
-
-        {{each storyData.floors floor floorIndex}}
-        <div class="floor-card">
-          <div class="floor-head">
-            <div>
-              <div class="floor-name">{{floor.name}}</div>
-              <div class="floor-sub">使用轮次：{{floor.roundNum || 0}}</div>
-            </div>
-            <div class="floor-meta">
-              <div class="floor-stars">
-                {{each Array(floor.star || 0) i}}
-                <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-                {{/each}}
-                {{if floor.extraStar}}
-                <span class="star-sep"></span>
-                {{/if}}
-                {{each Array(floor.extraStar || 0) i}}
-                <img class="abyss-star" src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
-                {{/each}}
-              </div>
-              <div>总分：<b>{{floor.score || 0}}</b></div>
-            </div>
-          </div>
-
-          {{set nodeList = [floor.node1, floor.node2, floor.node3]}}
-          {{each nodeList node nodeIndex}}
-          {{if node && node.avatars && node.avatars.length}}
-          <div class="node-card">
-            <div class="node-top">
-              <div>
-                <span class="node-name">节点{{nodeIndex + 1}}</span>
-                {{if node.time}}<span class="node-time">{{node.time}}</span>{{/if}}
-              </div>
-              <div class="node-score">积分：<b>{{node.score || 0}}</b></div>
-            </div>
-
-            <div class="avatar-row">
-              {{each node.avatars a}}
-              {{set av = avatars[a.id]}}
-              {{if av || a}}
-              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
-                <div class="avatar-inner">
-                  {{if a.element}}<span class="avatar-elem"><img src="{{_miao_path}}{{elemIcon(a.element)}}" alt=""></span>{{/if}}
-                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
-                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
-                  <div class="avatar-bottom">
-                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
-                  </div>
-                  <div class="avatar-rarity-bar"></div>
-                </div>
-                {{if !mysFailed && av?.talent}}
-                <div class="avatar-talent">
-                  {{each av.talent k idx}}
-                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
-                  {{/each}}
-                </div>
-                {{/if}}
-                {{if !mysFailed}}
-                <div class="avatar-equip">
-                  {{if av?.weapon || av?.artisSet}}
-                  <div class="equip-lc">
-                    {{if av?.weapon && av.weapon.img}}
-                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
-                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
-                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
-                    </div>
-                    {{/if}}
-                  </div>
-                  <div class="equip-relic">
-                    <div class="relic-pair">
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
-                      {{/if}}
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
-                      {{/if}}
-                    </div>
-                  </div>
-                  {{else}}
-                  <div class="equip-empty"><span>暂无数据</span></div>
-                  {{/if}}
-                </div>
-                {{/if}}
-              </div>
-              {{/if}}
-              {{/each}}
-            </div>
-
-            {{if node.buff || node.maze_buff || node.buff_list}}
-            {{set buff = node.buff || node.maze_buff || (node.buff_list && node.buff_list[0])}}
-            <div class="buff-box">
-              {{if buff?.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{buff.icon}}" alt=""></span>{{/if}}
-              <div>
-                <div class="buff-name">{{buff?.name_mi18n || buff?.name || '关卡效果'}}：<span>{{buff?.desc_mi18n || buff?.desc || ''}}</span></div>
-              </div>
-            </div>
-            {{/if}}
-          </div>
-          {{/if}}
-          {{/each}}
-        </div>
-        {{/each}}
-      </div>
-    </div>
-    {{/if}}
-
-    <!-- 右2：异相仲裁 -->
-    {{if peakData}}
-    <div class="all-abyss-col">
-      <div class="story-body">
-        <div class="story-header">
-          <div class="story-head-left">
-            <div class="story-title">异相仲裁挑战回顾</div>
-          </div>
-          <div class="story-head-right">
-            <div>UID: {{uid}}</div>
-          </div>
-        </div>
-
-        <div class="story-summary">
-          <div class="summary-title">异相仲裁挑战回顾</div>
-          <div class="summary-panel">
-            <div class="summary-cell summary-icon">
-              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-              <span>x{{peakData.totalStars || 0}}</span>
-            </div>
-            <div class="summary-cell summary-text">
-              <div><span>Boss：</span><b>{{peakData.bossName}}</b></div>
-              <div><span>轮次：</span><b>{{peakData.bossRound || '-'}}</b></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Boss 关卡 -->
-        {{if peakData.bossAvatars && peakData.bossAvatars.length}}
-        <div class="peak-section">
-          <div class="peak-boss-header">
-            <div class="peak-boss-name">{{peakData.bossName}}</div>
-            <div class="peak-boss-stars">
-              {{each Array(peakData.bossStars || 0) i}}
-              <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
-              {{/each}}
-            </div>
-          </div>
-          <div class="node-card">
-            <div class="node-top">
-              <div><span class="node-name">Boss</span></div>
-              <div class="node-score">轮次：<b>{{peakData.bossRound || 0}}</b></div>
-            </div>
-            <div class="avatar-row">
-              {{each peakData.bossAvatars a}}
-              {{set av = avatars[a.id]}}
-              {{if av || a}}
-              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
-                <div class="avatar-inner">
-                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
-                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
-                  <div class="avatar-bottom">
-                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
-                  </div>
-                  <div class="avatar-rarity-bar"></div>
-                </div>
-                {{if !mysFailed && av?.talent}}
-                <div class="avatar-talent">
-                  {{each av.talent k idx}}
-                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
-                  {{/each}}
-                </div>
-                {{/if}}
-                {{if !mysFailed}}
-                <div class="avatar-equip">
-                  {{if av?.weapon || av?.artisSet}}
-                  <div class="equip-lc">
-                    {{if av?.weapon && av.weapon.img}}
-                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
-                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
-                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
-                    </div>
-                    {{/if}}
-                  </div>
-                  <div class="equip-relic">
-                    <div class="relic-pair">
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
-                      {{/if}}
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
-                      {{/if}}
-                    </div>
-                  </div>
-                  {{else}}
-                  <div class="equip-empty"><span>暂无数据</span></div>
-                  {{/if}}
-                </div>
-                {{/if}}
-              </div>
-              {{/if}}
-              {{/each}}
-            </div>
-          </div>
         </div>
         {{/if}}
-
-        <!-- Mob 关卡 -->
-        {{each peakData.mobs mob}}
-        <div class="peak-section">
-          <div class="peak-boss-header">
-            <div class="peak-boss-name">{{mob.name}}</div>
-            <div class="peak-boss-stars">
-              {{each Array(mob.stars || 0) i}}
+        {{/each}}
+      </div>
+      {{if t.buff}}
+      <div class="buff-box">
+        {{if t.buff.icon}}<span class="buff-icon-wrap"><img class="buff-icon" src="{{t.buff.icon}}" alt=""></span>{{/if}}
+        <div>
+          <div class="buff-name">{{t.buff.name}}：<span>{{t.buff.desc}}</span></div>
+        </div>
+      </div>
+      {{/if}}
+    </div>
+    {{else}}
+    {{set f = it.filler}}
+    <div class="tile tile-filler span-{{it.span || gridSpan}} mode-{{sec.key}}">
+      <div class="tile-head">
+        <span class="th-floor">{{f.title}}</span>
+        <span class="th-right">{{sec.name}}</span>
+      </div>
+      <div class="filler-wrap">
+      <div class="filler-body">
+        {{if f.kind === 'chars'}}
+        <div class="filler-chars">
+          {{each f.chars c}}
+          <div class="filler-char">
+            {{if c.face}}<img src="{{_miao_path}}{{c.face}}" alt="">{{/if}}
+            <span class="fc-n">{{c.n}}</span>
+            <div class="fc-name">{{c.name}}</div>
+          </div>
+          {{/each}}
+        </div>
+        {{else if f.kind === 'floors'}}
+        <div class="filler-floors">
+          {{each f.floors fl}}
+          <div class="ff-row">
+            <span class="ff-name">{{fl.name}}{{if fl.starMode}} <i>✦</i>{{/if}}</span>
+            <span class="ff-node">{{fl.node}}</span>
+            <span class="ff-star">
+              {{each Array(fl.star) i}}
               <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
               {{/each}}
-            </div>
-          </div>
-          <div class="node-card">
-            <div class="node-top">
-              <div><span class="node-name">{{mob.name}}</span></div>
-              <div class="node-score">轮次：<b>{{mob.round || 0}}</b></div>
-            </div>
-            <div class="avatar-row">
-              {{each mob.avatars a}}
-              {{set av = avatars[a.id]}}
-              {{if av || a}}
-              <div class="avatar-card rarity-{{av?.star || a?.rarity || 5}}">
-                <div class="avatar-inner">
-                  <span class="avatar-life life-{{av?.cons || a?.rank || 0}}">{{av?.cons || a?.rank || 0}}</span>
-                  {{if av?.face}}<img class="avatar-img" src="{{_miao_path}}{{av.face}}" alt="">{{else if a?.icon}}<img class="avatar-img" src="{{a.icon}}" alt="">{{/if}}
-                  <div class="avatar-bottom">
-                    <span class="avatar-level">Lv{{av?.level || a?.level || 80}} {{av?.abbr || av?.name || a?.name || ""}}</span>
-                  </div>
-                  <div class="avatar-rarity-bar"></div>
-                </div>
-                {{if !mysFailed && av?.talent}}
-                <div class="avatar-talent">
-                  {{each av.talent k idx}}
-                  <span class="talent-item {{if av.talentCount === 5}}talent-sm{{else if av.talentCount === 6}}talent-xs{{/if}} {{if k.max && k.level >= k.max}}talent-max{{/if}}">{{k.level}}</span>
-                  {{/each}}
-                </div>
-                {{/if}}
-                {{if !mysFailed}}
-                <div class="avatar-equip">
-                  {{if av?.weapon || av?.artisSet}}
-                  <div class="equip-lc">
-                    {{if av?.weapon && av.weapon.img}}
-                    <div class="equip-lc-bg lc-star-{{av.weapon.star || 4}}">
-                      <img class="equip-lc-icon" src="{{_miao_path}}{{av.weapon.img}}" alt="">
-                      <span class="equip-lc-affix affix-{{av.weapon.affix}}">{{av.weapon.affix}}</span>
-                    </div>
-                    {{/if}}
-                  </div>
-                  <div class="equip-relic">
-                    <div class="relic-pair">
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[0]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[0]}}" alt="">
-                      {{/if}}
-                      {{if av?.artisSet && av.artisSet.imgs && av.artisSet.imgs[1]}}
-                      <img class="relic-img" src="{{_miao_path}}{{av.artisSet.imgs[1]}}" alt="">
-                      {{/if}}
-                    </div>
-                  </div>
-                  {{else}}
-                  <div class="equip-empty"><span>暂无数据</span></div>
-                  {{/if}}
-                </div>
-                {{/if}}
-              </div>
-              {{/if}}
+              {{each Array(fl.extraStar) i}}
+              <img src="{{_miao_path}}stat/imgs/challenge/boss/abyss_star.png" alt="">
               {{/each}}
-            </div>
+            </span>
+            <span class="ff-num">{{if f.showScore}}<b>{{fl.score}}</b>{{else}}{{fl.time}}{{/if}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{else if f.kind === 'bosses'}}
+        <div class="filler-bosses">
+          {{each f.bosses b}}
+          <div class="filler-boss">
+            {{if b.icon}}<img src="{{b.icon}}" alt="">{{/if}}
+            <span>{{b.label}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{else if f.kind === 'bossimg'}}
+        <div class="filler-bossimg">
+          {{if f.img}}<img src="{{f.img}}" alt="">{{/if}}
+          <div class="fb-name">{{f.name}}</div>
+          <div class="fb-star">
+            <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+            <span>×{{f.star}}</span>
           </div>
         </div>
-        {{/each}}
+        {{else if f.kind === 'period'}}
+        <div class="filler-period">
+          <div class="fp-big">
+            <img src="{{_miao_path}}stat/imgs/challenge/peak/mob_star.png" alt="">
+            <span>×{{f.star}}</span>
+            {{if f.extraStar}}<i>+✦{{f.extraStar}}</i>{{/if}}
+          </div>
+          <div class="fp-rows">
+            {{each f.rows r}}
+            <div class="fp-row"><span>{{r.k}}</span><b>{{r.v}}</b></div>
+            {{/each}}
+          </div>
+          {{if f.period}}<div class="fp-time">{{f.period}}</div>{{/if}}
+        </div>
+        {{/if}}
+      </div>
       </div>
     </div>
     {{/if}}
+    {{/each}}
+    {{/each}}
   </div>
 </div>
 {{/block}}
