@@ -36,564 +36,546 @@
         </div>
       </div>
 
-      <div class="cols">
-        <!-- 深境螺旋 -->
-        <div class="col col-abyss">
-          <div class="section-title">
-            <span class="sec-badge abyss">深境螺旋</span>
-            {{if abyss.ok}}
-            <span class="sec-meta">最高 {{abyss.maxFloor}} · {{abyss.totalStar}}星 · {{abyss.totalBattle}}次</span>
-            {{else}}
-            <span class="sec-meta dim">{{abyss.reason || '无数据'}}</span>
-            {{/if}}
-          </div>
-          {{if abyss.ok}}
-          <div class="col-body">
-            {{if abyss.stats && abyss.stats.length}}
-            <div class="abyss-rank-row">
-              {{each abyss.stats st}}
-              <div class="abyss-rank-card" {{if st.avatar && (st.avatar.gacha || st.avatar.face)}}style="--rank-img:url('{{st.avatar.gacha || st.avatar.face}}')"{{/if}}>
-                <div class="abyss-rank-text">
-                  <div class="abyss-rank-title">{{st.title}}</div>
-                  <div class="abyss-rank-val">{{st.value}}</div>
-                </div>
-              </div>
-              {{/each}}
-            </div>
-            {{/if}}
-            {{each abyss.floors fl}}
-            <div class="block-card abyss-floor {{if fl.useSplitLineup}}floor-split{{else}}floor-rooms-detail{{/if}}">
-              <div class="block-head">
-                <span class="bh-title">第 {{fl.index}} 层</span>
-                <span class="bh-star">★ {{fl.star}}/{{fl.max_star}}</span>
-              </div>
+  <!--
+    模块网格：12 栅格，深渊的「间 / 半区队伍」占半行（8 人位），
+    危战和剧诗占三分之一行（4 人位）。每行都铺满 12 栅格，
+    所以格子的上下左右边界都落在同一套栅格线上。
+    数据在 apps/gsAllAbyss.js 的 buildGsSections() 里归一化，模板只负责摆格子。
+  -->
+  <div class="abyss-grid">
+    {{each sections sec}}
 
-              {{if fl.useSplitLineup}}
-              <!-- 仅 11 层：顶部上/下半队共用一个大框 + 底部 1/2/3 间小头像 -->
-              <!-- 1/2 人：横版立绘卡（对齐 miao wide）；3/4 人：原竖版小卡 -->
-              <div class="floor-one-box">
-                <div class="one-box-side">
-                  <div class="split-label">上</div>
-                  {{if fl.lineupUp.length <= 2}}
-                  <div class="team wcard-team team-n{{fl.lineupUp.length}}">
-                    {{each fl.lineupUp a}}
-                    <div class="wcard star-{{a.star}} {{if fl.lineupUp.length === 1}}wcard-solo{{/if}}">
-                      <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
-                        <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
-                      </div>
-                      <div class="wcard-info">
-                        <div class="wcard-name">{{a.name}}</div>
-                        <div class="wcard-lv-row">
-                          <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
-                          <span class="wcard-lv">Lv{{a.level}}</span>
-                        </div>
-                        <div class="wcard-talent">
-                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                        </div>
-                        <div class="wcard-gear">
-                          <div class="gbox">
-                            {{if a.weapon && a.weapon.img}}
-                            <img src="{{a.weapon.img}}" alt="" />
-                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                          <div class="gbox artis">
-                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {{/each}}
-                  </div>
-                  {{else}}
-                  <div class="team mcard-team flat-team team-n{{fl.lineupUp.length}}">
-                    {{each fl.lineupUp a}}
-                    <div class="mcard flat star-{{a.star}}">
-                      <div class="mcard-face">
-                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                        <span class="mcard-cons">{{a.cons}}</span>
-                      </div>
-                      <div class="mcard-lv">Lv.{{a.level}}</div>
-                      <div class="mcard-name">{{a.name}}</div>
-                      <div class="mcard-talent">
-                        <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                        <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                        <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                      </div>
-                      <div class="mcard-gear">
-                        <div class="gbox">
-                          {{if a.weapon && a.weapon.img}}
-                          <img src="{{a.weapon.img}}" alt="" />
-                          {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                          {{else}}<span class="gempty"></span>{{/if}}
-                        </div>
-                        <div class="gbox artis">
-                          {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                          <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                          {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                          {{else}}<span class="gempty"></span>{{/if}}
-                        </div>
-                      </div>
-                    </div>
-                    {{/each}}
-                  </div>
-                  {{/if}}
-                </div>
-                <div class="one-box-divider"></div>
-                <div class="one-box-side">
-                  <div class="split-label">下</div>
-                  {{if fl.lineupDown.length <= 2}}
-                  <div class="team wcard-team team-n{{fl.lineupDown.length}}">
-                    {{each fl.lineupDown a}}
-                    <div class="wcard star-{{a.star}} {{if fl.lineupDown.length === 1}}wcard-solo{{/if}}">
-                      <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
-                        <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
-                      </div>
-                      <div class="wcard-info">
-                        <div class="wcard-name">{{a.name}}</div>
-                        <div class="wcard-lv-row">
-                          <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
-                          <span class="wcard-lv">Lv{{a.level}}</span>
-                        </div>
-                        <div class="wcard-talent">
-                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                        </div>
-                        <div class="wcard-gear">
-                          <div class="gbox">
-                            {{if a.weapon && a.weapon.img}}
-                            <img src="{{a.weapon.img}}" alt="" />
-                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                          <div class="gbox artis">
-                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {{/each}}
-                  </div>
-                  {{else}}
-                  <div class="team mcard-team flat-team team-n{{fl.lineupDown.length}}">
-                    {{each fl.lineupDown a}}
-                    <div class="mcard flat star-{{a.star}}">
-                      <div class="mcard-face">
-                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                        <span class="mcard-cons">{{a.cons}}</span>
-                      </div>
-                      <div class="mcard-lv">Lv.{{a.level}}</div>
-                      <div class="mcard-name">{{a.name}}</div>
-                      <div class="mcard-talent">
-                        <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                        <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                        <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                      </div>
-                      <div class="mcard-gear">
-                        <div class="gbox">
-                          {{if a.weapon && a.weapon.img}}
-                          <img src="{{a.weapon.img}}" alt="" />
-                          {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                          {{else}}<span class="gempty"></span>{{/if}}
-                        </div>
-                        <div class="gbox artis">
-                          {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                          <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                          {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                          {{else}}<span class="gempty"></span>{{/if}}
-                        </div>
-                      </div>
-                    </div>
-                    {{/each}}
-                  </div>
-                  {{/if}}
-                </div>
-              </div>
+    <div class="mode-band mode-{{sec.key}}">
+      <div class="mb-name">{{sec.name}}</div>
+      {{if sec.sub}}<div class="mb-sub">{{sec.sub}}</div>{{/if}}
+      <div class="mb-meta">
+        {{each sec.meta m}}
+        <span>{{m.k}} <b>{{m.v}}</b></span>
+        {{/each}}
+      </div>
+    </div>
 
-              <div class="floor-rooms">
-                {{each fl.levels lv}}
-                <div class="floor-room">
-                  <div class="room-meta">
-                    <span class="room-title">第{{lv.index}}间</span>
-                    <span class="room-stars">{{lv.starText}}</span>
-                    <span class="room-time">{{lv.time || ''}}</span>
-                  </div>
-                  <div class="room-avatars">
-                    <div class="room-side">
-                      {{if lv.up && lv.up.avatars}}
-                      {{each lv.up.avatars a}}
-                      <span class="room-av star-{{a.star}}">
-                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}
-                      </span>
-                      {{/each}}
-                      {{/if}}
-                    </div>
-                    <span class="room-split"></span>
-                    <div class="room-side">
-                      {{if lv.down && lv.down.avatars}}
-                      {{each lv.down.avatars a}}
-                      <span class="room-av star-{{a.star}}">
-                        {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}
-                      </span>
-                      {{/each}}
-                      {{/if}}
-                    </div>
-                  </div>
-                </div>
-                {{/each}}
-              </div>
+    {{each sec.items it}}
+    {{if it.gap}}
+    <div class="tile-gap span-{{it.span}}"></div>
 
-              {{else}}
-              <!-- 12 层：3 间，每间上/下半；1/2 人横版立绘卡，3/4 人竖版小卡 -->
-              {{each fl.levels lv}}
-              <div class="level-compact">
-                <div class="lv-bar">
-                  <span>间 {{lv.index}}</span>
-                  <span class="room-stars">{{lv.starText}}</span>
-                  <span class="room-time">{{lv.time || ''}}</span>
-                </div>
-                <div class="half-row">
-                  {{if lv.up}}
-                  <div class="half-col shared-box">
-                    <div class="half-label">上</div>
-                    {{if lv.up.avatars.length <= 2}}
-                    <div class="team wcard-team team-n{{lv.up.avatars.length}}">
-                      {{each lv.up.avatars a}}
-                      <div class="wcard star-{{a.star}} {{if lv.up.avatars.length === 1}}wcard-solo{{/if}}">
-                        <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
-                          <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
-                        </div>
-                        <div class="wcard-info">
-                          <div class="wcard-name">{{a.name}}</div>
-                          <div class="wcard-lv-row">
-                            <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
-                            <span class="wcard-lv">Lv{{a.level}}</span>
-                          </div>
-                          <div class="wcard-talent">
-                            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                          </div>
-                          <div class="wcard-gear">
-                            <div class="gbox">
-                              {{if a.weapon && a.weapon.img}}
-                              <img src="{{a.weapon.img}}" alt="" />
-                              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                              {{else}}<span class="gempty"></span>{{/if}}
-                            </div>
-                            <div class="gbox artis">
-                              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                              {{else}}<span class="gempty"></span>{{/if}}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {{/each}}
-                    </div>
-                    {{else}}
-                    <div class="team mcard-team flat-team team-n{{lv.up.avatars.length}}">
-                      {{each lv.up.avatars a}}
-                      <div class="mcard flat star-{{a.star}}">
-                        <div class="mcard-face">
-                          {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                          <span class="mcard-cons">{{a.cons}}</span>
-                        </div>
-                        <div class="mcard-lv">Lv.{{a.level}}</div>
-                        <div class="mcard-name">{{a.name}}</div>
-                        <div class="mcard-talent">
-                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                        </div>
-                        <div class="mcard-gear">
-                          <div class="gbox">
-                            {{if a.weapon && a.weapon.img}}
-                            <img src="{{a.weapon.img}}" alt="" />
-                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                          <div class="gbox artis">
-                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                        </div>
-                      </div>
-                      {{/each}}
-                    </div>
-                    {{/if}}
-                  </div>
-                  {{/if}}
-                  {{if lv.down}}
-                  <div class="half-col shared-box">
-                    <div class="half-label">下</div>
-                    {{if lv.down.avatars.length <= 2}}
-                    <div class="team wcard-team team-n{{lv.down.avatars.length}}">
-                      {{each lv.down.avatars a}}
-                      <div class="wcard star-{{a.star}} {{if lv.down.avatars.length === 1}}wcard-solo{{/if}}">
-                        <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
-                          <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
-                        </div>
-                        <div class="wcard-info">
-                          <div class="wcard-name">{{a.name}}</div>
-                          <div class="wcard-lv-row">
-                            <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
-                            <span class="wcard-lv">Lv{{a.level}}</span>
-                          </div>
-                          <div class="wcard-talent">
-                            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                          </div>
-                          <div class="wcard-gear">
-                            <div class="gbox">
-                              {{if a.weapon && a.weapon.img}}
-                              <img src="{{a.weapon.img}}" alt="" />
-                              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                              {{else}}<span class="gempty"></span>{{/if}}
-                            </div>
-                            <div class="gbox artis">
-                              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                              {{else}}<span class="gempty"></span>{{/if}}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {{/each}}
-                    </div>
-                    {{else}}
-                    <div class="team mcard-team flat-team team-n{{lv.down.avatars.length}}">
-                      {{each lv.down.avatars a}}
-                      <div class="mcard flat star-{{a.star}}">
-                        <div class="mcard-face">
-                          {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                          <span class="mcard-cons">{{a.cons}}</span>
-                        </div>
-                        <div class="mcard-lv">Lv.{{a.level}}</div>
-                        <div class="mcard-name">{{a.name}}</div>
-                        <div class="mcard-talent">
-                          <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                          <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                          <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                        </div>
-                        <div class="mcard-gear">
-                          <div class="gbox">
-                            {{if a.weapon && a.weapon.img}}
-                            <img src="{{a.weapon.img}}" alt="" />
-                            {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                          <div class="gbox artis">
-                            {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                            <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                            {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                            {{else}}<span class="gempty"></span>{{/if}}
-                          </div>
-                        </div>
-                      </div>
-                      {{/each}}
-                    </div>
-                    {{/if}}
-                  </div>
-                  {{/if}}
-                </div>
-              </div>
-              {{/each}}
-              {{/if}}
+    {{else if it.filler}}
+    <div class="tile block-card tile-filler span-{{it.span}} mode-{{sec.key}}">
+      <div class="tile-head block-head">
+        <span class="th-title">{{it.title}}</span>
+        <span class="th-right">{{sec.name}}</span>
+      </div>
+      <div class="filler-wrap">
+        <div class="filler-body">
+          {{if it.kind === 'chars'}}
+          <div class="filler-chars">
+            {{each it.chars c}}
+            <div class="filler-char">
+              {{if c.face}}<img src="{{c.face}}" alt="" />{{/if}}
+              <span class="fc-n">{{c.n}}</span>
+              <div class="fc-name">{{c.name}}</div>
             </div>
             {{/each}}
           </div>
-          {{else}}
-          <div class="empty-col">暂无深渊数据</div>
-          {{/if}}
-        </div>
-
-        <!-- 幽境危战：队伍 + Boss图 + 最强一击/总伤 + 机制（对齐 #幽境危战） -->
-        <div class="col col-hard">
-          <div class="section-title">
-            <span class="sec-badge hard">幽境危战</span>
-            {{if hard.ok}}
-            <span class="sec-meta">{{hard.difficultyName}} · {{hard.second}}秒</span>
-            {{else}}
-            <span class="sec-meta dim">{{hard.reason || '无数据'}}</span>
-            {{/if}}
-          </div>
-          {{if hard.ok}}
-          <div class="col-body">
-            {{each hard.challs ch}}
-            <div class="block-card hard-card v2">
-              <div class="block-head">
-                <span class="bh-title">{{ch.name}}</span>
-                <span class="bh-star">用时 {{ch.second}}s</span>
-              </div>
-
-              <!-- 上：Boss + DPS -->
-              <div class="hard-top">
-                {{if ch.monster}}
-                <div class="hard-boss">
-                  {{if ch.monster.icon}}<img class="hard-boss-ico" src="{{ch.monster.icon}}" alt="" />{{/if}}
-                  <div class="hard-boss-lv">Lv.{{ch.monster.level}}</div>
-                </div>
-                {{/if}}
-                {{if ch.best && ch.best.length}}
-                <div class="hard-dps">
-                  {{each ch.best b}}
-                  <div class="dps-row">
-                    <span class="dps-t">{{b.title}}</span>
-                    <div class="dps-body">
-                      {{if b.avatar && b.avatar.face}}
-                      <img class="dps-face" src="{{b.avatar.face}}" alt="" />
-                      {{/if}}
-                      <span class="dps-n">{{b.dps}}</span>
-                    </div>
-                  </div>
-                  {{/each}}
-                </div>
-                {{/if}}
-              </div>
-
-              <!-- 中：队伍（人数 1~4 自适应） -->
-              <div class="team mcard-team team-hard hard-team-mid team-n{{ch.avatars.length}}">
-                {{each ch.avatars a}}
-                <div class="mcard star-{{a.star}}">
-                  <div class="mcard-face">
-                    {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                    {{if a.isUp}}<span class="mcard-up">UP</span>{{/if}}
-                    <span class="mcard-cons">{{a.cons}}</span>
-                  </div>
-                  <div class="mcard-lv">Lv.{{a.level}}</div>
-                  <div class="mcard-name">{{a.name}}</div>
-                  <div class="mcard-talent">
-                    <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                    <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                    <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                  </div>
-                  <div class="mcard-gear">
-                    <div class="gbox">
-                      {{if a.weapon && a.weapon.img}}
-                      <img src="{{a.weapon.img}}" alt="" />
-                      {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                      {{else}}<span class="gempty"></span>{{/if}}
-                    </div>
-                    <div class="gbox artis">
-                      {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
-                      <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                      {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                      {{else}}<span class="gempty"></span>{{/if}}
-                    </div>
-                  </div>
-                </div>
-                {{/each}}
-              </div>
-
-              <!-- 下：机制全文 -->
-              {{if ch.monster && ch.monster.descs && ch.monster.descs.length}}
-              <ul class="hard-desc full">
-                {{each ch.monster.descs d}}
-                <li>{{d}}</li>
-                {{/each}}
-              </ul>
-              {{/if}}
-            </div>
+          {{else if it.kind === 'stat'}}
+          <div class="filler-rows">
+            {{each it.rows r}}
+            <div class="filler-row"><span>{{r.k}}</span><b>{{r.v}}</b></div>
             {{/each}}
           </div>
-          {{else}}
-          <div class="empty-col">暂无危战数据</div>
-          {{/if}}
-        </div>
-
-        <!-- 幻想剧诗 -->
-        <div class="col col-role">
-          <div class="section-title">
-            <span class="sec-badge role">幻想剧诗</span>
-            {{if role.ok}}
-            <span class="sec-meta">{{role.month}}月 · {{role.difficultyName}} · {{role.totalTime}}秒 · 花{{role.coin}}</span>
-            {{else}}
-            <span class="sec-meta dim">{{role.reason || '无数据'}}</span>
-            {{/if}}
-          </div>
-          {{if role.ok}}
-          <div class="col-body">
-            {{each role.stages s}}
-            <div class="block-card {{s.kind}}">
-              <div class="block-head">
-                <div class="bh-left">
-                  <span class="medal {{if s.is_get_medal}}on{{else}}off{{/if}}"></span>
-                  <span class="bh-title">{{s.title}}</span>
-                </div>
-                <span class="bh-star">{{s.finish_time}}</span>
-              </div>
-              <div class="team mcard-team team-n{{s.avatars.length}}">
-                {{each s.avatars a}}
-                <div class="mcard star-{{a.star}}">
-                  <div class="mcard-face">
-                    {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
-                    {{if a.typeLabel}}
-                    <span class="mcard-cons trial">{{a.typeLabel}}</span>
-                    {{else}}
-                    <span class="mcard-cons">{{a.cons}}</span>
-                    {{/if}}
-                  </div>
-                  <div class="mcard-lv">Lv.{{a.level}}</div>
-                  <div class="mcard-name">{{a.name}}</div>
-                  <div class="mcard-talent">
-                    <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
-                    <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
-                    <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
-                  </div>
-                  <div class="mcard-gear">
-                    <div class="gbox">
-                      {{if a.weapon && a.weapon.img && !a.typeLabel}}
-                      <img src="{{a.weapon.img}}" alt="" />
-                      {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
-                      {{else}}<span class="gempty"></span>{{/if}}
-                    </div>
-                    <div class="gbox artis">
-                      {{if a.artis && a.artis.imgs && a.artis.imgs[0] && !a.typeLabel}}
-                      <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
-                      {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
-                      {{else}}<span class="gempty"></span>{{/if}}
-                    </div>
-                  </div>
-                </div>
-                {{/each}}
-              </div>
-              {{if s.enemies && s.enemies.length}}
-              <div class="enemy-box multi">
-                <span class="enemy-label">讨伐</span>
-                <div class="enemy-names">
-                  {{each s.enemies en}}
-                  <div class="enemy-line">
-                    {{if en.icon}}<img class="enemy-icon" src="{{en.icon}}" alt="" />{{/if}}
-                    <span class="enemy-name">{{en.name}}</span>
-                    {{if en.level}}<span class="enemy-lv">Lv.{{en.level}}</span>{{/if}}
-                  </div>
-                  {{/each}}
-                </div>
-              </div>
-              {{/if}}
-            </div>
-            {{/each}}
-          </div>
-          {{else}}
-          <div class="empty-col">暂无剧诗数据</div>
           {{/if}}
         </div>
       </div>
+    </div>
+
+    {{else if it.kind === 'stats'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} tile-stats">
+      <div class="tile-head block-head">
+        <span class="th-title">本期战绩</span>
+        <span class="th-right">深境螺旋</span>
+      </div>
+      <div class="abyss-rank-row">
+        {{each it.stats st}}
+        <div class="abyss-rank-card" {{if st.avatar && (st.avatar.gacha || st.avatar.face)}}style="--rank-img:url('{{st.avatar.gacha || st.avatar.face}}')"{{/if}}>
+          <div class="abyss-rank-text">
+            <div class="abyss-rank-title">{{st.title}}</div>
+            <div class="abyss-rank-val">{{st.value}}</div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{else if it.kind === 'room8'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} abyss-floor floor-rooms-detail">
+      <div class="tile-head block-head">
+        <span class="th-title">第 {{it.floor.index}} 层</span>
+        <span class="th-node">间 {{it.level.index}}</span>
+        <span class="th-star">{{it.level.starText}}</span>
+        <span class="th-right">{{it.level.time || ''}}</span>
+      </div>
+      <div class="half-row">
+        {{if it.level.up}}
+        <div class="half-col shared-box">
+          <div class="half-label">上</div>
+          {{if it.level.up.avatars.length <= 2}}
+          <div class="team wcard-team team-n{{it.level.up.avatars.length}}">
+            {{each it.level.up.avatars a}}
+        <div class="wcard star-{{a.star}} {{if it.level.up.avatars.length === 1}}wcard-solo{{/if}}">
+          <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
+            <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
+          </div>
+          <div class="wcard-info">
+            <div class="wcard-name">{{a.name}}</div>
+            <div class="wcard-lv-row">
+              <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
+              <span class="wcard-lv">Lv{{a.level}}</span>
+            </div>
+            <div class="wcard-talent">
+              <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+              <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+              <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+            </div>
+            <div class="wcard-gear">
+              <div class="gbox">
+                {{if a.weapon && a.weapon.img}}
+                <img src="{{a.weapon.img}}" alt="" />
+                {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+              <div class="gbox artis">
+                {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="team mcard-team flat-team team-n{{it.level.up.avatars.length}}">
+            {{each it.level.up.avatars a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{if it.level.down}}
+        <div class="half-col shared-box">
+          <div class="half-label">下</div>
+          {{if it.level.down.avatars.length <= 2}}
+          <div class="team wcard-team team-n{{it.level.down.avatars.length}}">
+            {{each it.level.down.avatars a}}
+        <div class="wcard star-{{a.star}} {{if it.level.down.avatars.length === 1}}wcard-solo{{/if}}">
+          <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
+            <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
+          </div>
+          <div class="wcard-info">
+            <div class="wcard-name">{{a.name}}</div>
+            <div class="wcard-lv-row">
+              <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
+              <span class="wcard-lv">Lv{{a.level}}</span>
+            </div>
+            <div class="wcard-talent">
+              <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+              <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+              <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+            </div>
+            <div class="wcard-gear">
+              <div class="gbox">
+                {{if a.weapon && a.weapon.img}}
+                <img src="{{a.weapon.img}}" alt="" />
+                {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+              <div class="gbox artis">
+                {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="team mcard-team flat-team team-n{{it.level.down.avatars.length}}">
+            {{each it.level.down.avatars a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+      </div>
+    </div>
+
+    {{else if it.kind === 'lineup8'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} abyss-floor floor-split">
+      <div class="tile-head block-head">
+        <span class="th-title">第 {{it.floor.index}} 层</span>
+        <span class="th-node">主力阵容</span>
+        <span class="th-right">★ {{it.floor.star}}/{{it.floor.max_star}}</span>
+      </div>
+      <div class="floor-one-box">
+        <div class="one-box-side">
+          <div class="split-label">上</div>
+          {{if it.floor.lineupUp.length <= 2}}
+          <div class="team wcard-team team-n{{it.floor.lineupUp.length}}">
+            {{each it.floor.lineupUp a}}
+        <div class="wcard star-{{a.star}} {{if it.floor.lineupUp.length === 1}}wcard-solo{{/if}}">
+          <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
+            <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
+          </div>
+          <div class="wcard-info">
+            <div class="wcard-name">{{a.name}}</div>
+            <div class="wcard-lv-row">
+              <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
+              <span class="wcard-lv">Lv{{a.level}}</span>
+            </div>
+            <div class="wcard-talent">
+              <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+              <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+              <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+            </div>
+            <div class="wcard-gear">
+              <div class="gbox">
+                {{if a.weapon && a.weapon.img}}
+                <img src="{{a.weapon.img}}" alt="" />
+                {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+              <div class="gbox artis">
+                {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="team mcard-team flat-team team-n{{it.floor.lineupUp.length}}">
+            {{each it.floor.lineupUp a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        <div class="one-box-divider"></div>
+        <div class="one-box-side">
+          <div class="split-label">下</div>
+          {{if it.floor.lineupDown.length <= 2}}
+          <div class="team wcard-team team-n{{it.floor.lineupDown.length}}">
+            {{each it.floor.lineupDown a}}
+        <div class="wcard star-{{a.star}} {{if it.floor.lineupDown.length === 1}}wcard-solo{{/if}}">
+          <div class="wcard-face" style="{{if a.gacha || a.face}}background-image:url('{{a.gacha || a.face}}'){{/if}}">
+            <div class="wcard-face-lv">Lv{{a.level}} {{a.name}}</div>
+          </div>
+          <div class="wcard-info">
+            <div class="wcard-name">{{a.name}}</div>
+            <div class="wcard-lv-row">
+              <span class="wcard-cons cons-{{a.cons}}">{{a.cons}}</span>
+              <span class="wcard-lv">Lv{{a.level}}</span>
+            </div>
+            <div class="wcard-talent">
+              <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+              <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+              <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+            </div>
+            <div class="wcard-gear">
+              <div class="gbox">
+                {{if a.weapon && a.weapon.img}}
+                <img src="{{a.weapon.img}}" alt="" />
+                {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+              <div class="gbox artis">
+                {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+                <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+                {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+                {{else}}<span class="gempty"></span>{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{else}}
+          <div class="team mcard-team flat-team team-n{{it.floor.lineupDown.length}}">
+            {{each it.floor.lineupDown a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+    {{else if it.kind === 'rooms'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} abyss-floor floor-split">
+      <div class="tile-head block-head">
+        <span class="th-title">第 {{it.floor.index}} 层</span>
+        <span class="th-node">各间阵容</span>
+        <span class="th-right">{{it.floor.levels.length}} 间</span>
+      </div>
+      <div class="rooms-wrap">
+      <div class="floor-rooms">
+        {{each it.floor.levels lv}}
+        <div class="floor-room">
+          <div class="room-meta">
+            <span class="room-title">第{{lv.index}}间</span>
+            <span class="room-stars">{{lv.starText}}</span>
+            <span class="room-time">{{lv.time || ''}}</span>
+          </div>
+          <div class="room-avatars">
+            <div class="room-side">
+              {{if lv.up && lv.up.avatars}}{{each lv.up.avatars a}}
+              <span class="room-av star-{{a.star}}">{{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}</span>
+              {{/each}}{{/if}}
+            </div>
+            <span class="room-split"></span>
+            <div class="room-side">
+              {{if lv.down && lv.down.avatars}}{{each lv.down.avatars a}}
+              <span class="room-av star-{{a.star}}">{{if a.face}}<img src="{{a.face}}" alt="" />{{else}}?{{/if}}</span>
+              {{/each}}{{/if}}
+            </div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      </div>
+    </div>
+    {{else if it.kind === 'hard'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} hard-card v2">
+      <div class="tile-head block-head">
+        <span class="th-title">{{it.chall.name}}</span>
+        <span class="th-right">用时 {{it.chall.second}}s</span>
+      </div>
+      <div class="hard-top">
+        {{if it.chall.monster}}
+        <div class="hard-boss">
+          {{if it.chall.monster.icon}}<img class="hard-boss-ico" src="{{it.chall.monster.icon}}" alt="" />{{/if}}
+          <div class="hard-boss-lv">Lv.{{it.chall.monster.level}}</div>
+        </div>
+        {{/if}}
+        {{if it.chall.best && it.chall.best.length}}
+        <div class="hard-dps">
+          {{each it.chall.best b}}
+          <div class="dps-row">
+            <span class="dps-t">{{b.title}}</span>
+            <div class="dps-body">
+              {{if b.avatar && b.avatar.face}}<img class="dps-face" src="{{b.avatar.face}}" alt="" />{{/if}}
+              <span class="dps-n">{{b.dps}}</span>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+      <div class="team mcard-team team-hard hard-team-mid team-n{{it.chall.avatars.length}}">
+        {{each it.chall.avatars a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{if it.chall.monster && it.chall.monster.descs && it.chall.monster.descs.length}}
+      <ul class="hard-desc full">
+        {{each it.chall.monster.descs d}}<li>{{d}}</li>{{/each}}
+      </ul>
+      {{/if}}
+    </div>
+
+    {{else if it.kind === 'stage'}}
+    <div class="tile block-card span-{{it.span}} mode-{{sec.key}} {{it.stage.kind}}">
+      <div class="tile-head block-head">
+        <span class="medal {{if it.stage.is_get_medal}}on{{else}}off{{/if}}"></span>
+        <span class="th-title">{{it.stage.title}}</span>
+        <span class="th-right">{{it.stage.finish_time}}</span>
+      </div>
+      <div class="team mcard-team team-n{{it.stage.avatars.length}}">
+        {{each it.stage.avatars a}}
+        <div class="mcard flat star-{{a.star}}">
+          <div class="mcard-face">
+            {{if a.face}}<img src="{{a.face}}" alt="" />{{else}}<div class="char-ph">?</div>{{/if}}
+            <span class="mcard-cons">{{a.cons}}</span>
+          </div>
+          <div class="mcard-lv">Lv.{{a.level}}</div>
+          <div class="mcard-name">{{a.name}}</div>
+          <div class="mcard-talent">
+            <span>{{a.talent.a !== '' && a.talent.a != null ? a.talent.a : '-'}}</span>
+            <span>{{a.talent.e !== '' && a.talent.e != null ? a.talent.e : '-'}}</span>
+            <span>{{a.talent.q !== '' && a.talent.q != null ? a.talent.q : '-'}}</span>
+          </div>
+          <div class="mcard-gear">
+            <div class="gbox">
+              {{if a.weapon && a.weapon.img}}
+              <img src="{{a.weapon.img}}" alt="" />
+              {{if a.weapon.affix != null && a.weapon.affix !== ''}}<i>{{a.weapon.affix}}</i>{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+            <div class="gbox artis">
+              {{if a.artis && a.artis.imgs && a.artis.imgs[0]}}
+              <img class="a1" src="{{a.artis.imgs[0]}}" alt="" />
+              {{if a.artis.imgs[1]}}<img class="a2" src="{{a.artis.imgs[1]}}" alt="" />{{/if}}
+              {{else}}<span class="gempty"></span>{{/if}}
+            </div>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{if it.stage.enemies && it.stage.enemies.length}}
+      <div class="enemy-box multi">
+        <span class="enemy-label">讨伐</span>
+        <div class="enemy-names">
+          {{each it.stage.enemies en}}
+          <div class="enemy-line">
+            {{if en.icon}}<img class="enemy-icon" src="{{en.icon}}" alt="" />{{/if}}
+            <span class="enemy-name">{{en.name}}</span>
+            {{if en.level}}<span class="enemy-lv">Lv.{{en.level}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+    {{/each}}
+    {{/each}}
+  </div>
 
       <footer>角色卡：头像·天赋·武器·圣遗物 · from 小火花</footer>
     </div>

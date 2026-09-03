@@ -470,6 +470,147 @@ function buildRoleSection(lvs, avatarDataMap) {
   }
 }
 
+/* ==================== 模块网格 ====================
+ * 12 栅格：深渊的「间 / 半区队伍」是 8 人一格（span 6，半行），
+ * 危战和剧诗是 4 人一格（span 4，三分之一行）。
+ * 每个模式的 span 总和补齐到 12 的整数倍，所以每行都是满的，
+ * 格子的上下左右边界都落在同一套栅格线上。跟星铁四合一同一套规则。
+ */
+const GS_SPAN = 12
+
+function gsCountAvatars(lists) {
+  const hit = {}
+  for (const list of lists) {
+    for (const a of list || []) {
+      if (!a?.id) continue
+      hit[a.id] = hit[a.id] || { id: a.id, n: 0, face: a.face || '', name: a.name || '', star: a.star || 5 }
+      hit[a.id].n += 1
+      if (!hit[a.id].face) hit[a.id].face = a.face || ''
+      if (!hit[a.id].name) hit[a.id].name = a.name || ''
+    }
+  }
+  return lodash.orderBy(Object.values(hit), ['n'], ['desc']).slice(0, 10)
+}
+
+// 按行铺格：信息卡靠左、战绩格靠右，最后一行用透明占位补齐
+function gsLayout(tiles, fillers, unit) {
+  const items = []
+  const fq = [...fillers]
+  let used = 0
+  const push = x => { items.push(x); used = (used + x.span) % GS_SPAN }
+  if (fq.length) push(fq.shift())
+  for (const t of tiles) {
+    while (fq.length && used !== 0 && used + t.span > GS_SPAN) push(fq.shift())
+    if (used !== 0 && used + t.span > GS_SPAN) push({ gap: true, span: GS_SPAN - used })
+    push(t)
+  }
+  while (fq.length) push(fq.shift())
+  if (used !== 0) push({ gap: true, span: GS_SPAN - used })
+  return items
+}
+
+function gsFillers(need, unit, cards) {
+  const out = []
+  for (const c of cards) {
+    if (out.length * unit >= need) break
+    if (c) out.push({ ...c, span: unit, filler: true })
+  }
+  return out
+}
+
+function buildGsSections({ abyss, hard, role }) {
+  const sections = []
+
+  if (abyss?.ok) {
+    const tiles = []
+    if (abyss.stats?.length) tiles.push({ kind: 'stats', span: 6, stats: abyss.stats })
+    for (const fl of abyss.floors || []) {
+      if (fl.useSplitLineup) {
+        tiles.push({ kind: 'lineup8', span: 6, floor: fl })
+        if (fl.levels?.length) tiles.push({ kind: 'rooms', span: 6, floor: fl })
+      } else {
+        for (const lv of fl.levels || []) tiles.push({ kind: 'room8', span: 6, floor: fl, level: lv })
+      }
+    }
+    const lists = []
+    for (const fl of abyss.floors || []) {
+      lists.push(fl.lineupUp, fl.lineupDown)
+      for (const lv of fl.levels || []) lists.push(lv.up?.avatars, lv.down?.avatars)
+    }
+    const need = (GS_SPAN - (lodash.sumBy(tiles, 'span') % GS_SPAN)) % GS_SPAN
+    sections.push({
+      key: 'abyss',
+      name: '深境螺旋',
+      sub: abyss.schedule || '',
+      meta: lodash.compact([
+        abyss.maxFloor ? { k: '最高', v: abyss.maxFloor } : null,
+        { k: '星数', v: `${abyss.totalStar || 0}` },
+        { k: '战斗', v: `${abyss.totalBattle || 0} 次` },
+        abyss.onlyTop ? { k: '展示', v: '仅最高层' } : null
+      ]),
+      items: gsLayout(tiles, gsFillers(need, 6, [
+        { kind: 'chars', title: '本模式出场', chars: gsCountAvatars(lists) },
+        { kind: 'stat', title: '本期概况', rows: [
+          { k: '最高层', v: abyss.maxFloor || '-' },
+          { k: '总星数', v: `${abyss.totalStar || 0}` },
+          { k: '战斗次数', v: `${abyss.totalBattle || 0}` },
+          { k: '层数', v: `${abyss.floors?.length || 0} 层` }
+        ] }
+      ]), 6)
+    })
+  }
+
+  if (hard?.ok) {
+    const tiles = (hard.challs || []).map(ch => ({ kind: 'hard', span: 4, chall: ch }))
+    const need = (GS_SPAN - (lodash.sumBy(tiles, 'span') % GS_SPAN)) % GS_SPAN
+    sections.push({
+      key: 'hard',
+      name: '幽境危战',
+      sub: hard.difficultyName || '',
+      meta: [
+        { k: '难度', v: hard.difficultyName || '-' },
+        { k: '用时', v: `${hard.second || 0} 秒` },
+        { k: '强敌', v: `${hard.challs?.length || 0} 个` }
+      ],
+      items: gsLayout(tiles, gsFillers(need, 4, [
+        { kind: 'chars', title: '本模式出场', chars: gsCountAvatars((hard.challs || []).map(c => c.avatars)) },
+        { kind: 'stat', title: '本期概况', rows: [
+          { k: '难度', v: hard.difficultyName || '-' },
+          { k: '总用时', v: `${hard.second || 0} 秒` },
+          { k: '强敌数', v: `${hard.challs?.length || 0}` }
+        ] }
+      ]), 4)
+    })
+  }
+
+  if (role?.ok) {
+    const tiles = (role.stages || []).map(s => ({ kind: 'stage', span: 4, stage: s }))
+    const need = (GS_SPAN - (lodash.sumBy(tiles, 'span') % GS_SPAN)) % GS_SPAN
+    sections.push({
+      key: 'role',
+      name: '幻想剧诗',
+      sub: `${role.month || ''}月`,
+      meta: [
+        { k: '难度', v: role.difficultyName || '-' },
+        { k: '用时', v: `${role.totalTime || 0} 秒` },
+        { k: '花', v: `${role.coin || 0}` },
+        { k: '幕', v: `${role.stages?.length || 0}` }
+      ],
+      items: gsLayout(tiles, gsFillers(need, 4, [
+        { kind: 'chars', title: '本模式出场', chars: gsCountAvatars((role.stages || []).map(s => s.avatars)) },
+        { kind: 'stat', title: '本期概况', rows: [
+          { k: '难度', v: role.difficultyName || '-' },
+          { k: '总用时', v: `${role.totalTime || 0} 秒` },
+          { k: '花费', v: `${role.coin || 0}` },
+          { k: '幕数', v: `${role.stages?.length || 0}` }
+        ] }
+      ]), 4)
+    })
+  }
+
+  return sections
+}
+
 function collectAvatarIds(...idLists) {
   const set = new Set()
   for (const list of idLists) {
@@ -683,6 +824,7 @@ export class gsAllAbyss extends plugin {
       abyss,
       hard,
       role,
+      sections: buildGsSections({ abyss, hard, role }),
     }
 
     try {

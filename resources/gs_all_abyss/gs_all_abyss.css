@@ -1866,3 +1866,220 @@ body.theme-dark .hard-desc.full {
   border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
+
+/* ==================== 模块网格（放在最后，别被 theme-dark 覆盖） ====================
+ * 12 栅格：深渊的「间 / 半区队伍」占半行（span 6），危战和剧诗占三分之一行（span 4）。
+ * 每行都铺满 12 栅格，格子的上下左右边界都落在同一套栅格线上。
+ */
+.abyss-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px;
+}
+.span-1 { grid-column: span 1; }
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+.span-4 { grid-column: span 4; }
+.span-6 { grid-column: span 6; }
+.span-12 { grid-column: span 12; }
+.tile-gap { visibility: hidden; }
+
+/* 模式带：跨整行的分段标题 */
+.mode-band {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: 2px 2px 6px rgba(51, 51, 52, 0.12), inset 2px 2px 8px rgba(255, 255, 255, 0.5);
+}
+.mode-band .mb-name {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.mode-band .mb-sub {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid rgba(60, 70, 90, 0.28);
+  border-radius: 5px;
+  font-size: 10px;
+  color: #445;
+}
+.mode-band .mb-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: #555;
+}
+.mode-band .mb-meta b { font-size: 11px; color: #222; }
+
+.mode-abyss { --mode-c: 91, 141, 239; }
+.mode-hard { --mode-c: 199, 107, 255; }
+.mode-role { --mode-c: 255, 154, 77; }
+.mode-band.mode-abyss .mb-name { background: linear-gradient(135deg, #5b8def, #3d6fd8); }
+.mode-band.mode-hard .mb-name { background: linear-gradient(135deg, #c76bff, #8e44d8); }
+.mode-band.mode-role .mb-name { background: linear-gradient(135deg, #ff9a4d, #e06b1a); }
+
+/* 格子头：沿用 block-head 的底色，里面的元素按「标题 / 标签 / 星 / 右侧」四段排 */
+.tile { display: flex; flex-direction: column; }
+.tile-head { gap: 6px; }
+.th-title {
+  flex-shrink: 0;
+  max-width: 62%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 700;
+  color: #222;
+}
+.th-node {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid rgba(60, 70, 90, 0.26);
+  border-radius: 4px;
+  font-size: 9px;
+  color: #556;
+}
+.th-star { flex-shrink: 0; font-size: 10px; color: #e8a33d; letter-spacing: 1px; }
+.th-right {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 9px;
+  color: #666;
+}
+.tile-stats .abyss-rank-row { margin: 0; padding: 6px; }
+
+/* 信息卡：内容绝对定位，所以它自己「没有高度」，不会把行高顶起来；
+ * 行高由战绩格决定，信息卡被 grid 拉平后内容随之撑满。
+ */
+.tile-filler { min-height: 130px; }
+.filler-wrap { position: relative; flex: 1 1 0; min-height: 0; }
+.filler-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7px 9px 9px;
+}
+.filler-chars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 5px 4px;
+  flex: 1;
+  min-height: 0;
+}
+.filler-char {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  border: 1px solid rgba(60, 70, 90, 0.22);
+  border-radius: 4px 8px 6px 6px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.filler-char img { display: block; flex: 1; width: 100%; min-height: 0; object-fit: cover; object-position: center top; }
+.filler-char .fc-n {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  height: 15px;
+  border-radius: 0 6px 0 5px;
+  background: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  font-weight: 700;
+  color: #d4820f;
+  text-align: center;
+  line-height: 15px;
+}
+.filler-char .fc-name {
+  padding: 1px 0;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 9px;
+  text-align: center;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.filler-rows { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
+.filler-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 2px;
+  border-bottom: 1px dashed rgba(60, 70, 90, 0.18);
+  font-size: 10px;
+  color: #666;
+}
+.filler-row:last-child { border-bottom: 0; }
+.filler-row b { font-size: 12px; font-weight: 700; color: #222; }
+
+/* 深色主题下的网格件 */
+body.theme-dark .mode-band { background: rgba(0, 0, 0, 0.58); box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2), inset 2px 2px 8px rgba(255, 255, 255, 0.05); }
+body.theme-dark .mode-band .mb-sub { border-color: rgba(255, 255, 255, 0.24); color: #c9d2e0; }
+body.theme-dark .mode-band .mb-meta { color: #a8b0be; }
+body.theme-dark .mode-band .mb-meta b { color: #f0f2f6; }
+body.theme-dark .th-title { color: #f0f2f6; }
+body.theme-dark .th-node { border-color: rgba(255, 255, 255, 0.22); color: #b8c0ce; }
+body.theme-dark .th-right { color: #98a0ae; }
+body.theme-dark .filler-char { border-color: rgba(255, 255, 255, 0.16); background: rgba(0, 0, 0, 0.42); }
+body.theme-dark .filler-char .fc-n { background: rgba(0, 0, 0, 0.68); color: #ffd170; }
+body.theme-dark .filler-char .fc-name { background: rgba(0, 0, 0, 0.55); color: #dfe4ec; }
+body.theme-dark .filler-row { border-bottom-color: rgba(255, 255, 255, 0.12); color: #a8b0be; }
+body.theme-dark .filler-row b { color: #f0f2f6; }
+
+/* —— 加宽格子里的内容撑满，别在格子里留一圈空白 —— */
+/* 半行宽的格子（深渊的间 / 主力阵容）：8 张角色卡平分宽度、头像跟着放大 */
+.tile.span-6 .half-col.shared-box .flat-team > .mcard,
+.tile.span-6 .floor-one-box .team.mcard-team > .mcard { max-width: 104px; }
+.tile.span-6 .half-col.shared-box .flat-team .mcard-face,
+.tile.span-6 .half-col.shared-box .flat-team .mcard-face img,
+.tile.span-6 .floor-one-box .mcard-face,
+.tile.span-6 .floor-one-box .mcard-face img { width: 56px; height: 56px; }
+.tile.span-6 .half-row { flex: 1; }
+.tile.span-6 .floor-one-box { flex: 1; }
+
+/* 各间阵容：3 个间改成纵向排，头像放大到看得清，同时把格子撑满 */
+.tile.abyss-floor.floor-split .floor-rooms {
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px 8px;
+}
+.tile.abyss-floor.floor-split .floor-room {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.tile.abyss-floor.floor-split .room-av { max-width: 44px; }
+
+/* 危战 / 剧诗格：机制说明和讨伐条撑到格子底 */
+.tile.span-4 .hard-desc.full { flex: 1; margin-bottom: 0; }
+.tile.span-4 .enemy-box { margin-top: auto; }
+
+/* 各间阵容不参与行高计算（内容绝对定位），由同行的主力阵容格决定行高后再撑满 */
+.rooms-wrap { position: relative; flex: 1 1 0; min-height: 0; }
+.tile.abyss-floor.floor-split .rooms-wrap .floor-rooms { position: absolute; inset: 0; }
+/* 三个间纵向挤在同一格里，高度不够时头像跟着缩，别让第三个间被裁掉 */
+.tile.abyss-floor.floor-split .rooms-wrap .floor-rooms { gap: 4px; padding: 5px 8px 6px; }
+.tile.abyss-floor.floor-split .rooms-wrap .floor-room { min-height: 0; padding: 3px 7px 4px; gap: 2px; }
+.tile.abyss-floor.floor-split .rooms-wrap .room-meta { margin-bottom: 2px; }
+.tile.abyss-floor.floor-split .rooms-wrap .room-avatars { flex: 1 1 0; min-height: 0; align-items: center; }
+.tile.abyss-floor.floor-split .rooms-wrap .room-av { max-width: 42px; max-height: 100%; }
