@@ -21,6 +21,7 @@
 import md5 from 'md5'
 import fetch from 'node-fetch'
 import LiteMysApi, { getServer } from './mysClient.js'
+import { quoteEnabled } from './replyHelper.js'
 
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
@@ -149,7 +150,7 @@ async function solveGeetest(e, { uid, create, verifyAddr, polls = 80, intervalMs
   }
 
   try {
-    await e.reply(`🔐 签到需要验证，请在 2 分钟内点开链接手动过码：\n${reg.data.link}`, true, { recallMsg: 120 })
+    await e.reply(`🔐 签到需要验证，请在 2 分钟内点开链接手动过码：\n${reg.data.link}`, quoteEnabled(), { recallMsg: 120 })
   } catch (_) {}
 
   let loggedShape = false

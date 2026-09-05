@@ -2,6 +2,8 @@
 # 用户请改 config/config.yaml（不会被 git 覆盖）
 # 首次启动会自动从本文件复制生成 config.yaml
 
+# 出图和提示是否引用触发指令的那条消息（关掉就单独发，不带引用）
+reply_quote: true
 Tl: true
 # 全局倍率微调：1.0=模板推荐倍率；可调 0.8~1.5，最终 scale 上限 2.5
 render_scale: 1.0

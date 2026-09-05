@@ -7,6 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import plugin from '../../../lib/plugins/plugin.js'
 import { config, pluginDir } from '../utils/pluginConfig.js'
+import { quoteEnabled } from '../utils/replyHelper.js'
 
 const DEFAULT_CRON = '17 4 * * *'
 const DEFAULT_MAX_AGE_HOURS = 24
@@ -135,7 +136,7 @@ export class TmpCleaner extends plugin {
     const tip = forceAll
       ? `已清空 tmp：删除 ${r.removed} 个文件，释放 ${formatBytes(r.freed)}`
       : `已清理超过 ${effHours} 小时的临时文件：删除 ${r.removed} 个，保留 ${r.kept} 个，释放 ${formatBytes(r.freed)}`
-    e.reply(tip, true)
+    e.reply(tip, quoteEnabled())
     return true
   }
 }

@@ -18,7 +18,7 @@ import lodash from 'lodash'
 import { ArtifactSet, Character, Player, Weapon } from '../../miao-plugin/models/index.js'
 import { config, getRenderScaleStyle, pluginDir, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
 import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
-import { replyProgress, replyQuote } from '../utils/replyHelper.js'
+import { replyProgress, replyQuote, quoteEnabled } from '../utils/replyHelper.js'
 import { faceUrl, resolveTargetQq, resolveDisplayName, pickGsBgImage } from '../utils/gsHelper.js'
 import { createUser } from '../utils/userBind.js'
 import {
@@ -492,18 +492,18 @@ export class teamDamage extends plugin {
       if (!uid && !targetQq) uid = e.user?.getUid?.('gs') || ''
     }
     if (!uid) {
-      await e.reply(targetQq ? '这位还没绑定原神 UID~' : '你还没绑定原神 UID，也可以直接写：#队伍伤害100000000 角色…', true)
+      await e.reply(targetQq ? '这位还没绑定原神 UID~' : '你还没绑定原神 UID，也可以直接写：#队伍伤害100000000 角色…', quoteEnabled())
       return true
     }
 
     // 解析队伍 + 手法
     const { teamTokens, comboTokens } = splitInput(body)
     if (!teamTokens.length) {
-      await e.reply('没认出队伍，写法：#队伍伤害 钟离,班尼特,香菱,行秋', true)
+      await e.reply('没认出队伍，写法：#队伍伤害 钟离,班尼特,香菱,行秋', quoteEnabled())
       return true
     }
     if (teamTokens.length > 4) {
-      await e.reply('一支队伍最多 4 个人哦~', true)
+      await e.reply('一支队伍最多 4 个人哦~', quoteEnabled())
       return true
     }
 
@@ -512,11 +512,11 @@ export class teamDamage extends plugin {
       const { name, mods, unknown } = parseMember(token)
       const char = Character.get(name)
       if (!char || char.game !== 'gs') {
-        await e.reply(`认不出角色「${name}」`, true)
+        await e.reply(`认不出角色「${name}」`, quoteEnabled())
         return true
       }
       if (TRAVELER.includes(char.name)) {
-        await e.reply('旅行者的伤害小助手算不了~', true)
+        await e.reply('旅行者的伤害小助手算不了~', quoteEnabled())
         return true
       }
       if (unknown.length) {
@@ -528,7 +528,7 @@ export class teamDamage extends plugin {
         return true
       }
       if (members.some((m) => m.char.id === char.id)) {
-        await e.reply(`队伍里重复出现了「${char.name}」`, true)
+        await e.reply(`队伍里重复出现了「${char.name}」`, quoteEnabled())
         return true
       }
       members.push({ char, mods })
@@ -556,7 +556,7 @@ export class teamDamage extends plugin {
       warns.push(...modWarns)
     }
     if (missing.length) {
-      await e.reply(`UID${uid} 缺少 ${missing.join('|')} 的面板\n请先 #更新面板 再来~`, true)
+      await e.reply(`UID${uid} 缺少 ${missing.join('|')} 的面板\n请先 #更新面板 再来~`, quoteEnabled())
       return true
     }
 
@@ -607,7 +607,7 @@ export class teamDamage extends plugin {
         )
         return true
       }
-      await e.reply(res.msg, true)
+      await e.reply(res.msg, quoteEnabled())
       return true
     }
 

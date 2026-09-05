@@ -3,7 +3,19 @@
  * - 单图结果：引用触发消息
  * - 合并转发：不引用
  * - 「正在…」类提示：30 秒后自动撤回
+ * 引用行为可以在锅巴里用 reply_quote 关掉（默认开）。
  */
+
+import { config } from './pluginConfig.js'
+
+/** 锅巴开关：是否引用触发消息 */
+export function quoteEnabled() {
+  try {
+    return config().reply_quote !== false
+  } catch (_) {
+    return true
+  }
+}
 
 /** 解析 e.reply 返回的 message_id */
 export function getReplyMessageId(res) {
@@ -39,6 +51,7 @@ export async function recallById(e, messageId) {
  */
 export async function replyProgress(e, msg, { quote = true, recallSec = 30 } = {}) {
   if (!e?.reply) return null
+  quote = quote && quoteEnabled()
   try {
     // Yunzai 内置 recallMsg（秒）
     if (recallSec > 0) {
@@ -63,10 +76,10 @@ export async function replyProgress(e, msg, { quote = true, recallSec = 30 } = {
   }
 }
 
-/** 单条结果（图/文）：引用触发消息 */
+/** 单条结果（图/文）：引用触发消息（锅巴关掉 reply_quote 就不引用） */
 export async function replyQuote(e, msg) {
   if (!e?.reply) return null
-  return e.reply(msg, true)
+  return e.reply(msg, quoteEnabled())
 }
 
 /** 合并转发：不引用触发消息 */

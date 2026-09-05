@@ -27,6 +27,7 @@ import { runBbsVerify } from '../utils/mysVerify.js'
 import LiteMysApi from '../utils/mysClient.js'
 import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { config, pluginDir, getRenderScaleStyle, pickHelpBgImage, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
+import { quoteEnabled } from '../utils/replyHelper.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'auto_sign.json')
@@ -129,7 +130,7 @@ export class autoSign extends plugin {
 
   _disabled(e) {
     if (config().auto_sign_enable === false) {
-      e.reply('自动签到功能已被管理员关闭~', true)
+      e.reply('自动签到功能已被管理员关闭~', quoteEnabled())
       return true
     }
     return false
@@ -138,7 +139,7 @@ export class autoSign extends plugin {
   // 签到相关指令一律不支持私聊：仅群内可用
   _groupOnly(e) {
     if (!e.isGroup) {
-      e.reply('签到相关功能仅支持在群内使用，请到群里发送该指令~', true)
+      e.reply('签到相关功能仅支持在群内使用，请到群里发送该指令~', quoteEnabled())
       return true
     }
     return false
@@ -155,7 +156,7 @@ export class autoSign extends plugin {
     const label = GAME_LABEL[game]
     const results = await this.signUserGame(e, e.user_id, game, e)
     if (!results.length) {
-      e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社~`, true)
+      e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社~`, quoteEnabled())
       return true
     }
     const lines = [`${label}签到结果：`]
@@ -163,7 +164,7 @@ export class autoSign extends plugin {
     if (results.some((r) => r.code === 'captcha')) {
       lines.push(`（部分账号触发验证码，过码未成功；请稍后重发 #${label}签到，撞码时按提示点链接手动划过）`)
     }
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 
@@ -175,7 +176,7 @@ export class autoSign extends plugin {
     if (this._disabled(e)) return true
     const verifyAddr = config().auto_sign_verify_addr || ''
     if (!verifyAddr) {
-      e.reply('未配置过码服务地址（auto_sign_verify_addr），无法手动过码~', true)
+      e.reply('未配置过码服务地址（auto_sign_verify_addr），无法手动过码~', quoteEnabled())
       return true
     }
 
@@ -196,11 +197,11 @@ export class autoSign extends plugin {
       logger?.error?.(`[xhh-TL][过码] 枚举 UID 失败 ${e.user_id}: ${err.message}`)
     }
     if (!uidList.length) {
-      e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社~`, true)
+      e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社~`, quoteEnabled())
       return true
     }
 
-    e.reply(`开始为${label} ${uidList.length} 个账号过码，撞到验证时请按提示点链接手划~`, true)
+    e.reply(`开始为${label} ${uidList.length} 个账号过码，撞到验证时请按提示点链接手划~`, quoteEnabled())
 
     const lines = [`${label}过码结果：`]
     for (const uid of uidList) {
@@ -233,7 +234,7 @@ export class autoSign extends plugin {
       await new Promise((r) => setTimeout(r, 500))
     }
     lines.push(`过码后发 #${label}签到 即可`)
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 
@@ -260,7 +261,7 @@ export class autoSign extends plugin {
       logger?.error?.(`[xhh-TL][自动签到] 枚举 UID 失败 ${e.user_id}: ${err.message}`)
     }
     if (!uidList.length) {
-      e.reply(`你还没有绑定${label}账号（或名下 UID 均无有效 CK），请先【#扫码登录】米游社后再开启自动签到~`, true)
+      e.reply(`你还没有绑定${label}账号（或名下 UID 均无有效 CK），请先【#扫码登录】米游社后再开启自动签到~`, quoteEnabled())
       return true
     }
 
@@ -287,9 +288,9 @@ export class autoSign extends plugin {
     if (subs[game][qq]) {
       delete subs[game][qq]
       saveSubs(subs)
-      e.reply(`已关闭${label}自动签到`, true)
+      e.reply(`已关闭${label}自动签到`, quoteEnabled())
     } else {
-      e.reply(`你还没有开启${label}自动签到`, true)
+      e.reply(`你还没有开启${label}自动签到`, quoteEnabled())
     }
     return true
   }
@@ -309,7 +310,7 @@ export class autoSign extends plugin {
       }
     }
     if (!has) lines.push('（暂无，发送 #原神自动签到 试试）')
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 

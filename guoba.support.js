@@ -28,6 +28,16 @@ export function supportGuoba() {
       schemas: [
         {
           component: 'Divider',
+          label: '通用'
+        },
+        {
+          field: 'reply_quote',
+          label: '回复时引用消息',
+          bottomHelpMessage: '关掉后所有出图和提示都不再引用你的那条消息，直接单独发出来',
+          component: 'Switch'
+        },
+        {
+          component: 'Divider',
           label: '体力查询'
         },
         {

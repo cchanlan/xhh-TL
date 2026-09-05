@@ -40,6 +40,7 @@ import { TL } from './TL.js'
 import { createUser } from '../utils/userBind.js'
 import { config, getRenderScaleStyle, pluginDir } from '../utils/pluginConfig.js'
 import { listWavesAccounts, fetchWavesStamina, isWavesTlEnabled, getWavesEnvError } from '../utils/wavesData.js'
+import { quoteEnabled } from '../utils/replyHelper.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'resin_push.json')
@@ -232,7 +233,7 @@ export class resinPush extends plugin {
   /** 功能总开关：锅巴里关闭 resin_push_enable 时，所有指令一并停用 */
   _pushDisabled(e) {
     if (config().resin_push_enable === false) {
-      e.reply('体力推送功能已被管理员关闭~', true)
+      e.reply('体力推送功能已被管理员关闭~', quoteEnabled())
       return true
     }
     return false
@@ -273,23 +274,23 @@ export class resinPush extends plugin {
     if (this._pushDisabled(e)) return true
     const meta = GAME_META[game]
     if (!e.isGroup) {
-      e.reply('体力推送只能在群里设置哦，请在需要接收提醒的群内发送该指令~', true)
+      e.reply('体力推送只能在群里设置哦，请在需要接收提醒的群内发送该指令~', quoteEnabled())
       return true
     }
     const m = (e.msg || '').match(/(\d{1,3})/)
     const threshold = m ? Number(m[1]) : NaN
     if (!Number.isFinite(threshold) || threshold <= 0) {
-      e.reply(`请带上阈值，例如：#${meta.label}体力推送 ${meta.example}`, true)
+      e.reply(`请带上阈值，例如：#${meta.label}体力推送 ${meta.example}`, quoteEnabled())
       return true
     }
     if (threshold > meta.cap) {
-      e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, true)
+      e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, quoteEnabled())
       return true
     }
     if (game === 'ww') {
       const guard = await this._wavesGuard(e.user_id)
       if (guard) {
-        e.reply(guard, true)
+        e.reply(guard, quoteEnabled())
         return true
       }
     }
@@ -301,15 +302,15 @@ export class resinPush extends plugin {
       item = await this.queryItem(new TL(), game, { qq: e.user_id, groupId: e.group_id, e })
     } catch (err) {
       logger?.error?.(`[xhh-TL][体力推送] 设置校验查询失败 ${e.user_id}: ${err.message}`)
-      e.reply('查询体力失败，请稍后再试~', true)
+      e.reply('查询体力失败，请稍后再试~', quoteEnabled())
       return true
     }
     if (!item || typeof item === 'string') {
-      e.reply(this._queryErrText(game, item), true)
+      e.reply(this._queryErrText(game, item), quoteEnabled())
       return true
     }
     if (!meta.hasField(item)) {
-      e.reply(`暂时查不到你的${meta.unit}，请确认已正确绑定后再试~`, true)
+      e.reply(`暂时查不到你的${meta.unit}，请确认已正确绑定后再试~`, quoteEnabled())
       return true
     }
 
@@ -336,23 +337,23 @@ export class resinPush extends plugin {
     if (this._pushDisabled(e)) return true
     const meta = GAME_META[game]
     if (!e.isGroup) {
-      e.reply('体力推送只能在群里设置哦，请在需要接收提醒的群内发送该指令~', true)
+      e.reply('体力推送只能在群里设置哦，请在需要接收提醒的群内发送该指令~', quoteEnabled())
       return true
     }
     const m = (e.msg || '').match(/(\d{1,3})/)
     const threshold = m ? Number(m[1]) : NaN
     if (!Number.isFinite(threshold) || threshold <= 0) {
-      e.reply(`请带上阈值，例如：#${meta.label}体力全推送 ${meta.example}`, true)
+      e.reply(`请带上阈值，例如：#${meta.label}体力全推送 ${meta.example}`, quoteEnabled())
       return true
     }
     if (threshold > meta.cap) {
-      e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, true)
+      e.reply(`阈值过大啦，${meta.unit}最多设到 ${meta.cap}`, quoteEnabled())
       return true
     }
     if (game === 'ww') {
       const guard = await this._wavesGuard(e.user_id)
       if (guard) {
-        e.reply(guard, true)
+        e.reply(guard, quoteEnabled())
         return true
       }
     }
@@ -370,11 +371,11 @@ export class resinPush extends plugin {
       }
     } catch (err) {
       logger?.error?.(`[xhh-TL][体力推送] 全id枚举失败 ${e.user_id}: ${err.message}`)
-      e.reply('查询绑定 UID 失败，请稍后再试~', true)
+      e.reply('查询绑定 UID 失败，请稍后再试~', quoteEnabled())
       return true
     }
     if (!uidList.length) {
-      e.reply(this._queryErrText(game, '没有'), true)
+      e.reply(this._queryErrText(game, '没有'), quoteEnabled())
       return true
     }
 
@@ -458,9 +459,9 @@ export class resinPush extends plugin {
     if (subs[game][qq]) {
       delete subs[game][qq]
       saveSubs(subs)
-      e.reply(`已关闭${meta.label}体力推送`, true)
+      e.reply(`已关闭${meta.label}体力推送`, quoteEnabled())
     } else {
-      e.reply(`你还没有开启${meta.label}体力推送`, true)
+      e.reply(`你还没有开启${meta.label}体力推送`, quoteEnabled())
     }
     return true
   }
@@ -473,9 +474,9 @@ export class resinPush extends plugin {
     if (subs[key][qq]) {
       delete subs[key][qq]
       saveSubs(subs)
-      e.reply(`已关闭${meta.label}体力全推送`, true)
+      e.reply(`已关闭${meta.label}体力全推送`, quoteEnabled())
     } else {
-      e.reply(`你还没有开启${meta.label}体力全推送`, true)
+      e.reply(`你还没有开启${meta.label}体力全推送`, quoteEnabled())
     }
     return true
   }
@@ -540,7 +541,7 @@ export class resinPush extends plugin {
       }
     }
     if (!has) lines.push('（暂无，发送 #原神体力推送 130 试试）')
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 

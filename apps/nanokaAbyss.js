@@ -21,7 +21,7 @@ import fs from 'fs'
 import sharp from 'sharp'
 import plugin from '../../../lib/plugins/plugin.js'
 import { getRenderScaleStyle, config as cfg, pluginDir } from '../utils/pluginConfig.js'
-import { replyProgress, replyQuote } from '../utils/replyHelper.js'
+import { replyProgress, replyQuote, quoteEnabled } from '../utils/replyHelper.js'
 import { toWebp } from '../utils/renderImage.js'
 
 const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json'
@@ -2179,7 +2179,7 @@ export class nanokaAbyss extends plugin {
           true,
         )
       } catch (err) {
-        return e.reply(`获取列表失败：${err.message}`, true)
+        return e.reply(`获取列表失败：${err.message}`, quoteEnabled())
       }
     }
     return this.renderMode(e, () => loadGiTower(listOffset(msg), channel), 'gi-tower')
@@ -2202,7 +2202,7 @@ export class nanokaAbyss extends plugin {
           true,
         )
       } catch (err) {
-        return e.reply(`获取列表失败：${err.message}`, true)
+        return e.reply(`获取列表失败：${err.message}`, quoteEnabled())
       }
     }
     return this.renderMode(e, () => loadGiLeyline(listOffset(msg), channel), 'gi-leyline', {
@@ -2242,7 +2242,7 @@ export class nanokaAbyss extends plugin {
           true,
         )
       } catch (err) {
-        return e.reply(`获取列表失败：${err.message}`, true)
+        return e.reply(`获取列表失败：${err.message}`, quoteEnabled())
       }
     }
     return this.renderMode(
@@ -2261,12 +2261,12 @@ export class nanokaAbyss extends plugin {
       data = await hydrateIcons(data)
     } catch (err) {
       logger?.error?.('[xhh-TL][nanokaAbyss]', err)
-      return e.reply(`数据获取失败：${err.message || err}`, true)
+      return e.reply(`数据获取失败：${err.message || err}`, quoteEnabled())
     }
 
     try {
       if (!e.runtime?.render) {
-        return e.reply('渲染引擎不可用（e.runtime.render）', true)
+        return e.reply('渲染引擎不可用（e.runtime.render）', quoteEnabled())
       }
       const buf = await this.renderToBuffer(
         e,
@@ -2281,7 +2281,7 @@ export class nanokaAbyss extends plugin {
       return this.sendImage(e, buf)
     } catch (err) {
       logger?.error?.('[xhh-TL][nanokaAbyss] render', err)
-      return e.reply(`渲染失败：${err.message}`, true)
+      return e.reply(`渲染失败：${err.message}`, quoteEnabled())
     }
   }
 

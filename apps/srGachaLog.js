@@ -1228,7 +1228,7 @@ export class srGachaLog extends plugin {
       rule: [
         // 抽卡链接：只吃星铁的（含 hkrpg），原神的交回 genshin
         { reg: 'authkey=', fnc: 'logUrl' },
-        { reg: '^\\s*#?星铁(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
+        { reg: '^\\s*#?星铁(?:[xX][hH][hH]|小火花)?(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
         {
           // 允许「*导入记录」后面直接跟文件直链，也支持只发指令+附件
           reg: '^\\s*#?星铁(?:强制)?导入(?:抽卡)?记录(?:json|excel|xlsx)?(?:\\s+\\S+)?\\s*$',

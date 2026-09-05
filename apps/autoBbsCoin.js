@@ -27,6 +27,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import Runtime from '../../../lib/plugins/runtime.js'
 import { runCoinTask, queryCoin, listBbsAccounts, FORUMS } from '../utils/bbsCoinClient.js'
 import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
+import { quoteEnabled } from '../utils/replyHelper.js'
 import {
   config,
   pluginDir,
@@ -126,7 +127,7 @@ export class autoBbsCoin extends plugin {
 
   _disabled(e) {
     if (config().bbs_coin_enable === false) {
-      e.reply('米游币任务功能已被管理员关闭~', true)
+      e.reply('米游币任务功能已被管理员关闭~', quoteEnabled())
       return true
     }
     return false
@@ -135,7 +136,7 @@ export class autoBbsCoin extends plugin {
   // 与 autoSign 一致：签到相关一律不支持私聊
   _groupOnly(e) {
     if (!e.isGroup) {
-      e.reply('米游币任务仅支持在群内使用，请到群里发送该指令~', true)
+      e.reply('米游币任务仅支持在群内使用，请到群里发送该指令~', quoteEnabled())
       return true
     }
     return false
@@ -178,9 +179,9 @@ export class autoBbsCoin extends plugin {
     if (subs[qq]) {
       delete subs[qq]
       saveSubs(subs)
-      e.reply('已关闭自动米游币', true)
+      e.reply('已关闭自动米游币', quoteEnabled())
     } else {
-      e.reply('你还没有开启自动米游币', true)
+      e.reply('你还没有开启自动米游币', quoteEnabled())
     }
     return true
   }
@@ -191,7 +192,7 @@ export class autoBbsCoin extends plugin {
     const subs = loadSubs()
     const sub = subs[String(e.user_id)]
     if (!sub) {
-      e.reply('📋 你还没有开启自动米游币（发送 #开启自动米游币 试试）', true)
+      e.reply('📋 你还没有开启自动米游币（发送 #开启自动米游币 试试）', quoteEnabled())
       return true
     }
     e.reply(
@@ -206,7 +207,7 @@ export class autoBbsCoin extends plugin {
     if (this._groupOnly(e)) return true
     const accounts = await listBbsAccounts(e.user_id, e)
     if (!accounts.length) {
-      e.reply('没有可用的米游社账号，请先【#扫码登录】~', true)
+      e.reply('没有可用的米游社账号，请先【#扫码登录】~', quoteEnabled())
       return true
     }
     const lines = ['💰 米游币余额：']
@@ -218,7 +219,7 @@ export class autoBbsCoin extends plugin {
           : `· ${acc.stuid}：${r.msg}`,
       )
     }
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 
@@ -254,7 +255,7 @@ export class autoBbsCoin extends plugin {
         lines.push(`· ${r.stuid}：${r.msg}`)
       }
     }
-    e.reply(lines.join('\n'), true)
+    e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
 

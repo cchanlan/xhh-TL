@@ -8,6 +8,7 @@ import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
 import { extractRenderBuffer, toWebp } from '../utils/renderImage.js'
 import { getRenderScaleStyle, pickHelpBgImage, config, pluginDir } from '../utils/pluginConfig.js'
+import { quoteEnabled } from '../utils/replyHelper.js'
 
 /** 帮助图标目录（相对插件 resources，渲染时拼到 ppath） */
 const HELP_ICON_DIR = 'help/icons'
@@ -318,7 +319,7 @@ export function buildHelpGroups() {
         {
           icon: 'sr-卡芙卡.webp',
           title: '*更新抽卡记录',
-          desc: '免抽卡链接，直接拉五星记录与垫抽，合并进本地记录不丢旧数据',
+          desc: '免抽卡链接，直接拉五星记录与垫抽，合并进本地记录不丢旧数据；也可发 *xhh更新抽卡记录',
         },
         {
           icon: 'sr-希儿.webp',
@@ -446,7 +447,7 @@ export class help extends plugin {
   async help(e) {
     try {
       if (!e.runtime?.render) {
-        return e.reply('渲染引擎不可用（e.runtime.render）', true)
+        return e.reply('渲染引擎不可用（e.runtime.render）', quoteEnabled())
       }
 
       const rawGroups = buildHelpGroups()
@@ -493,12 +494,12 @@ export class help extends plugin {
 
       const image = await toWebp(extractRenderBuffer(renderResult))
       if (!image) {
-        return e.reply('帮助图渲染失败，请稍后重试', true)
+        return e.reply('帮助图渲染失败，请稍后重试', quoteEnabled())
       }
       return e.reply(segment.image(image))
     } catch (err) {
       logger?.error?.('[xhh-TL][help]', err)
-      return e.reply(`帮助图渲染失败：${err.message || err}`, true)
+      return e.reply(`帮助图渲染失败：${err.message || err}`, quoteEnabled())
     }
   }
 }

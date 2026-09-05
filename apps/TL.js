@@ -9,7 +9,7 @@ import { getstoken, cookiePart } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
 import { getRenderScaleStyle, config, pluginDir, pickCharacterPortrait, pickPortraitBg, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
 import { extractRenderBuffer, toWebp } from '../utils/renderImage.js';
-import { replyQuote, replyForward } from '../utils/replyHelper.js';
+import { replyQuote, replyForward, quoteEnabled } from '../utils/replyHelper.js';
 import { prepareMysContext, resolveAuth } from '../utils/runtimePatch.js';
 import LiteMysApi from '../utils/mysClient.js';
 import { getWavesStaminaList, isWavesTlEnabled, listWavesAccounts } from '../utils/wavesData.js';
@@ -420,7 +420,7 @@ export class TL extends plugin {
         wavesRes.error !== '没有' &&
         !wavesRes.hiddenAll
       ) {
-        e.reply(`鸣潮体力这次没取到：${wavesRes.error}`, true);
+        e.reply(`鸣潮体力这次没取到：${wavesRes.error}`, quoteEnabled());
       }
     } else if (isWaves) {
       const res = await this.getWavesList(e, targetQq || e.user_id);
@@ -435,17 +435,17 @@ export class TL extends plugin {
 
     // 总览时四游戏均被关闭 → 无可展示项，给出明确提示
     if (isQueryAll && !Object.keys(resultData).length) {
-      e.reply('你已关闭原神/星铁/绝区零体力显示，请先开启其中之一再查询总览~', true);
+      e.reply('你已关闭原神/星铁/绝区零体力显示，请先开启其中之一再查询总览~', quoteEnabled());
       return true;
     }
     if (Object.values(resultData).every(v => v === '没有')) {
       if (hasAllData) {
-        e.reply(await this.noAccountTip(overviewQq, '没有绑定米游社，请【#扫码登录】米游社'), true);
+        e.reply(await this.noAccountTip(overviewQq, '没有绑定米游社，请【#扫码登录】米游社'), quoteEnabled());
       }
       return true;
     }
     if (Object.values(resultData).every(v => v === '过期')) {
-      if (hasAllData) e.reply('米游社验证已过期，请【#刷新ck】，仍不行则【#扫码登录】', true);
+      if (hasAllData) e.reply('米游社验证已过期，请【#刷新ck】，仍不行则【#扫码登录】', quoteEnabled());
       return true;
     }
 
@@ -636,7 +636,7 @@ export class TL extends plugin {
         gameCount++;
       }
       if (!gameCount) {
-        e.reply(await this.noAccountTip(targetQq || e.user_id, '没有找到有效绑定的账号'), true);
+        e.reply(await this.noAccountTip(targetQq || e.user_id, '没有找到有效绑定的账号'), quoteEnabled());
         return true;
       }
 
@@ -747,7 +747,7 @@ export class TL extends plugin {
       ? `${preserveCfg}; git -C ${pluginDir} checkout . && git -C ${pluginDir} pull --no-rebase; ${restoreCfg}`
       : `git -C ${pluginDir} pull --no-rebase`;
 
-    e.reply(`开始${isForce ? '强制' : ''}更新 xhh-TL...`, true);
+    e.reply(`开始${isForce ? '强制' : ''}更新 xhh-TL...`, quoteEnabled());
 
     const execAsync = (command) => new Promise((resolve) => {
       exec(command, { windowsHide: true }, (error, stdout, stderr) => {
@@ -761,11 +761,11 @@ export class TL extends plugin {
     const { error, stdout, stderr } = await execAsync(cmd);
     if (error) {
       logger.error(`[xhh-TL] 更新失败: ${stderr || error.message}`);
-      e.reply(`xhh-TL 更新失败: ${stderr || error.message}`, true);
+      e.reply(`xhh-TL 更新失败: ${stderr || error.message}`, quoteEnabled());
       return true;
     }
     if (/Already up|已经是最新/.test(stdout)) {
-      e.reply('xhh-TL 已经是最新版本', true);
+      e.reply('xhh-TL 已经是最新版本', quoteEnabled());
       return true;
     }
 
@@ -773,7 +773,7 @@ export class TL extends plugin {
       `git -C ${pluginDir} log -1 --format="%cd" --date=format:"%m-%d %H:%M"`,
     );
     const time = timeOut.trim() || '未知';
-    e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n请重启以应用更新`, true);
+    e.reply(`xhh-TL 更新成功！\n更新时间: ${time}\n请重启以应用更新`, quoteEnabled());
 
     // 合并转发本次更新日志
     try {
@@ -858,23 +858,23 @@ export class TL extends plugin {
     const hidden = await getHiddenUids(qq, game);
     if (unhide) {
       if (!hidden.delete(uid)) {
-        e.reply(`${label} UID ${uid} 本来就没被屏蔽`, true);
+        e.reply(`${label} UID ${uid} 本来就没被屏蔽`, quoteEnabled());
         return true;
       }
       await setHiddenUids(qq, game, hidden);
-      e.reply(`已恢复 ${label} UID ${uid} 的体力显示`, true);
+      e.reply(`已恢复 ${label} UID ${uid} 的体力显示`, quoteEnabled());
       return true;
     }
 
     if (hidden.has(uid)) {
-      e.reply(`${label} UID ${uid} 已在屏蔽列表里，发【#开启${label}${uid}】可恢复`, true);
+      e.reply(`${label} UID ${uid} 已在屏蔽列表里，发【#开启${label}${uid}】可恢复`, quoteEnabled());
       return true;
     }
 
     // 能枚举出绑定列表时校验一次，挡掉打错的 UID；枚举不到（无凭证/鸣潮没开）就不拦
     const bound = await this.listBoundUids(e, game, qq);
     if (bound.length && !bound.includes(uid)) {
-      e.reply(`没在你的${label}绑定里找到 UID ${uid}\n当前绑定：${bound.join('、')}`, true);
+      e.reply(`没在你的${label}绑定里找到 UID ${uid}\n当前绑定：${bound.join('、')}`, quoteEnabled());
       return true;
     }
 
@@ -888,7 +888,7 @@ export class TL extends plugin {
         : `该游戏已无可显示 UID，查${label}体力会提示已屏蔽`);
     }
     lines.push(`恢复：#开启${label}${uid}`);
-    e.reply(lines.join('\n'), true);
+    e.reply(lines.join('\n'), quoteEnabled());
     return true;
   }
 
@@ -897,7 +897,7 @@ export class TL extends plugin {
     const all = await getAllHiddenUids(e.user_id);
     const games = Object.keys(all);
     if (!games.length) {
-      e.reply('你没有屏蔽任何 UID\n屏蔽：#关闭原神123456789（该 UID 不再出现在体力卡里）', true);
+      e.reply('你没有屏蔽任何 UID\n屏蔽：#关闭原神123456789（该 UID 不再出现在体力卡里）', quoteEnabled());
       return true;
     }
     const lines = games.map((g) => `${GAME_LABEL[g]}：${all[g].join('、')}`);
@@ -974,7 +974,7 @@ export class TL extends plugin {
     }
 
     if (!Object.keys(dataMap).length) {
-      e.reply(await this.noAccountTip(qq, '没有找到有效绑定的账号'), true);
+      e.reply(await this.noAccountTip(qq, '没有找到有效绑定的账号'), quoteEnabled());
       return true;
     }
 
@@ -991,7 +991,7 @@ export class TL extends plugin {
     }
 
     if (!segments.length) {
-      e.reply('图片渲染失败，请稍后重试', true);
+      e.reply('图片渲染失败，请稍后重试', quoteEnabled());
       return true;
     }
 
@@ -1488,7 +1488,7 @@ export class TL extends plugin {
 
     if (!sk) {
       if (!san)
-        e.reply('UID:' + uid + ' 未绑定米游社 SToken，请【#扫码登录】米游社~', true);
+        e.reply('UID:' + uid + ' 未绑定米游社 SToken，请【#扫码登录】米游社~', quoteEnabled());
       return '没有';
     }
     // sk 可能是纯 cookie：无扫码 stoken 的用户走 getstoken 的 SQLite 兜底，
