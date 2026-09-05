@@ -522,27 +522,24 @@ function buildGsSections({ abyss, hard, role }) {
   const sections = []
 
   if (abyss?.ok) {
-    // 主人指定的排法：12 层的三个「间」竖着排在右列，
-    // 本期战绩和 11 层（主力阵容 / 各间阵容）排在左列。
-    const left = []
-    const right = []
-    if (abyss.stats?.length) left.push({ kind: 'stats', span: 6, stats: abyss.stats })
-    for (const fl of abyss.floors || []) {
-      if (fl.useSplitLineup) {
-        left.push({ kind: 'lineup8', span: 6, floor: fl })
-        if (fl.levels?.length) left.push({ kind: 'rooms', span: 6, floor: fl })
-      } else {
-        for (const lv of fl.levels || []) right.push({ kind: 'room8', span: 6, floor: fl, level: lv })
-      }
-    }
+    // 主人指定的排法：一层就是一个大框，框里按间号从上到下排 3 间，层标题只出现一次。
+    // 第一行左边是本模式出场、右边是本期战绩；往下左列排低层、右列排高层，
+    // 所以 11 层和 12 层左右并排，各自的间号横着对齐。
     const lists = []
-    for (const fl of abyss.floors || []) {
-      lists.push(fl.lineupUp, fl.lineupDown)
-      for (const lv of fl.levels || []) lists.push(lv.up?.avatars, lv.down?.avatars)
+    const floorTiles = []
+    for (const fl of lodash.sortBy(abyss.floors || [], 'index')) {
+      const levels = fl.levels || []
+      for (const lv of levels) lists.push(lv.up?.avatars, lv.down?.avatars)
+      if (levels.length) floorTiles.push({ kind: 'floor8', span: 6, floor: fl, levels })
     }
+    const half = Math.ceil(floorTiles.length / 2)
+    const left = [{ kind: 'chars', title: '本模式出场', chars: gsCountAvatars(lists), span: 6, filler: true }]
+    const right = []
+    if (abyss.stats?.length) right.push({ kind: 'stats', span: 6, stats: abyss.stats })
+    left.push(...floorTiles.slice(0, half))
+    right.push(...floorTiles.slice(half))
     // 哪一列短了，先用信息卡补，再用透明占位补，保证两列一样长
     const spare = [
-      { kind: 'chars', title: '本模式出场', chars: gsCountAvatars(lists), span: 6, filler: true },
       { kind: 'stat', title: '本期概况', span: 6, filler: true, rows: [
         { k: '最高层', v: abyss.maxFloor || '-' },
         { k: '总星数', v: `${abyss.totalStar || 0}` },

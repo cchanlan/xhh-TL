@@ -1184,7 +1184,7 @@ footer {
   flex: 1 1 0;
   min-width: 0;
   max-width: 100%;
-  height: 132px; /* 与 1 人 solo 同高，上下半底边对齐 */
+  height: 172px; /* 1/2 人同高，上下半底边对齐；比例对齐参考图的大立绘卡 */
   overflow: hidden;
   border-radius: 10px;
   background: transparent;
@@ -1201,13 +1201,13 @@ footer {
 .wcard.wcard-solo {
   flex: 1 1 auto;
   max-width: 100%;
-  height: 132px;
+  height: 172px;
 }
 
 .wcard-face {
   position: relative;
-  flex: 0 0 96px;
-  width: 96px;
+  flex: 0 0 118px;
+  width: 118px;
   height: 100%;
   overflow: hidden;
   background-color: rgba(40, 50, 70, 0.18);
@@ -1217,8 +1217,8 @@ footer {
   border-radius: 9px 0 0 9px;
 }
 .wcard.wcard-solo .wcard-face {
-  flex: 0 0 128px;
-  width: 128px;
+  flex: 0 0 150px;
+  width: 150px;
 }
 .wcard.star-5 .wcard-face {
   box-shadow: inset -1px 0 0 rgba(210, 150, 30, 0.35);
@@ -1320,11 +1320,11 @@ footer {
   line-height: 18px;
   text-align: center;
   font-size: 11px;
-  font-weight: 800;
-  color: #2a3a55;
-  background: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+  color: #8a93a6;
+  background: rgba(255, 255, 255, 0.42);
   border-radius: 4px;
-  box-shadow: inset 0 0 0 1px rgba(40, 55, 85, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(40, 55, 85, 0.14);
 }
 .wcard.wcard-solo .wcard-talent {
   margin-top: 8px;
@@ -1333,6 +1333,12 @@ footer {
   height: 20px;
   line-height: 20px;
   font-size: 12px;
+}
+
+/* 武器名 / 圣遗物套装名：模板里写了两份（等级下、装备图标右），
+ * 默认都不显示，由 12 层 1 人 / 2 人卡各自打开一份，别的卡型宽度不够不开 */
+.wcard-gnames {
+  display: none;
 }
 
 .wcard-gear {
@@ -1347,8 +1353,13 @@ footer {
   border-radius: 5px;
 }
 .wcard.wcard-solo .wcard-gear .gbox {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+.wcard.wcard-solo .wcard-gear .gbox i {
+  font-size: 12px;
+  line-height: 14px;
 }
 .wcard-gear .gbox i {
   font-size: 10px;
@@ -1356,81 +1367,78 @@ footer {
 }
 
 /*
- * 2 人：高度与 1 人 solo 对齐（132px），底边齐平。
- * 尽量贴满半框边：减小 gap/padding，立绘与装备略放大。
- * 预算：半框 ~220 → 两卡均分后每卡 ~106（gap 3）
- *   face 50 + pad 6 + gbox 22×2 + gap 3 ≈ 103，贴边不裁切。
+ * 2 人：高度与 1 人 solo 对齐（172px），底边齐平。
+ * 参考图风格：立绘区占卡面大半，右列信息自然排布。
+ * 预算：高 172 − 上下 pad 9 ≈ 163，右列 name 16 + lv 17 +
+ * 装备 34 + 间距 ≈ 75，充足；立绘 150 宽 → 右列 ~70，
+ * 名字/命座竖排仍放得下，天赋退场不再占位。
  */
 .floor-one-box .wcard-team.team-n2 {
-  gap: 3px;
+  gap: 4px;
   width: 100%;
 }
 .floor-one-box .wcard-team.team-n2 .wcard {
-  height: 132px;
+  height: 172px;
   background: transparent;
   flex: 1 1 0;
   min-width: 0;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-face {
-  flex: 0 0 50px;
-  width: 50px;
+  flex: 0 0 150px;
+  width: 150px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-info {
-  padding: 5px 3px 4px 4px;
+  padding: 8px 6px 6px 7px;
   min-width: 0;
   background: transparent;
   overflow: visible;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-name {
-  font-size: 12px;
+  font-size: 14px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-lv-row {
-  margin-top: 3px;
-  min-height: 15px;
-  gap: 2px;
+  margin-top: 5px;
+  min-height: 18px;
+  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-cons {
-  min-width: 13px;
-  height: 13px;
-  font-size: 9px;
-  padding: 0 2px;
+  min-width: 17px;
+  height: 17px;
+  font-size: 12px;
+  padding: 0 4px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-lv {
-  font-size: 10px;
+  font-size: 13px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-talent {
-  margin-top: 5px;
-  gap: 2px;
-}
-.floor-one-box .wcard-team.team-n2 .wcard-talent span {
-  height: 15px;
-  line-height: 15px;
-  font-size: 9px;
+  display: none;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-gear {
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-start;
-  gap: 3px;
-  padding-top: 4px;
+  gap: 4px;
+  padding-top: 6px;
   margin-top: auto;
   width: 100%;
   max-width: 100%;
   overflow: visible;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-gear .gbox {
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  max-width: 22px;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  max-width: 34px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-gear .gbox i {
-  font-size: 8px;
-  line-height: 10px;
+  font-size: 11px;
+  line-height: 13px;
 }
 .floor-one-box .wcard-team.team-n2 .wcard-face-lv {
-  font-size: 8px;
-  padding: 6px 1px 2px;
+  font-size: 11px;
+  padding: 10px 4px 4px;
 }
 
 /* 横卡时 one-box 两侧等高，底边对齐；贴边少留白 */
@@ -1461,7 +1469,7 @@ footer {
   gap: 5px;
   padding: 0;
   width: 100%;
-  min-height: 100px;
+  min-height: 132px;
 }
 .half-col.shared-box .wcard-team.team-n1 {
   justify-content: stretch;
@@ -1469,133 +1477,199 @@ footer {
 .half-col.shared-box .wcard-team.team-n2 {
   gap: 4px;
 }
-/* 12 层：1/2 人同高 118px，底边对齐；背景透明 */
+/* 12 层：1/2 人同高 172px（与 11 层对齐），底边对齐；背景透明 */
 .half-col.shared-box .wcard {
-  height: 118px;
+  height: 172px;
   background: transparent;
 }
 .half-col.shared-box .wcard.wcard-solo {
-  height: 118px;
+  height: 172px;
 }
 .half-col.shared-box .wcard-face {
-  flex: 0 0 82px;
-  width: 82px;
+  flex: 0 0 118px;
+  width: 118px;
 }
+/* 1 人：一张卡吃满半框。名字和 Lv 右列已经写全了，
+ * 立绘底部那条渐变名字牌就不再重复，立绘留干净。 */
+/* 1 人：立绘框越窄，cover 放大倍数越小、露出的原图纵向范围越大 ——
+ * 196px 宽只能露 27%（只有头和肩），150px 露 36%，收到 132px 能露 42%，
+ * 头顶一直到腰下都在画面里，脸还有 36px 够看清；
+ * 起点 8% 把露出的那段对准人物上半身（12% 会切掉玛薇卡这类高发型的额头）。
+ * 匀出来的 18px 归右列，正好让装备图标旁边的武器名 / 套装名不被裁。 */
 .half-col.shared-box .wcard.wcard-solo .wcard-face {
-  flex: 0 0 108px;
-  width: 108px;
+  flex: 0 0 132px;
+  width: 132px;
+  background-position: 50% 8%;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-face-lv {
+  display: none;
 }
 .half-col.shared-box .wcard-name {
-  font-size: 13px;
+  font-size: 14px;
 }
 .half-col.shared-box .wcard.wcard-solo .wcard-name {
-  font-size: 15px;
+  font-size: 18px;
 }
 .half-col.shared-box .wcard-info {
-  padding: 5px 5px 4px 6px;
+  padding: 8px 6px 6px 7px;
   background: transparent;
 }
-.half-col.shared-box .wcard-talent {
+.half-col.shared-box .wcard-lv-row {
   margin-top: 5px;
+  min-height: 18px;
+}
+.half-col.shared-box .wcard-cons {
+  min-width: 16px;
+  height: 16px;
+  font-size: 11px;
+  padding: 0 4px;
+}
+.half-col.shared-box .wcard-lv {
+  font-size: 12px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-lv {
+  font-size: 13px;
+}
+.half-col.shared-box .wcard-talent {
+  margin-top: 6px;
 }
 .half-col.shared-box .wcard-talent span {
-  height: 16px;
-  line-height: 16px;
-  font-size: 10px;
-}
-.half-col.shared-box .wcard.wcard-solo .wcard-talent span {
   height: 18px;
   line-height: 18px;
   font-size: 11px;
 }
-.half-col.shared-box .wcard-gear .gbox {
-  width: 24px;
+/* 1 人卡右列有 160px 可用，天赋条和装备一起放大，把右下角的空白吃掉 */
+.half-col.shared-box .wcard.wcard-solo .wcard-lv-row {
+  margin-top: 6px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-cons {
+  min-width: 19px;
+  height: 19px;
+  font-size: 13px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-talent {
+  margin-top: 8px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-talent span {
   height: 24px;
+  line-height: 24px;
+  font-size: 13px;
+}
+.half-col.shared-box .wcard-gear .gbox {
+  width: 34px;
+  height: 34px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-gear {
+  gap: 7px;
+  padding-top: 7px;
 }
 .half-col.shared-box .wcard.wcard-solo .wcard-gear .gbox {
-  width: 28px;
-  height: 28px;
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-gear .gbox i {
+  font-size: 12px;
+  line-height: 14px;
 }
 .half-col.shared-box .wcard-face-lv {
-  font-size: 9px;
-  padding: 8px 3px 3px;
+  font-size: 10px;
+  padding: 10px 4px 4px;
 }
 .half-col.shared-box .wcard.wcard-solo .wcard-face-lv {
-  font-size: 10px;
+  font-size: 11px;
 }
 /*
- * 12 层 2 人：与 1 人同高 118px，尽量贴满半框。
+ * 12 层 2 人：半框约 355px 拆两张卡，每张只剩 ~177px，宽度得在「立绘」和「信息」之间分。
+ * 立绘写死 150px 时右列只剩 33px —— 名字被截成一个字、Lv90 只剩「Lv」；
+ * 缩到 95px 后右列有 71px 可用，名字（最长 5 字 × 12px = 60px）、命座 + Lv100、
+ * 天赋三格、武器/圣遗物全部横排放得下，一个字都不裁；
+ * 立绘 95 宽 × 172 高 cover 后能露出原图 54% 的纵向范围，脸比之前更完整。
+ * 名字和 Lv 右列已写全，立绘底部那条渐变名字牌就不再重复，也不挡人。
  */
 .half-col.shared-box .wcard-team.team-n2 {
-  gap: 2px;
+  gap: 4px;
   width: 100%;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard {
-  height: 118px;
+  height: 172px;
   background: transparent;
   flex: 1 1 0;
   min-width: 0;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-face {
-  flex: 0 0 44px;
-  width: 44px;
+  flex: 0 0 95px;
+  width: 95px;
+  /* 2 人卡换的是方脸图（231×256），按高铺满后横向裁两侧，脸居中留住 */
+  background-position: 50% 42%;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-face-lv {
+  display: none;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-info {
-  padding: 4px 2px 3px 3px;
+  flex: 1 1 0;
+  width: auto;
+  align-items: stretch;
+  padding: 6px 5px 6px 6px;
   min-width: 0;
   background: transparent;
   overflow: visible;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-name {
-  font-size: 11px;
+  display: block;
+  font-size: 12px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-lv-row {
-  margin-top: 2px;
-  min-height: 13px;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  margin-top: 4px;
+  min-height: 17px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-cons {
-  min-width: 12px;
-  height: 12px;
-  font-size: 8px;
-  padding: 0 2px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 11px;
+  padding: 0 4px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-lv {
-  font-size: 9px;
+  display: inline;
+  font-size: 11px;
 }
+/* 天赋跟装备成一组贴在底部：margin-top:auto 挪到天赋上，装备紧跟其后不再自己顶开 */
 .half-col.shared-box .wcard-team.team-n2 .wcard-talent {
-  margin-top: 4px;
-  gap: 1px;
+  display: flex;
+  margin-top: auto;
+  gap: 3px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-talent span {
-  height: 14px;
-  line-height: 14px;
-  font-size: 8px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-gear {
   display: flex;
+  flex-direction: row;
   flex-wrap: nowrap;
+  align-items: flex-end;
   justify-content: flex-start;
-  gap: 2px;
-  padding-top: 3px;
-  margin-top: auto;
+  gap: 4px;
+  padding-top: 4px;
+  margin-top: 0;
   width: 100%;
   max-width: 100%;
   overflow: visible;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-gear .gbox {
-  flex: 0 0 20px;
-  width: 20px;
-  height: 20px;
-  max-width: 20px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  max-width: 30px;
 }
 .half-col.shared-box .wcard-team.team-n2 .wcard-gear .gbox i {
-  font-size: 8px;
-  line-height: 9px;
-}
-.half-col.shared-box .wcard-team.team-n2 .wcard-face-lv {
-  font-size: 7px;
-  padding: 5px 1px 2px;
+  font-size: 10px;
+  line-height: 12px;
 }
 /* 有横卡时 shared-box 更贴边 */
 .half-col.shared-box:has(.wcard-team) {
@@ -1604,11 +1678,6 @@ footer {
 }
 .half-col.shared-box:has(.wcard-team.team-n2) {
   padding: 4px 2px 4px;
-}
-/* 有横卡时 shared-box 顶部留白稍减 */
-.half-col.shared-box:has(.wcard-team) {
-  padding: 6px 5px 5px;
-  overflow: visible;
 }
 
 
@@ -1981,39 +2050,62 @@ body.theme-dark .hard-desc.full {
   flex: 1;
   min-height: 0;
 }
+/* 圆头像版：扁格子里放立绘必然裁脸，改成圆框放正方形脸图（同深渊卡的头像），
+ * 脸永远完整，名字挂在头像下面。格子高度有限（两行各约 64px），
+ * 头像 46px 正好装下「头像 + 名字」不裁切。
+ * 这里只在 chromium 108+ 验证过 aspect-ratio 写法（本机 24.x），旧内核会退化成椭圆。 */
 .filler-char {
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   min-height: 0;
-  border: 1px solid rgba(60, 70, 90, 0.22);
-  border-radius: 4px 8px 6px 6px;
-  background: rgba(255, 255, 255, 0.5);
 }
-.filler-char img { display: block; flex: 1; width: 100%; min-height: 0; object-fit: cover; object-position: center top; }
-.filler-char .fc-n {
+.filler-char img {
+  flex: 1 1 0;
+  min-height: 0;
+  width: auto;
+  max-width: 96%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+}
+/* 角标包在头像层上：头像居中后格子右上角离头像很远，钉格子会悬空 */
+.fc-av { position: relative; display: flex; min-height: 0; flex: 1 1 0; justify-content: center; }
+.fc-av img { margin: 0; }
+.fc-av .fc-n {
   position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 16px;
-  height: 15px;
-  border-radius: 0 6px 0 5px;
-  background: rgba(255, 255, 255, 0.86);
+  top: -2px;
+  right: calc(50% - 34px);
+  z-index: 1;
+  min-width: 17px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   font-size: 10px;
   font-weight: 700;
   color: #d4820f;
   text-align: center;
-  line-height: 15px;
+  line-height: 16px;
 }
 .filler-char .fc-name {
-  padding: 1px 0;
-  background: rgba(255, 255, 255, 0.62);
-  font-size: 9px;
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 700;
   text-align: center;
   color: #333;
   white-space: nowrap;
   overflow: hidden;
+  max-width: 100%;
 }
 .filler-rows { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
 .filler-row {
@@ -2037,9 +2129,9 @@ body.theme-dark .mode-band .mb-meta b { color: #f0f2f6; }
 body.theme-dark .th-title { color: #f0f2f6; }
 body.theme-dark .th-node { border-color: rgba(255, 255, 255, 0.22); color: #b8c0ce; }
 body.theme-dark .th-right { color: #98a0ae; }
-body.theme-dark .filler-char { border-color: rgba(255, 255, 255, 0.16); background: rgba(0, 0, 0, 0.42); }
+body.theme-dark .filler-char img { border-color: rgba(255, 255, 255, 0.16); background: rgba(0, 0, 0, 0.42); }
 body.theme-dark .filler-char .fc-n { background: rgba(0, 0, 0, 0.68); color: #ffd170; }
-body.theme-dark .filler-char .fc-name { background: rgba(0, 0, 0, 0.55); color: #dfe4ec; }
+body.theme-dark .filler-char .fc-name { color: #dfe4ec; }
 body.theme-dark .filler-row { border-bottom-color: rgba(255, 255, 255, 0.12); color: #a8b0be; }
 body.theme-dark .filler-row b { color: #f0f2f6; }
 
@@ -2053,6 +2145,17 @@ body.theme-dark .filler-row b { color: #f0f2f6; }
 .tile.span-6 .floor-one-box .mcard-face img { width: 56px; height: 56px; }
 .tile.span-6 .half-row { flex: 1; }
 .tile.span-6 .floor-one-box { flex: 1; }
+/* 3 人队：写死 74px 宽会在半框里靠左堆着、右边空掉 1/3（实测填充 65%），
+ * 改成三张平分宽度、头像同步放大到 64px，右侧不再留空。
+ * 1/2 人不走这里（模板 ≤2 人换成横版立绘卡 .wcard），所以只管 team-n3。 */
+.tile.span-6 .half-col.shared-box .flat-team.team-n3 { gap: 8px; }
+.tile.span-6 .half-col.shared-box .flat-team.team-n3 > .mcard {
+  flex: 1 1 0;
+  width: auto;
+  max-width: 118px;
+}
+.tile.span-6 .half-col.shared-box .flat-team.team-n3 .mcard-face,
+.tile.span-6 .half-col.shared-box .flat-team.team-n3 .mcard-face img { width: 64px; height: 64px; }
 
 /* 各间阵容：3 个间改成纵向排，头像放大到看得清，同时把格子撑满 */
 .tile.abyss-floor.floor-split .floor-rooms {
@@ -2095,3 +2198,208 @@ body.theme-dark .filler-row b { color: #f0f2f6; }
 .tile.mode-role .team-n3 > .mcard { width: 90px; max-width: 90px; }
 /* 11 层各间阵容：上/下半区的小头像各自居中 */
 .tile.abyss-floor.floor-split .rooms-wrap .room-side { justify-content: center; }
+
+/* —— 危战 / 剧诗四人卡撑满 span-4 格子（头像宁大不小） —— */
+.tile.span-4 .team-hard.mcard-team,
+.tile.mode-role .team.mcard-team {
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 10px 10px;
+}
+.tile.span-4 .team-hard.mcard-team > .mcard,
+.tile.mode-role .team.mcard-team > .mcard {
+  flex: 1 1 0;
+  width: 0;
+  max-width: 118px;
+  padding: 6px 2px 7px;
+}
+.tile.span-4 .team-hard.mcard-team .mcard-face,
+.tile.span-4 .team-hard.mcard-team .mcard-face img,
+.tile.mode-role .team.mcard-team .mcard-face,
+.tile.mode-role .team.mcard-team .mcard-face img {
+  width: 68px;
+  height: 68px;
+}
+.tile.span-4 .team-hard.mcard-team .mcard-name,
+.tile.span-4 .team-hard.mcard-team .mcard-lv,
+.tile.mode-role .team.mcard-team .mcard-name,
+.tile.mode-role .team.mcard-team .mcard-lv {
+  font-size: 11px;
+  height: 14px;
+  line-height: 14px;
+}
+.tile.span-4 .team-hard.mcard-team .gbox,
+.tile.mode-role .team.mcard-team .gbox {
+  width: 28px;
+  height: 28px;
+}
+.tile.span-4 .team-hard.mcard-team .mcard-talent span,
+.tile.mode-role .team.mcard-team .mcard-talent span {
+  max-width: 22px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+}
+
+/* —— 「本模式出场」头像放大：原 5 列两行头像仅 51px，改一行平铺(8人时约126px) ——
+ * auto-fit：人多(>12)自动折两行，头像随之变小，不会溢出。角标用 translate 钉头像角，
+ * 不再依赖头像半径写死偏移，头像变大变小都跟手。 */
+.tile-filler .filler-chars {
+  grid-auto-flow: column;
+  grid-template-rows: 1fr;
+  grid-auto-columns: 1fr;
+}
+/* 人数超过一行放不下时(auto-flow 列会横向溢出),退回两行平铺:列数 = ceil(n/2) 由 JS 算不了,
+ * 这里用足够小的 auto 列宽兜底——人数 ≤13 一行放得下(每列 ≥96px),更多才折行 */
+.tile-filler .filler-chars {
+  grid-auto-columns: 1fr;
+}
+/* 正方形头像盒：宽度取「格子宽 / 108px」的小者，高度由 aspect-ratio 跟出来。
+ * 关键是盒子必须和圆一样大，角标才贴得住 —— 以前 width:100% + max-height 压高度，
+ * 盒子宽是格子满宽（138px）而圆只有 96px，角标就飘到头像外面 20px 去了；
+ * 反过来按高度定宽（height:100% + aspect-ratio）又会给出内在宽度把 8 列 1fr 顶到横向溢出。
+ * 108px 是第一行可用高（行高由右边战绩卡定，实测各变体都稳定）留出名字 20px 后的余量。
+ * 只在 chromium 108+ 验证过（本机 24.x），旧内核不认 aspect-ratio/min() 会退回按宽铺满。 */
+.tile-filler .filler-char .fc-av {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: min(100%, 108px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  max-height: calc(100% - 20px);
+  position: relative;
+  align-self: center;
+  margin: 0 auto;
+}
+.tile-filler .filler-char .fc-av::before {
+  content: none;
+}
+.tile-filler .filler-char .fc-av img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-sizing: border-box;
+}
+.tile-filler .filler-char .fc-name {
+  font-size: 12px;
+  height: 16px;
+  line-height: 16px;
+}
+.tile-filler .fc-av .fc-n {
+  top: 0;
+  right: 0;
+  transform: translate(35%, -35%);
+  min-width: 19px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+/* dark 主题：头像放大后边框仍走暗色描边（压回上面白边） */
+body.theme-dark .tile-filler .filler-char .fc-av img {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* ========== 横版立绘卡的武器名 / 圣遗物套装名 ==========
+ * 1 人卡信息区有 ~205px，两个 58px 装备图标只占一半，右下角原本空一大块；
+ * 把武器名和套装名竖排补在图标右边（可用 ~76px，12px 字够放 6 个汉字，
+ * 最长的「苍古自由之誓」正好不裁），空白换成真信息。 */
+.half-col.shared-box .wcard.wcard-solo .wcard-gear .gnames-side {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  padding-bottom: 2px;
+}
+.half-col.shared-box .wcard.wcard-solo .wcard-gear .gnames-side span {
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 700;
+  color: #5d6577;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 2 人卡右列只有 71px，装备图标旁边挤不进字，改竖排补在等级下面 ——
+ * 天赋和装备仍旧贴底成组，中间那段空白由这两行吃掉。 */
+.half-col.shared-box .wcard-team.team-n2 .wcard-info > .wcard-gnames {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 5px;
+  min-width: 0;
+}
+.half-col.shared-box .wcard-team.team-n2 .wcard-info > .wcard-gnames span {
+  font-size: 10px;
+  line-height: 13px;
+  font-weight: 700;
+  color: #5d6577;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* dark 主题下这两行要提亮，否则压在暗底上看不清 */
+body.theme-dark .half-col.shared-box .wcard .wcard-gnames span {
+  color: #b6bcca;
+}
+
+/* ========== 一层一个大框：层标题只出现一次，间按 1→2→3 竖排 ==========
+ * 以前是「层 × 间」各占一格，第 11 层的标题要重复 3 遍、占掉 3 行；
+ * 现在 11 层和 12 层各一个大框左右并排，一行装完，间号也横着对齐。
+ * 间与间之间不拉伸补高（宁可底部留白），高度还是各自内容说了算。 */
+.abyss-floor.floor-rooms-all {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+/* 间块自己不再铺底：大框有底、半区盒有底，中间再来一层同色框会把层次糊住，
+ * 改用一条虚线分隔，三个间一眼能数清 */
+.abyss-floor.floor-rooms-all .floor-room-block {
+  padding: 1px 1px 2px;
+}
+.abyss-floor.floor-rooms-all .floor-room-block + .floor-room-block {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(40, 55, 85, 0.24);
+}
+.abyss-floor.floor-rooms-all .room-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 2px 4px;
+}
+.abyss-floor.floor-rooms-all .room-head .rh-node {
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2f3646;
+  background: rgba(40, 55, 85, 0.11);
+}
+.abyss-floor.floor-rooms-all .room-head .rh-star {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #d99b1a;
+}
+.abyss-floor.floor-rooms-all .room-head .rh-right {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7c8496;
+}
+body.theme-dark .abyss-floor.floor-rooms-all .floor-room-block + .floor-room-block {
+  border-top-color: rgba(255, 255, 255, 0.16);
+}
+body.theme-dark .abyss-floor.floor-rooms-all .room-head .rh-node {
+  color: #dfe3ec;
+  background: rgba(255, 255, 255, 0.12);
+}
+body.theme-dark .abyss-floor.floor-rooms-all .room-head .rh-right {
+  color: #99a1b2;
+}
