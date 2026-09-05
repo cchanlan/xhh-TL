@@ -138,13 +138,14 @@ async function api(url, { cookie, body, timeout = 20000 } = {}) {
     })
     let setCookie = []
     try {
-      // 取 set-cookie 三条路都要留：node-fetch v2 只有 headers.raw()，
-      // v3 和 undici 只有 getSetCookie()（插件自带的是 v3，宿主可能是 v2），
-      // 都没有就退回 headers.get() —— 那会把多条合并成一条，下面按 key= 边界再切开
-      if (typeof res.headers.getSetCookie === 'function') {
-        setCookie = res.headers.getSetCookie() || []
-      } else if (typeof res.headers.raw === 'function') {
+      // 取 set-cookie 三条路都要留：node-fetch v2/v3 走 headers.raw()（插件自带 v3，有 raw）；
+      // 解析到 undici / 原生 fetch 时只有 getSetCookie()；两个都没有就退回 headers.get()，
+      // 那会把多条挤成一条，下面按 key= 边界再切开。
+      // 注意别拿「在插件目录外复制源码跑」的结果推断这里：那样解析到的是宿主的 undici 垫片
+      if (typeof res.headers.raw === 'function') {
         setCookie = res.headers.raw()['set-cookie'] || []
+      } else if (typeof res.headers.getSetCookie === 'function') {
+        setCookie = res.headers.getSetCookie() || []
       } else {
         const merged = res.headers.get('set-cookie')
         if (merged) setCookie = [merged]
