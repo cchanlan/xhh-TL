@@ -1,0 +1,3 @@
+bili-ticket-gt-python==0.2.5
+pycryptodome>=3.19
+httpx>=0.27
