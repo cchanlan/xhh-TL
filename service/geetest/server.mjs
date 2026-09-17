@@ -12,8 +12,11 @@
  *   5) 拖动用 xdotool 系统级指针（CDP 注入的鼠标事件会被识别）
  *   6) **必须有窗口管理器**（openbox）—— 否则 X 窗口不映射，事件送不到
  *   7) 回交要用极验返回的新 challenge（带 lk/5r 后缀），不是最初申请的
+ *   8) **verify() 要反复调**，且判据不能只看 canvas 存在 —— 元素早已存在但内容空白时
+ *      抓到的是 2KB 空图，要按 PNG 体积判定渲染完成
+ *   9) 等待一律用条件轮询，不要写死 sleep —— 单轮 23.5s → 9s 全靠这一条
  *
- * 单轮成功率约 80%，靠多轮重试兜到 100%。
+ * 单轮成功率约 30%（对面风控收紧过），靠多轮重试兜到 100%。
  */
 
 import fs from 'fs'
@@ -151,6 +154,60 @@ async function computeGap(workDir) {
   return 0
 }
 
+/** 轮询直到条件成立，返回实际耗时 ms；超时返回 null */
+async function waitFor(fn, { timeout = 20000, interval = 250 } = {}) {
+  const t0 = Date.now()
+  while (Date.now() - t0 < timeout) {
+    try {
+      if (await fn()) return Date.now() - t0
+    } catch (_) {}
+    await sleep(interval)
+  }
+  return null
+}
+
+/**
+ * 抓一次三图，返回 { ok, imgs }。
+ *
+ * ⚠️ 判据不能只看 canvas 元素是否存在 —— 元素早就存在了，但内容还没渲染时
+ * 抓到的是**空白图**（PNG 只有约 2KB，正常 bg 有 100KB+）。实测踩过：
+ * 只看元素存在就抓，三张图全是 2118 字节的空图，下游算缺口直接失败。
+ * 所以按 PNG 体积判定是否真的渲染完。
+ *
+ * fullbg 默认 display:none，这里顺手强制显示（抄 bg 的尺寸）。
+ */
+async function probeImages(page) {
+  return await page
+    .evaluate(() => {
+      const fb = document.querySelector('canvas.geetest_canvas_fullbg')
+      const bg = document.querySelector('canvas.geetest_canvas_bg')
+      if (fb && bg) {
+        fb.style.display = 'block'
+        fb.style.opacity = '1'
+        fb.style.width = bg.style.width
+        fb.style.height = bg.style.height
+      }
+      const get = (sel) => {
+        const c = document.querySelector(sel)
+        try {
+          return c ? c.toDataURL('image/png') : null
+        } catch (_) {
+          return null
+        }
+      }
+      const imgs = {
+        bg: get('canvas.geetest_canvas_bg'),
+        fullbg: get('canvas.geetest_canvas_fullbg'),
+        slice: get('canvas.geetest_canvas_slice'),
+      }
+      const ok =
+        imgs.bg && imgs.fullbg && imgs.slice &&
+        imgs.bg.length > 20000 && imgs.fullbg.length > 20000 && imgs.slice.length > 2000
+      return { ok, imgs }
+    })
+    .catch(() => ({ ok: false, imgs: {} }))
+}
+
 /**
  * 跑一轮完整过码。
  * @returns {Promise<{validate:string, challenge:string}|null>}
@@ -224,40 +281,39 @@ async function oneRound(cookie, puppeteer, round, myDisplay) {
       gt,
       challenge,
     )
-    await sleep(5000)
-    // ② 推进到滑块题
-    await page.evaluate(() => {
-      try {
-        window.__I__.verify()
-      } catch (_) {}
-    })
-    await sleep(6000)
+    // ② 推进到滑块题 + 等三图真渲染完
+    //
+    // 原先这里是 sleep(5000) → verify() → sleep(6000)，单轮白等 11 秒。
+    // 实测（网络时间线）：initGeetest 后到 ajax.php 之间有 **4.4 秒零请求**，
+    // 那是极验的本地人机检测，不是网络等待 —— 所以不能简单删掉 sleep，
+    // 而是改成「反复调 verify() + 探图」：探测到图真的渲染好就立刻往下走。
+    //
+    // ⚠️ verify() 必须**反复调**：只调一次会卡在「智能验证检测中」，
+    //    三张图永远抓不到（实测三图全空）。多调几次就能推进到滑块题。
+    let grabbed = null
+    for (let i = 0; i < 60; i++) {
+      const hasInst = await page.evaluate(() => !!window.__I__).catch(() => false)
+      if (hasInst) {
+        await page.evaluate(() => {
+          try {
+            window.__I__.verify()
+          } catch (_) {}
+        }).catch(() => {})
+      }
+      await sleep(250)
+      const r = await probeImages(page)
+      if (r.ok) {
+        grabbed = r.imgs
+        break
+      }
+    }
+    if (!grabbed) {
+      log(`  [轮${round}] 滑块组件未就绪（超时）`)
+      return null
+    }
 
-    // ③ 抓三图（fullbg 默认隐藏，必须强制显示）
-    const imgs = await page.evaluate(() => {
-      const fb = document.querySelector('canvas.geetest_canvas_fullbg')
-      const bg = document.querySelector('canvas.geetest_canvas_bg')
-      if (fb && bg) {
-        fb.style.display = 'block'
-        fb.style.opacity = '1'
-        fb.style.width = bg.style.width
-        fb.style.height = bg.style.height
-      }
-      const get = (sel) => {
-        const c = document.querySelector(sel)
-        try {
-          return c ? c.toDataURL('image/png') : null
-        } catch (_) {
-          return null
-        }
-      }
-      return {
-        bg: get('canvas.geetest_canvas_bg'),
-        fullbg: get('canvas.geetest_canvas_fullbg'),
-        slice: get('canvas.geetest_canvas_slice'),
-      }
-    })
-    for (const [k, v] of Object.entries(imgs)) {
+    // ③ 落盘三图
+    for (const [k, v] of Object.entries(grabbed)) {
       if (v) fs.writeFileSync(path.join(workDir, `${k}.png`), Buffer.from(v.split(',')[1], 'base64'))
     }
 
@@ -311,18 +367,29 @@ async function oneRound(cookie, puppeteer, round, myDisplay) {
     await sleep(150)
     run(['mousemove', String(Math.round(sx + dist)), String(sy), 'sleep', '0.1'])
     run(['mouseup', '1'])
-    await sleep(6000)
 
-    // ⑥ 重连取结果
+    // ⑥ 重连轮询取结果
+    //
+    // 原先是 sleep(6000) 死等。实测拖动后结果**平均 1.7 秒**就回来了，
+    // 改成轮询：拿到 validate 或页面报错就立刻返回，不用等满 6 秒。
     const b2 = await puppeteer.connect({
       browserWSEndpoint: browser.wsEndpoint(),
       defaultViewport: null,
     })
     const pages = await b2.pages()
     const p2 = pages.find((p) => p.url().includes('miyoushe')) || pages[0]
-    const st = await p2.evaluate(() => ({
-      v: window.__V__ || window.__I__?.getValidate?.(),
-    }))
+    let st = {}
+    await waitFor(
+      async () => {
+        st = await p2.evaluate(() => ({
+          v: window.__V__ || window.__I__?.getValidate?.(),
+          // 极验失败时会弹出错误面板，不必再等
+          err: document.querySelector('.geetest_panel_error')?.style?.display === 'block',
+        })).catch(() => ({}))
+        return !!(st.v?.geetest_validate || st.err)
+      },
+      { timeout: 15000, interval: 200 },
+    )
     await b2.close()
 
     if (!st.v?.geetest_validate) {
