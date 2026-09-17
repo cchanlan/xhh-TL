@@ -58,9 +58,13 @@ python3 -m venv .venv
 
 ```bash
 cd /root/Yunzai/plugins/xhh-TL
-git fetch origin solver
-git checkout origin/solver -- service
+git fetch origin solver:refs/remotes/origin/solver
+git restore --source origin/solver -- service
 ```
+
+（浅克隆要用上面这种带 refspec 的 fetch —— 直接 `git fetch origin solver` 只写 FETCH_HEAD，
+不会建出 `origin/solver` 引用。检出用 `restore` 而不是 `checkout`：`checkout` 会把服务文件
+写进暂存区，之后提交会把它带进 master。）
 
 2. 装依赖（见上）。
 
