@@ -157,12 +157,14 @@ function jitter(min = 1000, max = 3000) {
  * DS 走 GET 式（md5(salt&t&r)），DS2 走 POST 式（额外带 b=<body>&q=<query>）。
  * 本模块的 GET 接口把参数直接拼在 URL 上、DS 不参与签名，故这里只有 POST 需要 body。
  */
-async function req(url, { cookie, device, deviceFp, body = null }) {
+async function req(url, { cookie, device, deviceFp, body = null, extraHeaders = null }) {
   const isPost = body !== null
   const bodyStr = isPost ? JSON.stringify(body) : ''
   const headers = buildHeaders(cookie, device, deviceFp, {
     ds2Body: isPost ? bodyStr : null,
   })
+  // 过码后重发用：米游社颁的 challenge 要放在 x-rpc-challenge 里带回来
+  if (extraHeaders) Object.assign(headers, extraHeaders)
   const param = { method: isPost ? 'POST' : 'GET', headers, signal: AbortSignal.timeout(12000) }
   if (isPost) {
     param.body = bodyStr
@@ -200,13 +202,17 @@ export async function queryMissions(cookie, device, deviceFp) {
   }
 }
 
-/** 版块签到（body 用 gids，非 forumId） */
-async function signForum(cookie, device, deviceFp, gids) {
+/**
+ * 版块签到（body 用 gids，非 forumId）。
+ * 撞过风控时带 challenge（过码回执里颁的那张通行证）重发，光清风险分对 POST 类不管用。
+ */
+async function signForum(cookie, device, deviceFp, gids, challenge = '') {
   return req(`${BBS_HOST}/apihub/app/api/signIn`, {
     cookie,
     device,
     deviceFp,
     body: { gids: Number(gids) },
+    extraHeaders: challenge ? { 'x-rpc-challenge': challenge } : null,
   })
 }
 
@@ -457,6 +463,7 @@ export async function runCoinTask(account, opts = {}) {
           `[xhh-TL][米游币] ${stuid} ${forum.name} 撞风控 retcode=${signRes?.retcode}，尝试过码…`,
         )
         if (autoVerifyAddr || (e && verifyAddr)) {
+          const vc = { challenge: '' }
           const passed = await runBbsVerify(e, {
             uid: stuid,
             cookie,
@@ -465,14 +472,18 @@ export async function runCoinTask(account, opts = {}) {
             deviceFp,
             verifyAddr,
             autoVerifyAddr,
+            // 签到是 App 端接口（client_type=2），过码也必须按 App 端形态走，
+            // 否则米游社回执里的 challenge 换到签到上不认（实测：网页端形态走完照样 1034）
+            clientType: '2',
+            challengeOut: vc,
           })
           if (passed) {
             for (const gap of CAPTCHA_RETRY_GAPS) {
               if (gap) await sleep(gap)
-              signRes = await signForum(cookie, device, deviceFp, forum.gids)
+              signRes = await signForum(cookie, device, deviceFp, forum.gids, vc.challenge)
               if (!isCaptcha(signRes)) break
               log.mark(
-                `[xhh-TL][米游币] ${stuid} ${forum.name} 过码后重签仍被拦 retcode=${signRes?.retcode}`,
+                `[xhh-TL][米游币] ${stuid} ${forum.name} 过码后重签仍被拦 retcode=${signRes?.retcode} challenge=${vc.challenge ? '有' : '无'}`,
               )
             }
           }

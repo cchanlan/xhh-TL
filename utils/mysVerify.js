@@ -112,12 +112,17 @@ async function submitVerification(cookie, device, deviceFp, game, validate) {
     )
     if (res?.retcode !== 0) {
       log.mark(`[xhh-TL][verify] 提交的 validate 字段: ${Object.keys(payload).filter((k) => payload[k]).join(',') || '空'}`)
-      return false
+      return null
     }
-    return true
+    // 米游社在回执里颁一个 challenge，POST 类接口要拿它当 x-rpc-challenge 重发才放行
+    const challenge = res?.data?.challenge || ''
+    log.mark(
+      `[xhh-TL][verify] verifyVerification 回执: retcode=0 msg=${res?.message} challenge=${challenge ? '有' : '无'}`,
+    )
+    return { ok: true, challenge }
   } catch (err) {
     log.error(`[xhh-TL][verify] verifyVerification 异常: ${err?.message}`)
-    return false
+    return null
   }
 }
 
@@ -185,18 +190,31 @@ async function solveGeetest(e, { uid, create, verifyAddr, polls = 80, intervalMs
 /**
  * 本地自动过码服务：POST {cookie} → 服务自己跑「申请→解滑块→回交」全流程。
  * 配了 autoVerifyAddr 时优先走它，无需用户手划。
+ *
+ * @param {object} [opts.challengeOut] 传对象进来时，会把米游社颁的 challenge 写进 .challenge ——
+ *   POST 类接口（签到）必须拿它当 x-rpc-challenge 重发才放行，光清风险分不管用。
  * @returns {Promise<boolean>} 是否过码成功
  */
-export async function solveByLocalService({ cookie, autoVerifyAddr }) {
+export async function solveByLocalService({ cookie, autoVerifyAddr, device = null, deviceFp = '', clientType = '', challengeOut = null }) {
   try {
+    // 把调用方的设备/客户端类型一起送过去：过码要跟调用方同一套身份，米游社才认
+    const devId = typeof device === 'object' && device ? device.id : device
+    const devFp = (typeof device === 'object' && device ? device.fp : '') || deviceFp || ''
+    const payload = { cookie }
+    if (devId) {
+      payload.deviceId = String(devId)
+      payload.deviceFp = String(devFp)
+    }
+    if (clientType) payload.clientType = String(clientType)
     const res = await fetch(autoVerifyAddr, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cookie }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(360000),
     }).then((r) => r.json())
     if (res?.data?.result === 'ok') {
       log.mark(`[xhh-TL][verify] 本地服务自动过码成功（第 ${res.data.round} 轮）`)
+      if (challengeOut) challengeOut.challenge = res.data.challenge || ''
       return true
     }
     log.mark(`[xhh-TL][verify] 本地服务未过码: ${JSON.stringify(res).slice(0, 120)}`)
@@ -244,10 +262,10 @@ export async function solveBatchByLocalService(cookies, autoVerifyAddr) {
  * @param {object} opts.autoVerifyAddr 本地自动过码服务地址；配了就走全自动，失败再回退手动
  * @returns {Promise<boolean>} 是否清风险成功（成功后可重试签到）
  */
-export async function runBbsVerify(e, { uid, cookie, game = 'gs', device, deviceFp, verifyAddr, autoVerifyAddr }) {
+export async function runBbsVerify(e, { uid, cookie, game = 'gs', device, deviceFp, verifyAddr, autoVerifyAddr, clientType = '', challengeOut = null }) {
   // 全自动优先：本地服务自己完成申请→解滑块→回交，不需要用户参与
   if (autoVerifyAddr) {
-    if (await solveByLocalService({ cookie, autoVerifyAddr })) return true
+    if (await solveByLocalService({ cookie, autoVerifyAddr, device, deviceFp, clientType, challengeOut })) return true
     log.mark('[xhh-TL][verify] 自动过码未成功，回退到手动链接')
   }
 
@@ -279,9 +297,11 @@ export async function runBbsVerify(e, { uid, cookie, game = 'gs', device, device
   })
   if (!validate) return false
 
-  const ok = await submitVerification(cookie, device, deviceFp, game, validate)
-  if (ok) log.mark(`[xhh-TL][verify] 过码成功 uid=${uid} game=${game}`)
-  return ok
+  const sub = await submitVerification(cookie, device, deviceFp, game, validate)
+  if (!sub) return false
+  if (challengeOut) challengeOut.challenge = sub.challenge || ''
+  log.mark(`[xhh-TL][verify] 过码成功 uid=${uid} game=${game}`)
+  return true
 }
 
 export { getServer }
