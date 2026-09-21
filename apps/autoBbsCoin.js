@@ -42,6 +42,9 @@ const CONFIG_FILE = path.join(DATA_DIR, 'bbs_coin.json')
 // 默认清晨随机分钟；错开 autoSign 的 00:23，避免同时段风控叠加
 const DEFAULT_CRON = '41 6 * * *'
 
+// 任务互斥：定时任务与 #米游币签到 共用一把锁，避免同一账号被并发签到（米游社按重复请求记风控）
+let _running = false
+
 // 汇总图各版块行图标（复用帮助图标）
 const GAME_ICON = {
   gs: 'help/icons/gs-logo.webp',
@@ -226,7 +229,19 @@ export class autoBbsCoin extends plugin {
   async runNow(e) {
     if (this._groupOnly(e)) return true
     if (this._disabled(e)) return true
+    if (_running) {
+      e.reply('米游币任务正在进行中，稍后再试', quoteEnabled())
+      return true
+    }
+    _running = true
+    try {
+      return await this._runNowInner(e)
+    } finally {
+      _running = false
+    }
+  }
 
+  async _runNowInner(e) {
     const accounts = await listBbsAccounts(e.user_id, e)
     if (!accounts.length) {
       e.reply(
@@ -280,6 +295,21 @@ export class autoBbsCoin extends plugin {
   async runAll() {
     const cfg = config()
     if (cfg.bbs_coin_enable === false) return
+    // 互斥：手动 #米游币签到 与定时任务撞在一起时，两边会同时打同一个账号的签到接口，
+    // 米游社侧看到的就是「重复请求」→ 风控码，谁都签不上。
+    if (_running) {
+      logger?.mark?.('[xhh-TL][米游币] 已有任务在跑，跳过本次定时')
+      return
+    }
+    _running = true
+    try {
+      await this._runAllInner()
+    } finally {
+      _running = false
+    }
+  }
+
+  async _runAllInner() {
     const subs = loadSubs()
     const games = resolveGames()
 
@@ -337,7 +367,7 @@ export class autoBbsCoin extends plugin {
               bucket.read += row.read
               bucket.vote += row.vote
               bucket.share += row.share
-              if (row.err) bucket.err++
+              if (row.err && row.err !== '已签过') bucket.err++
             }
           }
         } catch (err) {

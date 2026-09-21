@@ -71,6 +71,14 @@ const NEED_READ = 5
 const NEED_VOTE = 5
 const NEED_SHARE = 1
 
+/**
+ * 撞风控 → 过码成功后的重签梯度（毫秒，相对上一次尝试）。
+ * 第一个 0 = 立刻重签一次，之后逐步拉长等米游社放行 —— 实测过码完 0.3 秒就重打仍是 1034，
+ * 过一会儿才是 0（同 [[xhh-tl-manual-verify-scope]] 记的那条延迟）。
+ * 比 captchaNotice 的 21 秒窗口更长：那边用户在群里干等，这边是凌晨的定时任务，等得起。
+ */
+const CAPTCHA_RETRY_GAPS = [0, 6000, 15000, 30000, 60000]
+
 /** GET 类 DS：md5(salt=K2&t=&r=) —— r 为 6 位随机串 */
 function getBbsDs() {
   const t = Math.round(Date.now() / 1000)
@@ -438,24 +446,37 @@ export async function runCoinTask(account, opts = {}) {
     const row = { game, name: forum.name, signed: false, already: false, read: 0, vote: 0, share: 0, err: '' }
 
     try {
-      // 2.1 版块签到（撞码则过码重试一次）
+      // 2.1 版块签到（撞风控则过码 + 梯度重签）
       // ⚠️ 判据不能只看 e：定时任务（runAll）给 runAccounts 传的是 null，
       //    e 为空 → 整条过码分支短路，本地全自动服务配了也用不上。
       //    改成「有自动服务」或「能发手动链接（e + verifyAddr）」二选一即可。
       const autoVerifyAddr = config().auto_verify_addr || ''
       let signRes = await signForum(cookie, device, deviceFp, forum.gids)
-      if (isCaptcha(signRes) && (autoVerifyAddr || (e && verifyAddr))) {
-        log.mark(`[xhh-TL][米游币] ${stuid} ${forum.name} 撞验证码，尝试过码…`)
-        const passed = await runBbsVerify(e, {
-          uid: stuid,
-          cookie,
-          game,
-          device,
-          deviceFp,
-          verifyAddr,
-          autoVerifyAddr,
-        })
-        if (passed) signRes = await signForum(cookie, device, deviceFp, forum.gids)
+      if (isCaptcha(signRes)) {
+        log.mark(
+          `[xhh-TL][米游币] ${stuid} ${forum.name} 撞风控 retcode=${signRes?.retcode}，尝试过码…`,
+        )
+        if (autoVerifyAddr || (e && verifyAddr)) {
+          const passed = await runBbsVerify(e, {
+            uid: stuid,
+            cookie,
+            game,
+            device,
+            deviceFp,
+            verifyAddr,
+            autoVerifyAddr,
+          })
+          if (passed) {
+            for (const gap of CAPTCHA_RETRY_GAPS) {
+              if (gap) await sleep(gap)
+              signRes = await signForum(cookie, device, deviceFp, forum.gids)
+              if (!isCaptcha(signRes)) break
+              log.mark(
+                `[xhh-TL][米游币] ${stuid} ${forum.name} 过码后重签仍被拦 retcode=${signRes?.retcode}`,
+              )
+            }
+          }
+        }
       }
       if (isExpired(signRes)) {
         row.err = '登录失效'
