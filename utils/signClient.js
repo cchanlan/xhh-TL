@@ -92,14 +92,15 @@ function isCaptcha(res) {
  * @param {string} cookie 完整 cookie（需含 cookie_token/account_id；resolveAuth 提供）
  * @param {'gs'|'sr'|'zzz'} game
  * @param {object} [opts]
- * @param {object} [opts.e] 实时事件；传入且配了 verifyAddr 时，撞码可当场过码重试
- * @param {string} [opts.verifyAddr] 外部打码服务地址；为空则撞码只回 captcha 不过码
+ * @param {object} [opts.e] 实时事件；只有「发手动链接」那条路需要它，全自动过码不需要
+ * @param {string} [opts.verifyAddr] 手动打码服务地址；为空则不发手动链接
+ * @param {string} [opts.autoVerifyAddr] 本地全自动过码服务地址；配了则撞码自动过（定时任务也走这条）
  * @returns {Promise<{ code, msg, game, uid }>}
  *   code: 'ok' 签到成功 | 'already' 今日已签 | 'captcha' 触发验证码（未过/过码失败）|
  *         'expired' 登录失效 | 'first_bind' 需先手动签 | 'fail' 其他失败
  */
 export async function signOne(uid, cookie, game = 'gs', opts = {}) {
-  const { e = null, verifyAddr = '' } = opts
+  const { e = null, verifyAddr = '', autoVerifyAddr = '' } = opts
   const label = GAME_LABEL[game] || game
   const actId = SIGN_ACT_ID[game]
   if (!actId) return { code: 'fail', msg: `不支持的游戏: ${game}`, game, uid }
@@ -164,11 +165,13 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
   try {
     let { rc, res: signRes } = await doSign()
 
-    // 撞码：手动场景(有 e) + 配了打码地址 → 当场过码再重试一次
+    // 撞码：配了全自动过码服务就直接过（定时任务没有 e 也能走）；
+    // 只有走手动链接那条路才需要 e —— runBbsVerify 里没 e.reply 会自动跳过手划
+    const auto = autoVerifyAddr || config().auto_verify_addr || ''
     let verified = false
-    if (isCaptcha(signRes) && e && verifyAddr) {
+    if (isCaptcha(signRes) && (auto || (e && verifyAddr))) {
       log.mark(`[xhh-TL][sign] uid=${uid} 撞验证码，尝试过码…`)
-      const ok = await runBbsVerify(e, { uid, cookie, game, device, deviceFp, verifyAddr, autoVerifyAddr: config().auto_verify_addr || '' })
+      const ok = await runBbsVerify(e, { uid, cookie, game, device, deviceFp, verifyAddr, autoVerifyAddr: auto })
       if (ok) {
         verified = true
         ({ rc, res: signRes } = await doSign())

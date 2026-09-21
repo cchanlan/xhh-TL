@@ -411,11 +411,13 @@ export class autoSign extends plugin {
           results.push({ uid, code: 'expired', msg: `${GAME_LABEL[game]} 无有效登录，请【#刷新ck】，仍不行则【#扫码登录】`, game })
           continue
         }
-        // 手动签到(realE 为真实事件)且配了打码地址时，撞码可当场过码重试；
-        // 自动 cron(realE=null)无人手划，不传 e，撞码只跳过
-        const opts = realE
-          ? { e: realE, verifyAddr: config().auto_sign_verify_addr || '' }
-          : {}
+        // 手动签到(realE)能发链接让人手划；自动 cron 没有 e，但配了全自动过码服务时
+        // 一样能过码 —— runBbsVerify 只在「能 reply」时才走手划，e 为空会安全跳过。
+        const opts = {
+          e: realE || null,
+          verifyAddr: realE ? config().auto_sign_verify_addr || '' : '',
+          autoVerifyAddr: config().auto_verify_addr || '',
+        }
         const r = await signOne(auth.uid || uid, auth.ck, game, opts)
         results.push(r)
       } catch (err) {
