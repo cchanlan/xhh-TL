@@ -439,8 +439,12 @@ export async function runCoinTask(account, opts = {}) {
 
     try {
       // 2.1 版块签到（撞码则过码重试一次）
+      // ⚠️ 判据不能只看 e：定时任务（runAll）给 runAccounts 传的是 null，
+      //    e 为空 → 整条过码分支短路，本地全自动服务配了也用不上。
+      //    改成「有自动服务」或「能发手动链接（e + verifyAddr）」二选一即可。
+      const autoVerifyAddr = config().auto_verify_addr || ''
       let signRes = await signForum(cookie, device, deviceFp, forum.gids)
-      if (isCaptcha(signRes) && e && verifyAddr) {
+      if (isCaptcha(signRes) && (autoVerifyAddr || (e && verifyAddr))) {
         log.mark(`[xhh-TL][米游币] ${stuid} ${forum.name} 撞验证码，尝试过码…`)
         const passed = await runBbsVerify(e, {
           uid: stuid,
@@ -449,7 +453,7 @@ export async function runCoinTask(account, opts = {}) {
           device,
           deviceFp,
           verifyAddr,
-          autoVerifyAddr: config().auto_verify_addr || '',
+          autoVerifyAddr,
         })
         if (passed) signRes = await signForum(cookie, device, deviceFp, forum.gids)
       }

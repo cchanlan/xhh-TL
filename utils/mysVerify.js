@@ -251,6 +251,12 @@ export async function runBbsVerify(e, { uid, cookie, game = 'gs', device, device
     log.mark('[xhh-TL][verify] 自动过码未成功，回退到手动链接')
   }
 
+  // 手动流程要能 reply 才有意义（定时任务 e 为空，别白申请一次极验）
+  if (!e?.reply) {
+    log.debug('[xhh-TL][verify] 无实时事件，跳过手动过码')
+    return false
+  }
+
   if (!verifyAddr) {
     log.debug('[xhh-TL][verify] 未配置打码服务地址，跳过')
     return false
