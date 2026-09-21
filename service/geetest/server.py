@@ -45,6 +45,8 @@ CONCURRENCY = int(os.environ.get('GT_CONCURRENCY', 4))
 DEVICE_ID = os.environ.get('GT_DEVICE_ID', 'Yz-probe123')
 DEVICE_FP = os.environ.get('GT_DEVICE_FP', '38d7ee834d1e9')
 APP_VERSION = os.environ.get('GT_APP_VERSION', '2.40.1')
+# 默认按网页端（5）走，调用方可以在请求里指定 clientType=2 切到 App 端形态
+CLIENT_TYPE = os.environ.get('GT_CLIENT_TYPE', '5')
 UA = f'miHoYoBBS/{APP_VERSION}'
 
 _lock = threading.Lock()
@@ -68,13 +70,14 @@ def bbs_ds(query='', body=''):
     return f'{t},{r},{_md5(f"salt={_DS_SALT}&t={t}&r={r}&b={body}&q={query}")}'
 
 
-def bbs_headers(cookie):
+def bbs_headers(cookie, device_id=None, device_fp=None, client_type=None):
+    """device_id / device_fp / client_type 由调用方传入时就用调用方的 —— 过码要跟调用方同一套身份。"""
     return {
         'Cookie': cookie,
         'x-rpc-app_version': APP_VERSION,
-        'x-rpc-client_type': '5',
-        'x-rpc-device_id': DEVICE_ID,
-        'x-rpc-device_fp': DEVICE_FP,
+        'x-rpc-client_type': str(client_type or CLIENT_TYPE),
+        'x-rpc-device_id': device_id or DEVICE_ID,
+        'x-rpc-device_fp': device_fp or DEVICE_FP,
         'User-Agent': UA,
         'X-Requested-With': 'com.mihoyo.hyperion',
         'Origin': 'https://webstatic.mihoyo.com',
@@ -82,12 +85,26 @@ def bbs_headers(cookie):
     }
 
 
-def create_verification(cookie):
+def _paths(client_type):
+    """
+    App 端（client_type=2）和网页端（5）的接口路径不同，**必须成套用**。
+
+    ⚠️ 实测（2026-09-22，米游币签到 1034）：只有 App 端那套能解 POST 类接口的风控 ——
+       wapi + gids=2 + 拼错的 verifyVerfication，走完米游社照样回 1034；
+       换成 api + is_high=false + verifyVerification 才放行（签到一次过）。
+       GET 类（质变仪/查询）两套都能用，所以默认仍走网页端，不动老行为。
+    """
+    if str(client_type or CLIENT_TYPE) == '2':
+        return 'misc/api/createVerification', 'is_high=false', 'misc/api/verifyVerification'
+    return 'misc/wapi/createVerification', 'gids=2&is_high=false', 'misc/wapi/verifyVerfication'
+
+
+def create_verification(cookie, device_id=None, device_fp=None, client_type=None):
     """向米游社申请一次极验（拿 gt + challenge）"""
-    q = 'gids=2&is_high=false'
+    path, q, _ = _paths(client_type)
     r = httpx.get(
-        f'https://bbs-api.miyoushe.com/misc/wapi/createVerification?{q}',
-        headers={**bbs_headers(cookie), 'DS': bbs_ds(q)},
+        f'https://bbs-api.miyoushe.com/{path}?{q}',
+        headers={**bbs_headers(cookie, device_id, device_fp, client_type), 'DS': bbs_ds(q)},
         timeout=15,
     ).json()
     if r.get('retcode') != 0:
@@ -96,16 +113,17 @@ def create_verification(cookie):
     return d['gt'], d['challenge']
 
 
-def verify_verification(cookie, challenge, validate, seccode):
+def verify_verification(cookie, challenge, validate, seccode, device_id=None, device_fp=None, client_type=None):
     """把解出来的 validate 回交给米游社"""
+    _, _, path = _paths(client_type)
     body = json.dumps({
         'geetest_challenge': challenge,
         'geetest_validate': validate,
         'geetest_seccode': seccode,
     })
     r = httpx.post(
-        'https://bbs-api.miyoushe.com/misc/wapi/verifyVerfication',
-        headers={**bbs_headers(cookie), 'Content-Type': 'application/json', 'DS': bbs_ds('', body)},
+        f'https://bbs-api.miyoushe.com/{path}',
+        headers={**bbs_headers(cookie, device_id, device_fp, client_type), 'Content-Type': 'application/json', 'DS': bbs_ds('', body)},
         content=body,
         timeout=15,
     ).json()
@@ -118,14 +136,14 @@ def _load_solver():
     return bili_ticket_gt_python.SlidePy()
 
 
-def solve_round(cookie, round_no):
+def solve_round(cookie, round_no, device_id=None, device_fp=None, client_type=None):
     """
     跑一轮完整过码。返回 validate 信息或 None。
 
     每个 challenge 只能用一次，所以这里一次性走完全部步骤，
     中途失败就整轮作废、由上层重新申请。
     """
-    gt, challenge = create_verification(cookie)
+    gt, challenge = create_verification(cookie, device_id, device_fp, client_type)
     s = _load_solver()
 
     # ①② 热身 + 拿参数和三图 URL
@@ -153,25 +171,28 @@ def solve_round(cookie, round_no):
     return {'validate': validate, 'challenge': new_challenge, 'distance': distance}
 
 
-def solve(cookie):
+def solve(cookie, device_id=None, device_fp=None, client_type=None):
     """完整过码（含重试 + 回交米游社）"""
     t0 = time.time()
     for r in range(1, MAX_ROUNDS + 1):
         try:
-            v = solve_round(cookie, r)
+            v = solve_round(cookie, r, device_id, device_fp, client_type)
             if not v:
                 continue
             # 回交米游社
             seccode = f'{v["validate"]}|jordan'
-            res = verify_verification(cookie, v['challenge'], v['validate'], seccode)
+            res = verify_verification(cookie, v['challenge'], v['validate'], seccode, device_id, device_fp, client_type)
             if res.get('retcode') == 0:
                 dt = time.time() - t0
                 with _lock:
                     _stats['ok'] += 1
                     _stats['rounds'] += r
                     _stats['total_s'] += dt
-                log(f'✅ 过码成功（第 {r} 轮，缺口 {v["distance"]}，{dt:.1f}s）')
-                return {'ok': True, 'round': r, 'distance': v['distance']}
+                # 米游社在回执里颁一个 challenge，调用方要拿它当 x-rpc-challenge 重发原请求，
+                # 光「清风险」对 POST 类接口（签到）不管用 —— 见 xhh-tl-bbscoin-verify-shortcircuit
+                ch = (res.get('data') or {}).get('challenge', '')
+                log(f'✅ 过码成功（第 {r} 轮，缺口 {v["distance"]}，{dt:.1f}s）challenge={str(ch)[:16]}…')
+                return {'ok': True, 'round': r, 'distance': v['distance'], 'challenge': ch}
             log(f'  [轮{r}] 回交失败: {json.dumps(res)[:100]}')
         except Exception as err:
             log(f'  [轮{r}] 异常: {type(err).__name__}: {str(err)[:150]}')
@@ -221,6 +242,11 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as err:
             return self._send(400, {'error': f'bad json: {err}'})
 
+        # 调用方可指定设备/客户端类型：过码必须与调用方同一套身份，米游社才认
+        device_id = (body.get('deviceId') or '').strip() or None
+        device_fp = (body.get('deviceFp') or '').strip() or None
+        client_type = (body.get('clientType') or '').strip() or None
+
         # 批量模式：{cookies:[...]}，服务端并发跑
         if isinstance(body.get('cookies'), list):
             list_ck = [c for c in body['cookies'] if c]
@@ -233,8 +259,8 @@ class Handler(BaseHTTPRequestHandler):
             def work(i, ck):
                 with sem:
                     try:
-                        r = solve(ck)
-                        results[i] = {'ok': bool(r.get('ok')), 'round': r.get('round')}
+                        r = solve(ck, device_id, device_fp, client_type)
+                        results[i] = {'ok': bool(r.get('ok')), 'round': r.get('round'), 'challenge': r.get('challenge', '')}
                     except Exception as err:
                         log(f'  第 {i + 1} 个账号异常: {err}')
                         results[i] = {'ok': False}
@@ -251,10 +277,10 @@ class Handler(BaseHTTPRequestHandler):
         if not cookie:
             return self._send(400, {'error': 'missing cookie'})
         log('收到过码请求')
-        r = solve(cookie)
+        r = solve(cookie, device_id, device_fp, client_type)
         if not r.get('ok'):
             return self._send(500, {'error': 'verify failed'})
-        return self._send(200, {'msg': '', 'data': {'result': 'ok', 'round': r['round']}})
+        return self._send(200, {'msg': '', 'data': {'result': 'ok', 'round': r['round'], 'challenge': r.get('challenge', '')}})
 
 
 def self_check():
