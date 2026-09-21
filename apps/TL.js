@@ -1656,8 +1656,10 @@ export class TL extends plugin {
         method: 'get',
         headers,
       }).then(res => res.json());
-      // stoken 过期但同串仍带 cookie（gs/sr）→ 兜底 dailyNote
-      if ([-10001, 10001, -100].includes(res?.retcode) && canCookieFallback) {
+      // stoken 过期但同串仍带 cookie（gs/sr）→ 兜底 dailyNote；
+      // 风控码（1034/10035/10041）也一并交给它：widget 是裸 fetch、不经过 MysInfo，
+      // captchaNotice 那条全局兜底够不着，而 noteViaCookie 里有 fp + 自动过码 + 梯度重试。
+      if ([-10001, 10001, -100, 1034, 10035, 10041].includes(res?.retcode) && canCookieFallback) {
         const fb = await this.noteViaCookie(e, game, sk, uid);
         if (fb) res = fb;
       }
