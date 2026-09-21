@@ -207,12 +207,34 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
     fetchHeaders['User-Agent'] = 'Mozilla/5.0 (Linux; Android 12; Mi 10 Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.88 Mobile Safari/537.36 miHoYoBBS/2.73.1';
   }
 
+  const fetchOnce = () =>
+    fetch(apiItem.url, { method: apiItem.method, headers: fetchHeaders }).then(r => r.json());
+
   let res;
   try {
-    res = await fetch(apiItem.url, { method: apiItem.method, headers: fetchHeaders }).then(r => r.json());
+    res = await fetchOnce();
   } catch (error) {
     logger.error(`[xhh-TL] API error: ${error.message}`);
     return { retcode: -1 };
+  }
+
+  // 撞风控码：这里也是裸 fetch，captchaNotice 那条全局兜底够不着，自己过码 + 梯度重试。
+  // GameRoles 是 App 端接口（client_type=2）、sign_info 是网页端（5），过码要跟同一套身份走。
+  const ck = fetchHeaders.Cookie || '';
+  if (ck && [1034, 10035, 10041].includes(Number(res?.retcode)) && config().auto_verify_addr) {
+    logger.info?.(`[xhh-TL][api] ${type} 撞码 retcode=${res.retcode}，自动过码后重试`);
+    const solved = await solveByLocalService({
+      cookie: ck,
+      autoVerifyAddr: config().auto_verify_addr,
+      clientType: type === 'GameRoles' ? '2' : '5',
+    }).catch(() => false);
+    if (solved) {
+      for (const gap of TRANSFORMER_RETRY_GAPS) {
+        if (gap) await new Promise((r) => setTimeout(r, gap));
+        res = await fetchOnce().catch(() => false);
+        if (res?.retcode === 0) break;
+      }
+    }
   }
 
   if (res.retcode !== 0 && !silent) {
