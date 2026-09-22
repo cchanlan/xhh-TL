@@ -31,6 +31,28 @@ const SERVICE_FILES = ['server.py', 'w.py', 'start.sh', 'requirements.txt']
 // Python 依赖：装进服务目录的 venv，不动系统环境
 const PIP_PACKAGES = ['-r', 'requirements.txt']
 
+// 依赖项 → 各自的 import 名。装完逐个真 import 一遍才知道谁没装上，
+// 光看 pip 的退出码不行：pip 装成功但 .so 跑不起来（glibc 不匹配）照样是缺。
+const DEP_MODULES = [
+  { pkg: 'bili-ticket-gt-python', mod: 'bili_ticket_gt_python' },
+  { pkg: 'pycryptodome', mod: 'Crypto' },
+  { pkg: 'httpx', mod: 'httpx' },
+]
+
+// bili-ticket-gt-python 0.2.5 是 manylinux_2_31 的 wheel，glibc 低于这个版本装不上
+// （0.3.x 要 2.38，更装不上，所以这个包固定在 0.2.5）
+const MIN_GLIBC = [2, 31]
+
+// pip 源候选。国内直连 pypi.org 经常几十秒超时甚至直接失败，
+// 所以装依赖前先探一遍、按快慢排序，谁快用谁，第一个装失败自动换下一个。
+const PIP_INDEXES = [
+  { name: '清华', url: 'https://pypi.tuna.tsinghua.edu.cn/simple' },
+  { name: '阿里云', url: 'https://mirrors.aliyun.com/pypi/simple/' },
+  { name: '腾讯云', url: 'https://mirrors.cloud.tencent.com/pypi/simple/' },
+  { name: '中科大', url: 'https://pypi.mirrors.ustc.edu.cn/simple' },
+  { name: '官方', url: 'https://pypi.org/simple/' },
+]
+
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
   error: (...a) => (typeof logger !== 'undefined' ? logger.error(...a) : console.error(...a)),
@@ -102,6 +124,150 @@ function venvPython() {
     } catch (_) {}
   }
   return ''
+}
+
+/**
+ * 逐个真 import 一遍，返回**没装上**的依赖项。
+ *
+ * 用真 import 而不是 `pip list` / `find_spec`：装了但用不了的情况（wheel 的 glibc
+ * 版本跟系统对不上、.so 缺依赖库）只有 import 那一刻才会炸，查列表是看不出来的。
+ */
+async function missingDeps(vpy) {
+  const script = [
+    'import json',
+    `mods = ${JSON.stringify(DEP_MODULES.map((d) => d.mod))}`,
+    'missing = []',
+    'for m in mods:',
+    '    try:',
+    '        __import__(m)',
+    '    except Exception:',
+    '        missing.append(m)',
+    'print(json.dumps(missing))',
+  ].join('\n')
+  const r = await run(vpy, ['-c', script])
+  // 解释器本身都跑不起来（venv 坏了）就当全缺，让上层去报错
+  if (!r.ok) return DEP_MODULES.slice()
+  try {
+    const mods = JSON.parse(r.out.trim().split(/\r?\n/).pop())
+    return DEP_MODULES.filter((d) => mods.includes(d.mod))
+  } catch (_) {
+    return []
+  }
+}
+
+/** 本机 glibc 版本，拿不到返回空串 */
+async function libcVersion(vpy) {
+  const r = await run(vpy, ['-c', 'import platform;print(platform.libc_ver()[1] or "")'])
+  if (!r.ok) return ''
+  return (r.out.trim().split(/\r?\n/).pop() || '').trim()
+}
+
+/** glibc 是否低于 MIN_GLIBC（版本号不能直接比大小，"2.9" > "2.31" 是假的） */
+function libcTooOld(v) {
+  const m = String(v || '').match(/^(\d+)\.(\d+)/)
+  if (!m) return false
+  const maj = Number(m[1])
+  const min = Number(m[2])
+  return maj < MIN_GLIBC[0] || (maj === MIN_GLIBC[0] && min < MIN_GLIBC[1])
+}
+
+/** pip 输出里有没有「本地要编译 / 平台对不上」的特征，用来跟「网络不通」区分开 */
+function isBuildFailure(out) {
+  return /glibc|manylinux|building wheel|failed building|error: command|rustc|cargo/.test(
+    String(out || '').toLowerCase(),
+  )
+}
+
+/**
+ * 探一遍 pip 源，返回按响应快慢排好的列表（不通的 ms 为 Infinity，排在最后）。
+ *
+ * 探的是「这个包」的页面而不是源的根索引 —— 根索引页动辄几 MB，测出来的
+ * 是带宽不是延迟，还慢。有 HTTP 响应就算通：404 只说明这个源上没有这个包页，
+ * 不代表源不能用（真正的判据是后面 pip 装不装得上）。
+ */
+async function probePipIndexes() {
+  const list = await Promise.all(
+    PIP_INDEXES.map(async (idx) => {
+      const t0 = Date.now()
+      try {
+        const res = await fetch(`${idx.url.replace(/\/+$/, '')}/bili-ticket-gt-python/`, {
+          signal: AbortSignal.timeout(3000),
+        })
+        await res.arrayBuffer() // 读掉 body，别留着连接挂着
+        return { ...idx, ms: Date.now() - t0 }
+      } catch (_) {
+        return { ...idx, ms: Infinity }
+      }
+    }),
+  )
+  return list.sort((a, b) => a.ms - b.ms)
+}
+
+/**
+ * 装 Python 依赖。依赖齐了就直接返回；缺就先探源、按快的顺序依次试装。
+ * 返回 { ok, msg }，ok 为 false 时 msg 是发给用户的失败提示。
+ */
+async function ensureDeps(vpy) {
+  if (!(await missingDeps(vpy)).length) return { ok: true }
+
+  const probed = await probePipIndexes()
+  log.mark(
+    '[xhh-TL][部署] pip 源探测：' +
+      probed.map((p) => `${p.name}=${p.ms === Infinity ? '不通' : `${p.ms}ms`}`).join(' '),
+  )
+
+  // 只试最快的三个，试太多会把失败拖得很久；全不通时退回默认源再赌一次
+  const usable = probed.filter((p) => p.ms !== Infinity).slice(0, 3)
+  const candidates = usable.length ? usable : [{ name: '默认', url: '' }]
+
+  let lastOut = ''
+  for (const idx of candidates) {
+    const args = [
+      '-m', 'pip', 'install', '-q',
+      '--disable-pip-version-check',
+      // 默认超时 15s × 重试 5 次，遇到慢源一个包能卡几分钟。收紧好让失败快点暴露、好换源
+      '--timeout', '30', '--retries', '2',
+    ]
+    if (idx.url) args.push('-i', idx.url)
+    args.push(...PIP_PACKAGES)
+
+    const pip = await run(vpy, args, { cwd: SERVICE_DIR, timeout: 180000 })
+    if (pip.ok) {
+      log.mark(`[xhh-TL][部署] 依赖已用 ${idx.name} 装好`)
+      break
+    }
+    lastOut = pip.out
+    log.error(`[xhh-TL][部署] ${idx.name} 装依赖失败:`, pip.out.slice(0, 300))
+  }
+
+  // 装完再验一遍：pip 说成功不等于能用
+  const stillMissing = await missingDeps(vpy)
+  if (!stillMissing.length) return { ok: true }
+
+  const lines = [`依赖没装全，缺：${stillMissing.map((d) => d.pkg).join('、')}`]
+
+  // 「网络到源不通」和「这个包根本装不了」要分开报 —— 都甩一句「检查网络」的话，
+  // glibc 太低的用户会照着一直重试，怎么试都好不了
+  if (stillMissing.some((d) => d.mod === 'bili_ticket_gt_python')) {
+    const libc = await libcVersion(vpy)
+    if (libcTooOld(libc) || isBuildFailure(lastOut)) {
+      lines.push(
+        '',
+        `bili-ticket-gt-python 需要 glibc ${MIN_GLIBC.join('.')} 以上${libc ? `，当前系统是 ${libc}` : ''}`,
+        '换 Debian 12 / Ubuntu 22.04 以上的系统，或用 docker 跑',
+      )
+      return { ok: false, msg: lines.join('\n') }
+    }
+  }
+
+  const best = candidates[0]
+  const req = path.join(SERVICE_DIR, 'requirements.txt')
+  lines.push(
+    '',
+    '在机器人所在设备执行后，再发一次本指令：',
+    `"${vpy}" -m pip install${best.url ? ` -i ${best.url}` : ''} -r "${req}"`,
+  )
+  return { ok: false, msg: lines.join('\n') }
 }
 
 /**
@@ -287,14 +453,10 @@ export class solverDeploy extends plugin {
       await e.reply('创建 Python 环境失败，请确认装了 python3-venv', quoteEnabled())
       return true
     }
-    const depOk = await run(vpy, ['-c', 'import bili_ticket_gt_python, Crypto, httpx'])
-    if (!depOk.ok) {
-      const pip = await run(vpy, ['-m', 'pip', 'install', '-q', ...PIP_PACKAGES], { cwd: SERVICE_DIR })
-      if (!pip.ok) {
-        log.error('[xhh-TL][部署] 安装依赖失败:', pip.out.slice(0, 300))
-        await e.reply('安装过码依赖失败，请检查网络后重试', quoteEnabled())
-        return true
-      }
+    const deps = await ensureDeps(vpy)
+    if (!deps.ok) {
+      await e.reply(deps.msg, quoteEnabled())
+      return true
     }
 
     // ④ 起服务 / 重启服务。
