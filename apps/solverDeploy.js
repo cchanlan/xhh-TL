@@ -15,7 +15,7 @@ import { promisify } from 'util'
 import plugin from '../../../lib/plugins/plugin.js'
 import { config, pluginDir, patchUserConfig } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
-import { pm2, pm2Jlist, hasPm2, ensurePm2 } from '../utils/pm2.js'
+import { pm2, pm2Jlist, hasPm2, ensurePm2, pm2HasProcess, launcherInfo } from '../utils/pm2.js'
 
 const exec = promisify(execFile)
 const SERVICE_DIR = path.join(pluginDir, 'service', 'geetest')
@@ -57,6 +57,22 @@ const PIP_INDEXES = [
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
   error: (...a) => (typeof logger !== 'undefined' ? logger.error(...a) : console.error(...a)),
+}
+
+/**
+ * 把插件配置指向本机过码服务。
+ *
+ * ⚠️ 必须用 patchUserConfig（读-改-写），不能用 writeUserConfig —— 后者是整份覆盖，
+ * 只传一个键会把用户 config.yaml 里其余几十项全洗掉（卡片样式、回复引用、
+ * 多账号模式、鸣潮开关…全部静默回退默认值，用户毫无察觉）。
+ * 写失败只记日志：配置没写成不该让已经装好的服务被判成部署失败。
+ */
+function patchAutoVerify() {
+  try {
+    patchUserConfig({ auto_verify_addr: `http://127.0.0.1:${PORT}/solve` })
+  } catch (err) {
+    log.error('[xhh-TL][部署] 写配置失败:', err?.message)
+  }
 }
 
 /** 跑一条命令，返回 { ok, out }，不抛 */
@@ -402,17 +418,23 @@ export class solverDeploy extends plugin {
       return true
     }
 
-    // ①' pm2 缺失就自动装上 —— 不需要用户动手
+    // ①' 进程管理器缺失就自动装上 —— 不需要用户动手。
+    //     Windows 走 lpm2（隔离 pm2 的固定管道），Linux / macOS 照旧直连 pm2。
+    //     实在装不上时 ensurePm2 会退回直连现有的 pm2，不会因为装不上就整个部署不了。
     if (!(await hasPm2())) {
-      log.mark('[xhh-TL][部署] 没找到 pm2，自动安装中')
-      await e.reply('正在自动安装 pm2，可能要一两分钟~', quoteEnabled())
+      log.mark('[xhh-TL][部署] 没找到可用的进程管理器，自动安装中')
+      await e.reply('正在自动安装进程管理器，可能要一两分钟~', quoteEnabled())
     }
     const pm2Ready = await ensurePm2()
     if (!pm2Ready.ok) {
-      log.error('[xhh-TL][部署] pm2 自动安装失败:', pm2Ready.msg)
-      await e.reply(pm2Ready.msg, quoteEnabled())
+      log.error('[xhh-TL][部署] 启动器自动安装失败:', pm2Ready.msg, pm2Ready.detail)
+      await e.reply(
+        pm2Ready.detail ? `${pm2Ready.msg}\n\n安装输出：\n${pm2Ready.detail}` : pm2Ready.msg,
+        quoteEnabled(),
+      )
       return true
     }
+    if (pm2Ready.degraded) log.mark('[xhh-TL][部署]', pm2Ready.msg)
 
     // ② 拉服务文件：缺文件要检出，文件旧了也要检出。
     //    只判「缺不缺」是不够的 —— solver 上只改了内容没加文件时，缺文件判据永远是假，
@@ -481,6 +503,33 @@ export class solverDeploy extends plugin {
     //
     // 其余情况保持原样不动：重启会打断正在进行的过码。
     const running = await isServiceAlive()
+    // 进程是不是归本插件的 daemon 管（Windows 上是隔离的 data/pm2；
+    // Linux / macOS 用默认 ~/.pm2，进程表本来就是本插件的）。
+    // 旧版本直连 pm2 部署出来的进程不在这个表里 —— 下面单独处理，不静默抢占。
+    const managed = await pm2HasProcess(PM2_NAME)
+
+    if (running && !managed) {
+      // 服务在响应，但不归我们管。不抢占的原因：端口还被它占着，新进程根本起不来，
+      // 抢完只会「看起来部署成功、实际是旧进程在答」。所以明确告诉用户怎么切过来。
+      const l = launcherInfo()
+      log.mark('[xhh-TL][部署] 服务在跑但不归本插件管理，跳过接管')
+      patchAutoVerify()
+      await e.reply(
+        [
+          `过码服务正在运行，但不在本插件的进程表里（当前：${
+            l.kind === 'lpm2' ? 'lpm2' : '直接调用 pm2'
+          }，PM2_HOME=${l.pm2Home}）。`,
+          '',
+          '这多半是旧版本部署留下的进程。要让插件接管（顺带拿到隔离的进程管理），',
+          '先把它停掉、再发一次本指令：',
+          `· 机器人所在设备执行：pm2 delete ${PM2_NAME}`,
+          '· 或直接重启一次机器（过码服务不会自启）',
+        ].join('\n'),
+        quoteEnabled(),
+      )
+      return true
+    }
+
     if (refreshed && running) {
       log.mark('[xhh-TL][部署] 服务文件有更新，重启服务使其生效')
       const rs = await pm2(['restart', PM2_NAME, '--update-env'])
@@ -495,21 +544,14 @@ export class solverDeploy extends plugin {
         cwd: SERVICE_DIR,
       })
       if (!start.ok) {
-        log.error('[xhh-TL][部署] pm2 启动失败:', start.out.slice(0, 300))
-        await e.reply('启动服务失败，请检查 pm2 是否正常', quoteEnabled())
+        log.error('[xhh-TL][部署] 启动服务失败:', start.out.slice(0, 300))
+        await e.reply('启动服务失败，请发 #过码服务状态 看看', quoteEnabled())
         return true
       }
     }
 
     // ⑤ 写回配置并持久化 pm2
-    // ⚠️ 必须用 patchUserConfig（读-改-写），不能用 writeUserConfig —— 后者是整份覆盖，
-    // 只传一个键会把用户 config.yaml 里其余几十项全洗掉（卡片样式、回复引用、
-    // 多账号模式、鸣潮开关…全部静默回退默认值，用户毫无察觉）。
-    try {
-      patchUserConfig({ auto_verify_addr: `http://127.0.0.1:${PORT}/solve` })
-    } catch (err) {
-      log.error('[xhh-TL][部署] 写配置失败:', err?.message)
-    }
+    patchAutoVerify()
     await pm2(['save'])
 
     // ⑥ 验活
@@ -530,6 +572,14 @@ export class solverDeploy extends plugin {
 
   async status(e) {
     const lines = []
+    // 用的是哪种启动方式（平台分工见 utils/pm2.js 文件头）：
+    // Windows 走 lpm2 + 隔离 PM2_HOME；Linux / macOS 直连 pm2、用默认 ~/.pm2
+    const launcher = launcherInfo()
+    lines.push(
+      `进程管理：${launcher.kind === 'lpm2' ? 'lpm2' : '直接调用 pm2'}${
+        launcher.isolated ? '（隔离运行，PM2_HOME=data/pm2）' : ''
+      }`,
+    )
     // pm2 状态（jlist 前可能带版本提示，交给 pm2Jlist 剥掉）
     const list = await pm2Jlist()
     const info = list.find((p) => p.name === PM2_NAME) || null
@@ -557,6 +607,9 @@ export class solverDeploy extends plugin {
     // 文件残废优先报：这种情况服务看着是活的，但一发过码就全轮失败
     if (missing.length) {
       lines.push('', '发 #过码部署 可以修好')
+    } else if (alive && !info) {
+      // 端口活着、进程却不在本插件的表里：旧版直连 pm2 留下的进程
+      lines.push('', '服务在跑，但不在本插件的进程表里（旧版部署留下的进程）', '发 #过码部署 看怎么接管')
     } else if (!alive && !info) {
       lines.push('', '发 #过码部署 可以一键装好')
     } else if (!alive) {
