@@ -15,6 +15,7 @@ import { promisify } from 'util'
 import plugin from '../../../lib/plugins/plugin.js'
 import { config, pluginDir, patchUserConfig } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
+import { pm2, pm2Jlist, hasPm2, ensurePm2 } from '../utils/pm2.js'
 
 const exec = promisify(execFile)
 const SERVICE_DIR = path.join(pluginDir, 'service', 'geetest')
@@ -363,7 +364,12 @@ export class solverDeploy extends plugin {
     })
   }
 
-  /** 前置检查：平台 + 系统依赖。返回缺失项数组 */
+  /**
+   * 前置检查：平台 + 系统依赖。返回缺失项数组。
+   *
+   * 只查**没法自动装**的：Python 涉及系统级改动，交给用户自己决定；
+   * pm2 是纯 npm 操作，缺了由 ensurePm2 自动装上，不在这里报。
+   */
   async precheck() {
     const missing = []
     // Windows 上 python 命令名不同（通常没有 python3）
@@ -373,9 +379,6 @@ export class solverDeploy extends plugin {
         name: 'Python 3.9+',
         fix: process.platform === 'win32' ? '到 python.org 下载安装（勾选 Add to PATH）' : 'apt install -y python3 python3-venv',
       })
-    }
-    if (!(await has('pm2', ['--version']))) {
-      missing.push({ name: 'pm2', fix: 'npm i -g pm2' })
     }
     return missing
   }
@@ -396,6 +399,18 @@ export class solverDeploy extends plugin {
       for (const m of missing) lines.push(`· ${m.name}：${m.fix}`)
       lines.push('', '装完再发一次本指令')
       await e.reply(lines.join('\n'), quoteEnabled())
+      return true
+    }
+
+    // ①' pm2 缺失就自动装上 —— 不需要用户动手
+    if (!(await hasPm2())) {
+      log.mark('[xhh-TL][部署] 没找到 pm2，自动安装中')
+      await e.reply('正在自动安装 pm2，可能要一两分钟~', quoteEnabled())
+    }
+    const pm2Ready = await ensurePm2()
+    if (!pm2Ready.ok) {
+      log.error('[xhh-TL][部署] pm2 自动安装失败:', pm2Ready.msg)
+      await e.reply(pm2Ready.msg, quoteEnabled())
       return true
     }
 
@@ -468,15 +483,15 @@ export class solverDeploy extends plugin {
     const running = await isServiceAlive()
     if (refreshed && running) {
       log.mark('[xhh-TL][部署] 服务文件有更新，重启服务使其生效')
-      const rs = await run('pm2', ['restart', PM2_NAME, '--update-env'])
+      const rs = await pm2(['restart', PM2_NAME, '--update-env'])
       if (!rs.ok) {
         log.error('[xhh-TL][部署] pm2 重启失败:', rs.out.slice(0, 300))
         await e.reply('重启服务失败，请发 #过码服务状态 看看', quoteEnabled())
         return true
       }
     } else if (!running) {
-      await run('pm2', ['delete', PM2_NAME]) // 清掉残留的失败进程，避免端口占用
-      const start = await run('pm2', ['start', vpy, '--name', PM2_NAME, '--', 'server.py'], {
+      await pm2(['delete', PM2_NAME]) // 清掉残留的失败进程，避免端口占用
+      const start = await pm2(['start', vpy, '--name', PM2_NAME, '--', 'server.py'], {
         cwd: SERVICE_DIR,
       })
       if (!start.ok) {
@@ -495,7 +510,7 @@ export class solverDeploy extends plugin {
     } catch (err) {
       log.error('[xhh-TL][部署] 写配置失败:', err?.message)
     }
-    await run('pm2', ['save'])
+    await pm2(['save'])
 
     // ⑥ 验活
     await new Promise((r) => setTimeout(r, 8000))
@@ -515,13 +530,9 @@ export class solverDeploy extends plugin {
 
   async status(e) {
     const lines = []
-    // pm2 状态
-    const r = await run('pm2', ['jlist'])
-    let info = null
-    try {
-      const list = JSON.parse(r.out)
-      info = list.find((p) => p.name === PM2_NAME)
-    } catch (_) {}
+    // pm2 状态（jlist 前可能带版本提示，交给 pm2Jlist 剥掉）
+    const list = await pm2Jlist()
+    const info = list.find((p) => p.name === PM2_NAME) || null
     lines.push(info ? `服务进程：${info.pm2_env?.status || '未知'}` : '服务进程：未部署')
 
     // 健康检查
