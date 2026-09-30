@@ -245,20 +245,6 @@ function runCli(file, prefix, args, { shell, timeout, cwd, env }) {
   })
 }
 
-/** 绕过 lpm2 直接调 pm2：退路用，也用来判断「现有的 pm2 到底还能不能用」 */
-function runDirect(args, { timeout = 30000 } = {}) {
-  const js = resolvePm2Js()
-  const l = js
-    ? { file: process.execPath, prefix: [js], shell: false }
-    : { file: 'pm2', prefix: [], shell: IS_WIN }
-  return runCli(l.file, l.prefix, args, {
-    shell: l.shell,
-    timeout,
-    cwd: pluginDir,
-    env: process.env,
-  })
-}
-
 /**
  * 跑一条 pm2 命令（默认经 lpm2，参数原样转发）。
  * @param {string[]} args 参数数组，如 ['restart', 'geetest-solver']
@@ -286,8 +272,18 @@ export function launcherInfo() {
   }
 }
 
-/** pm2 是否可用 —— 真跑一次 --version，比看文件在不在准（会连带验证 lpm2 能不能解析到 pm2） */
+/**
+ * 启动器是否就绪。
+ *
+ * ⚠️ Windows 上只做**纯文件**判断，绝不真跑 `pm2 --version` 来「验证」：pm2 的 CLI 在
+ *    任何命令之前都会先把 daemon 确保起来（2026-09-30 实测：`lpm2 --version` 直接打出
+ *    「[PM2] Spawning PM2 daemon with pm2_home=…」），于是只查一次状态就在机器上留一个
+ *    常驻 daemon —— 本机不跑这些服务时尤其明显。真跑不起来的交给真正执行命令时暴露，
+ *    那时的错误信息里会带 pm2 / lpm2 的输出。
+ *    （POSIX 那边 pm2 daemon 本来就常驻，真跑一次没这顾虑，保持原样。）
+ */
 export async function hasPm2() {
+  if (IS_WIN) return Boolean(resolvePm2Js())
   return (await pm2(['--version'], { timeout: 30000 })).ok
 }
 
@@ -334,10 +330,25 @@ function extractJsonArray(text) {
   return []
 }
 
+/** 专属 home 有没有留下痕迹（存过 dump 或跑过进程）—— 用来避免「只为看一眼状态」就拉起 daemon */
+function hasOwnDaemonHistory() {
+  try {
+    if (fs.existsSync(path.join(PM2_HOME_DIR, 'dump.pm2'))) return true
+    const pids = path.join(PM2_HOME_DIR, 'pids')
+    return fs.existsSync(pids) && fs.readdirSync(pids).length > 0
+  } catch (_) {
+    return false
+  }
+}
+
 /**
  * `pm2 jlist` 并解析成数组，失败返回空数组。
+ *
+ * ⚠️ `jlist` 会**顺手把 daemon 拉起来**。专属 home 里既没有 dump 也没有进程 pid
+ *    （= 这台机器从没部署过）时直接当空 —— 不为了一句状态查询就留一个常驻 daemon。
  */
 export async function pm2Jlist({ timeout = 30000 } = {}) {
+  if (IS_WIN && !hasOwnDaemonHistory()) return []
   const r = await pm2(['jlist'], { timeout })
   if (!r.ok || !r.out) return []
   return extractJsonArray(r.out)
@@ -403,7 +414,8 @@ export async function ensurePm2() {
     if (resolveLpm2Js() && (await hasPm2())) return { ok: true, via: 'lpm2' }
   }
 
-  if ((await runDirect(['--version'])).ok) {
+  // 退路：现有的 pm2 还能用就照旧用（纯文件判断，不跑命令 —— 跑命令会拉起 daemon）
+  if (resolvePm2Js()) {
     return {
       ok: true,
       via: 'pm2',
