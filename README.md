@@ -106,6 +106,21 @@ game_record 实时便笺接口，纯 stoken 凭证拉不到时该行自动隐藏
 #队伍伤害 钟离,班尼特,香菱,行秋
 ```
 
+幻想角色数据来自 [Alioth.wiki](https://alioth.wiki/)，按指定月份查询，未收录月份直接提示暂无数据。
+角色资料沿用喵喵数据；绑定 CK 后按持有角色、限制元素/特邀名单及等级 ≥70 筛选，开幕试用角色按 80 级补入；未读取到 CK 时展示全部可用角色。
+
+**剧诗主题**：锅巴面板 → 小火花 → 幻想真境剧诗 →「幻想角色 / 小剧诗主题」，可选浅色、深色或跟随全部深渊，两张图共用。默认跟随全部深渊；全部深渊设为浅色时，幻想角色也使用浅色。
+
+**随机风景背景**：内置 50 张原神观景点原图，统一平铺在 `resources/bg/`。锅巴面板 → 小火花，将「深渊/剧诗/配队背景」或「立绘卡底图」填为 `plugins/xhh-TL/resources/bg`，即可每次随机使用风景图；也可指定其中一张图片。
+
+| 配置项 | 作用 | 默认值 |
+| --- | --- | --- |
+| `role_combat_bg_folder` | 深渊、剧诗、配队等背景；支持单图及多层分类目录 | `plugins/xhh-TL/resources/bg/bg1.png` |
+| `tl_portrait_bg` | 体力立绘卡底图；支持单图及多层分类目录 | `plugins/xhh-TL/resources/bg/bg1.png` |
+| `role_combat_theme` | 幻想角色与小剧诗主题；`light` 浅色、`dark` 深色，留空跟随全部深渊 | 空 |
+
+内置目录保留 `bg1.png`、`bg2.png` 供单图指定和兜底，随机背景只抽 50 张风景。自定义图库仍支持分类子目录，角色立绘仍按原有角色名筛选；旧版内置背景路径自动兼容。素材来源记录见 [观景点来源](resources/bg/来源.json)。
+
 配队与持有率数据源是[提瓦特小助手](https://api.yshelper.com)，无 CK 也能出通用榜。
 
 **队伍伤害**面板取 miao 的缓存，队里每人都得先 `#更新面板`。队伍后面可接手法
@@ -194,6 +209,7 @@ gsuid_core + 鸣潮插件（鸣潮体力）、Node ≥ 22.5（鸣潮读库更省
 ```yaml
 reply_quote: true           # 出图和提示是否引用你发的那条消息
 render_scale: 1.0           # 全局出图清晰度倍率（上限 2.5）
+role_combat_theme: ""      # 幻想角色/小剧诗：空串跟随全部深渊 / light 浅色 / dark 深色
 tl_card_style: classic      # 体力卡样式 classic / portrait / widget
 tl_render_mode: merge       # 体力渲染模式 merge=合并 / single=独立（三种样式均生效）
 tl_merge_uids_per_image: 0  # 合并模式下每图 UID 数，0=全部（立绘/小组件卡并排直接出图）

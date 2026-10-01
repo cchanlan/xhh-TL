@@ -108,10 +108,10 @@ export function supportGuoba() {
           field: 'tl_portrait_bg',
           label: '立绘卡底图',
           bottomHelpMessage:
-            '立绘卡样式的底图。支持单张图片文件，或目录（目录则每次随机抽一张）。相对 Yunzai 根或绝对路径。默认 bg1.png',
+            '立绘卡样式的底图。支持单张图片或多层分类目录，每次随机抽一张。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。相对 Yunzai 根或绝对路径；留空使用 bg1.png',
           component: 'Input',
           componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
           }
         },
         {
@@ -261,13 +261,26 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
+          field: 'role_combat_theme',
+          label: '幻想角色 / 小剧诗主题',
+          bottomHelpMessage: '#幻想角色、#小剧诗 共用。可选浅色、深色半透明主题；留空跟随「全部深渊主题」',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '跟随全部深渊', value: '' },
+              { label: '浅色', value: 'light' },
+              { label: '深色', value: 'dark' }
+            ]
+          }
+        },
+        {
           field: 'role_combat_bg_folder',
           label: '深渊/剧诗/配队背景',
           bottomHelpMessage:
-            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 共用同一张背景。可填单张图片或角色面板目录。默认 plugins/xhh-TL/resources/stat/imgs/bg1.png（插件自带，Win/Linux 通用）。目录结构：子文件夹=角色名，内含图片随机抽取。也可用绝对路径',
+            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 的背景来源。可填单张图片、角色面板目录或多层分类目录。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。支持 Win/Linux 相对或绝对路径；留空使用 bg1.png',
           component: 'Input',
           componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
           }
         },
         {
@@ -435,10 +448,10 @@ export function supportGuoba() {
           field: 'help_bg',
           label: '帮助图背景',
           bottomHelpMessage:
-            '#小火花帮助 背景。默认 plugins/xhh-TL/resources/stat/imgs/bg2.png（插件自带，Win/Linux 通用正斜杠）。可填单张图片，或目录（随机抽一张）。Windows 也可用绝对路径如 D:/Yunzai/plugins/.../xxx.png',
+            '#小火花帮助 背景。默认 plugins/xhh-TL/resources/bg/bg2.png（插件自带，Win/Linux 通用正斜杠）。可填单张图片，或目录（随机抽一张）。Windows 也可用绝对路径如 D:/Yunzai/plugins/.../xxx.png',
           component: 'Input',
           componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/stat/imgs/bg2.png'
+            placeholder: 'plugins/xhh-TL/resources/bg/bg2.png'
           }
         },
         {

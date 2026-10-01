@@ -526,3 +526,58 @@ footer {
   color: #888;
   font-weight: 700;
 }
+
+/* 整体遮罩保持四成，背景不额外模糊。 */
+.theme-light .xhh_box {
+  background: rgba(248,250,252,0.40);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 8rem 32rem rgba(51,51,52,0.2), inset 0 0 0 1rem rgba(255,255,255,0.3);
+}
+.theme-light .boss-card {
+  background: rgba(255,255,255,0.26);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 2rem 6rem rgba(51,51,52,0.15), inset 0 0 0 1rem rgba(255,255,255,0.3);
+}
+.theme-light .sub, .theme-light .meta-line, .theme-light .time-line,
+.theme-light .section-label, .theme-light .stage, .theme-light .head-right,
+.theme-light .char-name, .theme-light .char-meta, .theme-light .mcard-name,
+.theme-light .mcard-lv, .theme-light .enemy-name, .theme-light .enemy-lv,
+.theme-light footer { text-shadow: 0 1rem 2rem #fff, 0 0 4rem rgba(255,255,255,0.8); }
+.theme-light .sub, .theme-light .section-label { color: #293548; }
+.theme-light .time-line, .theme-light footer { color: #334155; }
+.theme-light .time_label, .theme-light .meta-line .dot, .theme-light .enemy-lv,
+.theme-light .empty, .theme-light .char-ph, .theme-light .mcard .char-ph { color: #4b596a; }
+body.theme-dark { color: #e2e8f0; background: #111827; }
+.theme-dark .container { background-color: #1b273a; }
+.theme-dark .xhh_box {
+  background: rgba(15,23,42,0.82);
+  box-shadow: 0 8rem 32rem rgba(0,0,0,0.4), inset 6rem 6rem 20rem rgba(148,163,184,0.08);
+}
+.theme-dark .zi .name {
+  background: #543b50;
+  color: #fce7f3;
+  box-shadow: 2rem 2rem 4rem rgba(0,0,0,0.25), inset 2rem 2rem 6rem rgba(255,255,255,0.06);
+}
+.theme-dark .stage, .theme-dark .char-name, .theme-dark .mcard-name, .theme-dark .enemy-name { color: #f1f5f9; }
+.theme-dark .sub, .theme-dark .meta-line, .theme-dark .section-label { color: #d6deeb; }
+.theme-dark .time-line, .theme-dark .time_label, .theme-dark .meta-line .dot,
+.theme-dark .head-right, .theme-dark .char-meta, .theme-dark .mcard-lv,
+.theme-dark .enemy-lv, .theme-dark .empty, .theme-dark footer { color: #b4c0d2; }
+.theme-dark .boss-card {
+  background: rgba(37,49,69,0.8);
+  box-shadow: 2rem 2rem 6rem rgba(0,0,0,0.22), inset 2rem 2rem 8rem rgba(148,163,184,0.08);
+}
+.theme-dark .boss-head { background: rgba(110,168,255,0.13); }
+.theme-dark .boss-card.tarot .boss-head { background: rgba(155,123,255,0.15); }
+.theme-dark .tag { color: #b3d3ff; background: rgba(15,23,42,0.6); }
+.theme-dark .boss-card.tarot .tag { color: #d0beff; }
+.theme-dark .char-ph, .theme-dark .mcard .char-ph { color: #c1cddd; background: rgba(148,163,184,0.16); }
+.theme-dark .enemy-box { border-color: rgba(203,213,225,0.18); }
+.theme-dark .enemy-label { color: #ffb3aa; background: rgba(255,100,80,0.12); }
+.theme-dark .enemy-icon { background: rgba(15,23,42,0.3); }
+.theme-dark .mcard-talent span { color: #e2e8f0; background: rgba(15,23,42,0.58); box-shadow: inset 0 0 0 1rem rgba(148,163,184,0.22); }
+.theme-dark .gbox { background: rgba(15,23,42,0.5); }
+.theme-dark .gbox .gempty { background: rgba(148,163,184,0.12); }
+.theme-dark footer { border-color: rgba(203,213,225,0.18); }

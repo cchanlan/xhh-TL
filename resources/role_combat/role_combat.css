@@ -52,3 +52,36 @@ body { width: 800rem; transform-origin: 0 0; background: #0a0e1a; color: #e0e0e0
 .mini em.anemo { background: rgba(75,200,180,0.2); color: #4bc8b4; }
 .mini em.geo { background: rgba(255,180,50,0.2); color: #ffb432; }
 footer { text-align: center; margin-top: 30rem; padding-top: 20rem; border-top: 1rem solid rgba(255,255,255,0.1); font-size: 12rem; color: #484f58; }
+.empty-tip, .account-tip { text-align: center; padding: 20rem; }
+.empty-tip { color: #8b949e; }
+.account-tip { color: #d29922; }
+
+/* 深色沿用原配色；浅色保留背景图与布局，只替换玻璃、遮罩和文字。 */
+body.theme-light { background: #edf2f8; color: #334155; }
+.theme-light .page { background: linear-gradient(135deg, #f8fafc, #e8eff7 50%, #f8fafc); }
+.theme-light .page::before { background: rgba(248,250,252,0.40); }
+.theme-light .bg-orb { opacity: 0; }
+.theme-light .hero, .theme-light .title, .theme-light footer { text-shadow: 0 1rem 2rem #fff, 0 0 4rem rgba(255,255,255,0.8); }
+.theme-light .hero, .theme-light footer { border-color: rgba(51,65,85,0.15); }
+.theme-light .hero h1, .theme-light .title h2, .theme-light .summary-item b, .theme-light .char .name { color: #1e293b; }
+.theme-light .hero p, .theme-light .summary-item span, .theme-light .monster span, .theme-light .empty-tip, .theme-light footer { color: #435063; }
+.theme-light .eyebrow, .theme-light .title span { color: #285a94; }
+.theme-light .summary-item, .theme-light .char, .theme-light .monster, .theme-light .mini, .theme-light .warn {
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  text-shadow: 0 1rem 2rem rgba(255,255,255,0.95);
+}
+.theme-light .char img { border-color: rgba(51,65,85,0.16); }
+.theme-light .char.invite { border-color: rgba(104,75,176,0.3); }
+.theme-light .monster b { color: #a9323d; }
+.theme-light .mini span { color: #334155; }
+.theme-light .warn, .theme-light .account-tip { color: #805710; }
+.theme-light .elem.pyro, .theme-light .mini em.pyro { color: #a33420; }
+.theme-light .elem.hydro, .theme-light .mini em.hydro { color: #15559a; }
+.theme-light .elem.dendro, .theme-light .mini em.dendro { color: #286437; }
+.theme-light .elem.electro, .theme-light .mini em.electro { color: #7437a6; }
+.theme-light .elem.cryo, .theme-light .mini em.cryo { color: #195976; }
+.theme-light .elem.anemo, .theme-light .mini em.anemo { color: #176657; }
+.theme-light .elem.geo, .theme-light .mini em.geo { color: #815410; }
+.theme-dark footer { color: #a8b3c4; }

@@ -383,10 +383,10 @@ export async function toDataUrlTrim(input) {
 }
 
 /** 插件内置默认背景（相对 Yunzai 根，跨平台 / 统一） */
-export const DEFAULT_ROLE_COMBAT_BG = 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+export const DEFAULT_ROLE_COMBAT_BG = 'plugins/xhh-TL/resources/bg/bg1.png'
 
 /** 帮助图默认背景（相对 Yunzai 根，跨平台 / 统一） */
-export const DEFAULT_HELP_BG = 'plugins/xhh-TL/resources/stat/imgs/bg2.png'
+export const DEFAULT_HELP_BG = 'plugins/xhh-TL/resources/bg/bg2.png'
 
 /**
  * 解析帮助图背景路径 help_bg
@@ -484,6 +484,15 @@ export function resolveRoleCombatBgPath(raw) {
     }
   }
 
+  // 内置背景目录改名、平铺后，继续兼容旧版用户配置；不改第三方图库路径。
+  const oldBgRoot = path.join(pluginDir, 'resources', 'stat')
+  for (const candidate of [...candidates]) {
+    const relative = path.relative(oldBgRoot, candidate)
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) continue
+    const file = /\.(jpe?g|png|webp|gif|bmp)$/i.test(relative) ? path.basename(relative) : ''
+    candidates.push(path.join(pluginDir, 'resources', 'bg', file))
+  }
+
   for (const c of candidates) {
     try {
       if (!c || !fs.existsSync(c)) continue
@@ -505,9 +514,10 @@ export function resolveRoleCombatBgFolder(raw) {
  * 从背景配置随机挑一张图，返回 file URL；失败返回 ''
  * 支持：
  * 1) 单张图片路径（默认 bg1.png）
- * 2) 目录：子文件夹名为角色名，内含 jpg/png/webp；也可直接在目录下放图
+ * 2) 目录：支持角色名、国家等多层分类子目录；也可直接在目录下放图
  * @param {object} [opts]
- * @param {(name: string) => boolean} [opts.filterDir] 过滤子目录名
+ * @param {(name: string) => boolean} [opts.filterDir] 过滤一级子目录名
+ * @param {boolean} [opts.recursive=true] 是否扫描分类目录内的更深层图片
  * @param {string} [opts.logTag]
  */
 export function pickRoleCombatBgImage(opts = {}) {
@@ -538,23 +548,36 @@ export function pickRoleCombatBgImage(opts = {}) {
   try {
     const collect = (filter) => {
       const imgs = []
+      const seen = new Set([fs.realpathSync(abs)])
+      const walk = (dir) => {
+        let files
+        try {
+          const real = fs.realpathSync(dir)
+          if (seen.has(real)) return
+          seen.add(real)
+          files = fs.readdirSync(dir)
+        } catch (_) {
+          return
+        }
+        for (const file of files) {
+          const full = path.join(dir, file)
+          try {
+            const st = fs.statSync(full)
+            if (st.isDirectory()) {
+              if (opts.recursive !== false) walk(full)
+            } else if (st.isFile() && /\.(jpe?g|png|webp|gif|bmp)$/i.test(file)) {
+              imgs.push(full)
+            }
+          } catch (_) {}
+        }
+      }
       for (const item of fs.readdirSync(abs)) {
         const full = path.join(abs, item)
-        let st
         try {
-          st = fs.statSync(full)
-        } catch (_) {
-          continue
-        }
-        if (!st.isDirectory()) continue
-        if (filter && !filter(item)) continue
-        let files = []
-        try {
-          files = fs.readdirSync(full).filter((f) => /\.(jpe?g|png|webp|gif|bmp)$/i.test(f))
-        } catch (_) {
-          continue
-        }
-        for (const f of files) imgs.push(path.join(full, f))
+          if (!fs.statSync(full).isDirectory()) continue
+          if (filter && !filter(item)) continue
+          walk(full)
+        } catch (_) {}
       }
       return imgs
     }
@@ -570,6 +593,11 @@ export function pickRoleCombatBgImage(opts = {}) {
           .filter((f) => /\.(jpe?g|png|webp|gif|bmp)$/i.test(f))
           .map((f) => path.join(abs, f))
       } catch (_) {}
+    }
+    // 内置目录随机只取风景，bg1/bg2 留给显式指定和缺图兜底。
+    if (path.resolve(abs) === path.join(pluginDir, 'resources', 'bg')) {
+      const scenery = imgs.filter(f => !/^bg[12]\.png$/i.test(path.basename(f)))
+      if (scenery.length) imgs = scenery
     }
     if (!imgs.length) {
       // 目录空 → 回退内置默认图
@@ -646,6 +674,7 @@ export function pickCharacterPortrait(game, opts = {}) {
       DEFAULT_TL_ZZZ_PORTRAIT_FOLDER
     return pickRoleCombatBgImage({
       folder,
+      recursive: false,
       logTag: opts.logTag || 'xhh-TL:portrait-zzz',
     })
   }
@@ -655,6 +684,7 @@ export function pickCharacterPortrait(game, opts = {}) {
       DEFAULT_TL_WW_PORTRAIT_FOLDER
     return pickRoleCombatBgImage({
       folder,
+      recursive: false,
       logTag: opts.logTag || 'xhh-TL:portrait-ww',
     })
   }
@@ -669,12 +699,13 @@ export function pickCharacterPortrait(game, opts = {}) {
   return pickRoleCombatBgImage({
     folder,
     filterDir,
+    recursive: false,
     logTag: opts.logTag || 'xhh-TL:portrait',
   })
 }
 
 /** 立绘卡底图默认路径 */
-export const DEFAULT_TL_PORTRAIT_BG = 'plugins/xhh-TL/resources/stat/imgs/bg1.png'
+export const DEFAULT_TL_PORTRAIT_BG = 'plugins/xhh-TL/resources/bg/bg1.png'
 
 /**
  * 立绘卡底图，返回 file URL（失败返回 ''）

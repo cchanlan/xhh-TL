@@ -336,8 +336,12 @@ export class miniRoleCombat extends plugin {
     const qq = targetQq || e.user_id || e.sender?.user_id || ''
     const qqname = targetName || e.sender?.card || e.sender?.nickname || String(qq)
 
+    const cfg = config()
+    const themeRaw = String(cfg.role_combat_theme || cfg.gs_all_abyss_theme || 'light').toLowerCase()
+    const theme = themeRaw === 'dark' ? 'dark' : 'light'
     const tplFile = pluginDir + '/resources/role_combat/mini_role_combat.html'
     const renderData = {
+      theme,
       stages,
       stageCount: stages.length,
       periodText,

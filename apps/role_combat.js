@@ -1,15 +1,14 @@
-import fetch from 'node-fetch';
 import moment from 'moment';
 import path from 'path';
-import YAML from 'yaml';
 import { Character, MysApi, Player } from '../../miao-plugin/models/index.js';
 import { createUser } from '../utils/userBind.js';
 import { prepareMysContext } from '../utils/runtimePatch.js';
-import { pickRoleCombatBgImage, pluginDir, toFileUrl } from '../utils/pluginConfig.js'
+import { config, pickRoleCombatBgImage, pluginDir, toFileUrl } from '../utils/pluginConfig.js'
 import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 
-const MANIFEST_URL = 'https://static.nanoka.cc/manifest.json';
+import { fetchIndex, fetchPhase, findIndexByMonth, giMonsterDb, aliothText } from '../utils/alioth.js'
+
 const ELEMENT_MAP = {
   2: 'pyro', 3: 'hydro', 4: 'dendro', 5: 'electro', 6: 'cryo', 7: 'anemo', 8: 'geo',
   Fire: 'pyro', Water: 'hydro', Grass: 'dendro', Elec: 'electro', Ice: 'cryo', Wind: 'anemo', Rock: 'geo',
@@ -36,22 +35,11 @@ function parseMonth(msg = '') {
   // ⚠️ 月份交替的顺序必须是「两位数在前」：`0?[1-9]|1[0-2]` 会让 `202610` 先命中 `1`
   // （`0?` 可省），正则不会回溯去试 `10` —— 结果 10/11/12 月全被解析成 1 月。
   // 症状很隐蔽：指令正则照样匹配，但查到的是 1 月，不在数据包里就 fallback 到最新一期。
-  let m = raw.match(/(20\d{2})(?:[-/.年]?)(1[0-2]|0?[1-9])(?:月)?/);
+  let m = raw.match(/(20\d{2})(?:[-/.年]?)(1[0-2]|0?[1-9])(?:月)?\s*$/);
   if (m) return `${m[1]}${String(Number(m[2])).padStart(2, '0')}`;
-  m = raw.match(/20\d{4}/);
-  if (m) return m[0];
+  m = raw.match(/(20\d{2})[-/.年]?(\d{1,2})月?\s*$/);
+  if (m) return `${m[1]}${m[2].padStart(2, '0')}`;
   return moment().format('YYYYMM');
-}
-
-async function fetchJson(url, timeout = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(url, { signal: controller.signal });
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 function charById(id) {
@@ -116,12 +104,27 @@ function mergeStart(avatars, initialAvatarIds) {
 }
 
 function extractCharacters(raw = {}) {
-  const cfg = raw.avatar_config || raw.AvatarConfig || {};
-  const openingIds = (cfg.buff_avatar_list || cfg.BuffAvatarList || []).map(v => Number(v.id || v.Id || v) + (Number(v.id || v.Id || v) < 10000000 ? 10000000 : 0));
-  const inviteIds = (cfg.invite_avatar_list || cfg.InviteAvatarList || []).map(v => Number(v.id || v.Id || v) + (Number(v.id || v.Id || v) < 10000000 ? 10000000 : 0));
-  const elements = (cfg.element_list || cfg.ElementList || []).map(v => ELEMENT_MAP[v]).filter(Boolean);
-  const opening = uniqById(openingIds.map(charById).filter(Boolean));
-  const invite = uniqById(inviteIds.map(charById).filter(Boolean));
+  // Alioth 使用短角色 ID；角色元素、星级与头像继续复用喵喵元数据。
+  const ids = list => list.map(v => {
+    const id = Number(v.ID);
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Alioth 剧诗角色 ID 无效');
+    return id < 10000000 ? id + 10000000 : id;
+  });
+  if (!Array.isArray(raw.Initial) || !Array.isArray(raw.Invitation) || !Array.isArray(raw.Elem)) {
+    throw new Error('Alioth 剧诗缺少角色或元素列表');
+  }
+  const elements = raw.Elem.map(v => {
+    if (!ELEMENT_MAP[v]) throw new Error(`Alioth 剧诗未知元素：${v}`);
+    return ELEMENT_MAP[v];
+  });
+  const characters = list => uniqById(ids(list).map(id => {
+    const char = charById(id);
+    // 不能用 filter(Boolean) 悄悄丢掉新角色，老版本喵喵缺数据时整期明确报错。
+    if (!char?.name || !ELEMENT_CN[char.elem]) throw new Error(`喵喵角色元数据缺失：${id}`);
+    return char;
+  }));
+  const opening = characters(raw.Initial);
+  const invite = characters(raw.Invitation);
   const inviteSet = new Set(invite.map(v => v.id));
   const available = [];
   const travelerIds = [10000005, 10000007];
@@ -158,41 +161,50 @@ function extractCharacters(raw = {}) {
   return { elements: [...new Set(elements)], opening, invite, available: [...availMap.values()] };
 }
 
-function extractMonsters(raw = {}) {
-  const diff = raw.difficulty_config || raw.DifficultyConfig || {};
-  const last = Object.values(diff).at(-1) || {};
-  const pairs = [
-    ['第三幕', last.room?.['3'] || last.Room?.['3']],
-    ['第六幕', last.room?.['6'] || last.Room?.['6']],
-    ['第八幕', last.room?.['8'] || last.Room?.['8']],
-    ['第十幕', last.room?.['10'] || last.Room?.['10']],
-    ['圣牌挑战 I', last.hard_room?.['4']],
-    ['圣牌挑战 II', last.hard_room?.['7']],
-  ];
-  return pairs.map(([stage, room]) => {
-    const names = (room?.monster_preview_list || room?.MonsterPreviewList || []).map(v => v.name || v.Name).filter(Boolean);
-    return names.length ? { stage, names } : null;
-  }).filter(Boolean);
+function extractMonsters(raw, monDb) {
+  // 与 #版本剧诗 相同：Chambers.Configs → MP 怪物 ID，Arcana 为圣牌挑战。
+  const stages = { 3: '第三幕', 6: '第六幕', 8: '第八幕', 10: '第十幕' };
+  const namesOf = ids => [...new Set(ids.map(id => {
+    const name = aliothText(monDb.get(String(id))?.Name || '');
+    if (!name) throw new Error(`Alioth 剧诗怪物名称缺失：${id}`);
+    return name;
+  }))];
+  const monsters = [];
+  for (const c of raw.Chambers || []) {
+    if (!stages[c._id]) continue;
+    const ids = (c.Configs || []).flatMap(k => {
+      const ids = raw.MP?.[String(k)];
+      if (!Array.isArray(ids) || !ids.length) throw new Error(`Alioth 剧诗怪物配置缺失：${k}`);
+      return ids;
+    });
+    if (ids.length) monsters.push({ stage: stages[c._id], names: namesOf(ids) });
+  }
+  (raw.Arcana || []).forEach((a, i) => {
+    const ids = (a.Monsters || []).map(m => m.ID);
+    if (ids.length) monsters.push({ stage: `圣牌挑战 ${['I', 'II', 'III', 'IV', 'V'][i] || i + 1}`, names: namesOf(ids) });
+  });
+  return monsters;
 }
 
 async function loadRoleCombat(month) {
-  const manifest = await fetchJson(MANIFEST_URL);
-  const version = manifest?.gi?.latest;
-  if (!version) throw new Error('Nanoka manifest 未返回原神版本');
-  const overall = await fetchJson(`https://static.nanoka.cc/gi/${version}/rolecombat.json`);
-  const count = Object.keys(overall || {}).length;
-  const minMonth = indexToMonth(0);
-  const maxMonth = indexToMonth(count - 1);
-  let idx = monthToIndex(month);
-  let usedMonth = month;
-  let fallback = false;
-  if (idx < 0 || idx >= count) {
-    idx = count - 1;
-    usedMonth = maxMonth;
-    fallback = true;
+  if (!/^20\d{2}(0[1-9]|1[0-2])$/.test(String(month))) {
+    throw Object.assign(new Error(`无效剧诗月份：${month}`), { code: 'INVALID_MONTH' });
   }
-  const raw = await fetchJson(`https://static.nanoka.cc/gi/${version}/zh/rolecombat/${idx + 3}.json`);
-  return { version, minMonth, maxMonth, month: usedMonth, requestedMonth: month, fallback, raw };
+  const index = await fetchIndex('theater');
+  const selected = findIndexByMonth(index.phases, month);
+  const phase = index.phases[selected];
+  // 只取请求月份，不使用 Latest 或最近已开始的一期代替缺失月份。
+  if (!phase || phase._begin?.format('YYYYMM') !== month) {
+    throw Object.assign(new Error(`Alioth 未收录剧诗月份：${month}`), { code: 'MONTH_NOT_FOUND' });
+  }
+  const raw = await fetchPhase('theater', phase._id);
+  if (String(raw._id) !== String(phase._id)) throw new Error('Alioth 剧诗详情期号与索引不符');
+  const monDb = await giMonsterDb();
+  const months = index.phases.map(p => p._begin?.format('YYYYMM')).filter(Boolean);
+  return {
+    version: phase.Ver || '', minMonth: months[0], maxMonth: months[months.length - 1],
+    month, requestedMonth: month, fallback: false, raw, monDb,
+  };
 }
 
 export class role_combat extends plugin {
@@ -220,15 +232,19 @@ export class role_combat extends plugin {
   }
 
   async nextRoleCombat(e) {
-    // 以当前月为基准 +1 个月，作为“下期”请求月份；数据未发布时 loadRoleCombat 会回退到最新一期
+    // 以当前月为基准 +1 个月，作为“下期”请求月份；数据未发布时明确提示该月暂无数据
     const cur = moment().format('YYYYMM');
     const nextMonth = indexToMonth(monthToIndex(cur) + 1);
-    return this.roleCombat(e, nextMonth);
+    return this.queryRoleCombat(e, nextMonth);
   }
 
-  async roleCombat(e, monthOverride) {
+  async roleCombat(e) {
+    // 指令入口只收事件，避免宿主传入的正则匹配结果被当作月份。
+    return this.queryRoleCombat(e, parseMonth(e.msg || ''));
+  }
+
+  async queryRoleCombat(e, requestedMonth) {
     await replyProgress(e, '正在获取幻想真境剧诗数据，请稍后...');
-    const requestedMonth = monthOverride || parseMonth(e.msg || '');
 
     // 检测 @提及
     let targetQq = null;
@@ -265,15 +281,17 @@ export class role_combat extends plugin {
       } catch (_) {}
     }
 
-    let payload;
+    let payload, data, monsters;
     try {
       payload = await loadRoleCombat(requestedMonth);
+      data = extractCharacters(payload.raw);
+      monsters = extractMonsters(payload.raw, payload.monDb);
     } catch (err) {
-      logger.error('[xhh][role_combat] 获取Nanoka数据失败:', err);
+      logger.error('[xhh][role_combat] 获取 Alioth.wiki 数据失败:', err);
+      if (err.code === 'MONTH_NOT_FOUND') return e.reply(`${requestedMonth.slice(0, 4)}-${requestedMonth.slice(4)} 幻想真境剧诗暂无数据，请换个月份查询`);
+      if (err.code === 'INVALID_MONTH') return e.reply('请使用有效月份，例如 #幻想角色202610');
       return e.reply(`幻想真境剧诗数据获取失败，请稍后重试`);
     }
-    const data = extractCharacters(payload.raw);
-    const monsters = extractMonsters(payload.raw);
     if (!data.elements.length || !data.opening.length || !data.invite.length) {
       return e.reply('本期幻想真境剧诗数据不完整，请稍后再试');
     }
@@ -368,9 +386,13 @@ export class role_combat extends plugin {
       logger.error('[xhh][role_combat] 加载背景图失败:', err);
     }
 
+    const cfg = config();
+    const themeRaw = String(cfg.role_combat_theme || cfg.gs_all_abyss_theme || 'light').toLowerCase();
+    const theme = themeRaw === 'dark' ? 'dark' : 'light';
     const tplFile = pluginDir + '/resources/role_combat/role_combat.html';
     const renderData = {
       ...data,
+      theme,
       available: filteredAvailable,
       monsters,
       month: `${payload.month.slice(0, 4)}-${payload.month.slice(4)}`,

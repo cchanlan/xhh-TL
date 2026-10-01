@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<link rel="stylesheet" href="{{ppath}}role_combat/role_combat.css" />
+<link rel="stylesheet" href="{{ppath}}role_combat/role_combat.css?v=20261002-mask40" />
   <style id="rem-root">html { font-size: {{scalePx}}px; }</style>
 </head>
-<body>
+<body class="theme-{{theme}}">
 <div class="page" id="container" {{if bgImage}}style="background: url('{{bgImage}}') center/cover no-repeat !important;"{{/if}}>
 <div class="bg-orb one"></div><div class="bg-orb two"></div>
 <main class="card">
@@ -17,7 +17,7 @@
 </div>
 </header>
 {{if fallback}}
-<div class="warn">请求月份 {{requestedMonth}} 不在 Nanoka 数据库中，已展示最新收录月份。可查询范围：{{range}}</div>
+<div class="warn">{{requestedMonth}} 暂无数据，请换个月份查询。</div>
 {{/if}}
 <section class="summary">
 <div class="summary-item"><span>限制元素</span><b>{{each elements el}}<i class="elem {{el}}">{{el === 'pyro' ? '火' : el === 'hydro' ? '水' : el === 'dendro' ? '草' : el === 'electro' ? '雷' : el === 'cryo' ? '冰' : el === 'anemo' ? '风' : '岩'}}</i>{{/each}}</b></div>
@@ -55,13 +55,13 @@
 {{each available c}}<div class="mini"><img src="{{c.face}}"><span>{{c.name}}</span><em class="{{c.elemClass}}">{{c.elemName}}</em></div>{{/each}}
 </div>
 {{if filterApplied && !available.length}}
-<p style="text-align:center;color:#8b949e;padding:20rem;">暂无符合条件的角色</p>
+<p class="empty-tip">暂无符合条件的角色</p>
 {{/if}}
 {{if ckMissing}}
-<p style="text-align:center;color:#d29922;padding:20rem;">未读取到{{if queryUser}} {{queryUser}} {{/if}}的角色数据，以下为当期全部可用角色。发送 <b>#扫码登录</b> 绑定后只看自己拥有的角色</p>
+<p class="account-tip">未读取到{{if queryUser}} {{queryUser}} {{/if}}的角色数据，以下为当期全部可用角色。发送 <b>#扫码登录</b> 绑定后只看自己拥有的角色</p>
 {{/if}}
 </section>
-<footer>数据来源：Nanoka · v{{version}} · 获取时间 {{generatedAt}} · from 小火花</footer>
+<footer>数据来源：Alioth.wiki · v{{version}} · 获取时间 {{generatedAt}} · from 小火花</footer>
 </main>
 </div>
 </body>
