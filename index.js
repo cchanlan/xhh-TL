@@ -13,6 +13,7 @@ import { autoSign } from './apps/autoSign.js'
 import { autoBbsCoin } from './apps/autoBbsCoin.js'
 import { TLDelCkHook } from './apps/delCkHook.js'
 import { solverDeploy } from './apps/solverDeploy.js'
+import { captchaNotice } from './apps/captchaNotice.js'
 
 /**
  * 本文件在 plugins/xhh-TL/index.js，`../..` 才是 Bot 根目录。
@@ -56,5 +57,5 @@ if (hasMiaoPlugin) {
 export {
   TL, Abyss, teamDamage, role_combat, miniRoleCombat, gsAllAbyss, abyssTeam, hardTeam, holdRate,
   TmpCleaner, nanokaAbyss, help, resinPush, autoSign, autoBbsCoin,
-  TLDelCkHook, srGachaLog, solverDeploy,
+  TLDelCkHook, srGachaLog, solverDeploy, captchaNotice,
 }
