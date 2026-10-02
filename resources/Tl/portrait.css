@@ -35,21 +35,12 @@ body {
   background: linear-gradient(135deg, #1b2426 0%, #101617 55%, #080c0d 100%);
 }
 
-/* 最底层背景图（bg1.png 铺满） */
-.pt-base {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* 右侧清晰立绘 */
+/* 右侧清晰立绘：只扩大画面，不压缩左侧信息区 */
 .pt-portrait {
   position: absolute;
   top: 0;
   right: 0;
-  width: 58%;
+  width: 70%;
   height: 100%;
   background-size: cover;
   background-position: top center;
@@ -251,6 +242,23 @@ body {
   color: rgba(255,255,255,0.35);
   letter-spacing: 0.05em;
 }
+
+/* 从立绘取色；不覆盖各游戏原有的进度条颜色，取色失败沿用上方兜底。 */
+.pt-adaptive {
+  background: linear-gradient(155deg, var(--pt-top) 0%, var(--pt-bottom) 100%);
+}
+.pt-adaptive .pt-shade {
+  background:
+    linear-gradient(90deg, var(--pt-top) 0%, var(--pt-top-93) 24%, var(--pt-top-60) 40%, var(--pt-top-15) 58%, transparent 76%),
+    linear-gradient(0deg, var(--pt-bottom-85) 0%, var(--pt-bottom-20) 20%, transparent 48%);
+}
+.pt-adaptive .pt-footer {
+  background: linear-gradient(180deg, var(--pt-bottom-20), var(--pt-bottom-92));
+}
+.pt-adaptive .pt-status-item.no { color: #f3e4e1; }
+.pt-adaptive .pt-bar-val i,
+.pt-adaptive .pt-stat-key,
+.pt-adaptive .pt-uid { color: #d0d4e0; }
 
 /* 合并渲染：多张立绘卡一行并排，body 宽度由模板按卡片数撑开 */
 .pt-row {

@@ -64,7 +64,7 @@ export function supportGuoba() {
           field: 'tl_card_style',
           label: '体力卡片样式',
           bottomHelpMessage:
-            '经典=多合一卡片；立绘卡=右侧大角色立绘；桌面小组件=仿米哈游官方桌面小组件竖卡（立绘复用同一目录）',
+            '经典=多合一卡片；立绘卡=七成宽角色立绘；桌面小组件=顶部立绘竖卡。后两种随立绘自动搭配渐变色，小组件自动裁边铺满',
           component: 'Select',
           componentProps: {
             options: [
@@ -102,16 +102,6 @@ export function supportGuoba() {
           component: 'Input',
           componentProps: {
             placeholder: 'plugins/xhh-TL/resources/ww_role_pile'
-          }
-        },
-        {
-          field: 'tl_portrait_bg',
-          label: '立绘卡底图',
-          bottomHelpMessage:
-            '立绘卡样式的底图。支持单张图片或多层分类目录，每次随机抽一张。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。相对 Yunzai 根或绝对路径；留空使用 bg1.png',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
           }
         },
         {

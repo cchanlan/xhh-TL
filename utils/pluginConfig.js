@@ -330,18 +330,55 @@ async function loadSharp() {
   return _sharpMod
 }
 
-/** 裁剪结果缓存：key = 绝对路径 + mtime，value = data URI */
+/** 裁剪结果缓存：key = 绝对路径 + mtime + 裁剪选项，value = data URI */
 const _trimCache = new Map()
+
+// 只认整行/整列连续的近白、近黑实色边；不按角点颜色裁整幅画，避免误吃天空和人物。
+async function trimSolidBorders(image, sharp) {
+  const { data, info } = await image.clone().toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const { width, height, channels } = info
+  const blankLine = (start, step, count) => {
+    const first = start * channels
+    const white = data[first] >= 247 && data[first + 1] >= 247 && data[first + 2] >= 247
+    const black = data[first] <= 8 && data[first + 1] <= 8 && data[first + 2] <= 8
+    if (!white && !black) return false
+    for (let i = 0; i < count; i++) {
+      const pos = (start + i * step) * channels
+      if (data[pos + 3] < 250) return false
+      for (let c = 0; c < 3; c++) {
+        if (white ? data[pos + c] < 247 : data[pos + c] > 8) return false
+      }
+    }
+    return true
+  }
+  let left = 0, right = width, top = 0, bottom = height
+  while (left < right && blankLine(left, width, height)) left++
+  while (right > left && blankLine(right - 1, width, height)) right--
+  if (left === right) return image
+  while (top < bottom && blankLine(top * width + left, 1, right - left)) top++
+  while (bottom > top && blankLine((bottom - 1) * width + left, 1, right - left)) bottom--
+  const cropWidth = right - left, cropHeight = bottom - top
+  // 全空白、异常大边框或过小的剩余内容均不裁；1px 压缩噪点也保留。
+  if (cropWidth < Math.max(32, width * 0.4) || cropHeight < Math.max(32, height * 0.4)) return image
+  if (left < 2) left = 0
+  if (width - right < 2) right = width
+  if (top < 2) top = 0
+  if (height - bottom < 2) bottom = height
+  if (!left && !top && right === width && bottom === height) return image
+  return sharp(data, { raw: { width, height, channels } })
+    .extract({ left, top, width: right - left, height: bottom - top })
+}
 
 /**
  * 本地图片 → 裁掉四周透明边后的 base64 data URI（内联进 HTML）
  * 用途：部分立绘是抠图素材，左右/上下留有透明边，铺进横幅时透明处会露出底色，
- * 且角色会偏离视觉中心。先用 sharp 去掉透明边，图片变实心后 CSS `cover` 即可铺满并居中。
- * 仅裁剪“完全透明”的边（指定透明背景），不透明图不受影响；sharp 不可用或失败时回退 toDataUrl。
+ * 且角色会偏离视觉中心。先去掉留白，再由 CSS `cover` 等比铺满；抠图内部透明处仍由虚化底层兜底。
+ * 默认只裁透明边；小组件可开启 trimSolid 裁掉连续的近白/近黑边。sharp 不可用或失败时回退 toDataUrl。
  * @param {string} input file URL / 本地路径
+ * @param {{ trimSolid?: boolean }} opts
  * @returns {Promise<string>} data URI 或原始入参
  */
-export async function toDataUrlTrim(input) {
+export async function toDataUrlTrim(input, opts = {}) {
   if (!input) return ''
   const raw = String(input)
   if (raw.startsWith('data:')) return raw
@@ -364,15 +401,14 @@ export async function toDataUrlTrim(input) {
 
   try {
     const mtime = fs.statSync(abs).mtimeMs
-    const key = `${abs}:${mtime}`
+    const key = `${abs}:${mtime}:${opts.trimSolid ? 'solid' : 'alpha'}`
     const cached = _trimCache.get(key)
     if (cached) return cached
 
-    const buf = await sharp(abs)
-      // 仅裁剪与“全透明”匹配的边，不透明图无匹配边 → 原样保留
+    let image = sharp(abs)
       .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 10 })
-      .webp({ quality: 90 })
-      .toBuffer()
+    if (opts.trimSolid) image = await trimSolidBorders(image, sharp)
+    const buf = await image.webp({ quality: 90 }).toBuffer()
     const uri = `data:image/webp;base64,${buf.toString('base64')}`
     _trimCache.set(key, uri)
     return uri
@@ -701,25 +737,6 @@ export function pickCharacterPortrait(game, opts = {}) {
     filterDir,
     recursive: false,
     logTag: opts.logTag || 'xhh-TL:portrait',
-  })
-}
-
-/** 立绘卡底图默认路径 */
-export const DEFAULT_TL_PORTRAIT_BG = 'plugins/xhh-TL/resources/bg/bg1.png'
-
-/**
- * 立绘卡底图，返回 file URL（失败返回 ''）
- * 配置项 tl_portrait_bg：支持单张图片文件或目录（目录则随机抽一张）
- * @param {object} [opts]
- */
-export function pickPortraitBg(opts = {}) {
-  const cfg = readPluginConfig()
-  const folder =
-    (cfg.tl_portrait_bg && String(cfg.tl_portrait_bg).trim()) ||
-    DEFAULT_TL_PORTRAIT_BG
-  return pickRoleCombatBgImage({
-    folder,
-    logTag: opts.logTag || 'xhh-TL:portraitBg',
   })
 }
 

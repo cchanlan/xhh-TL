@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import fs from 'fs';
 import fetch from 'node-fetch';
 import moment from 'moment';
 import md5 from 'md5';
@@ -7,7 +8,8 @@ import plugin from '../../../lib/plugins/plugin.js';
 import { createUser, getAliveMysIds, hasRuntimeBinding } from '../utils/userBind.js';
 import { getstoken, cookiePart, stokenToCookie } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
-import { config, pluginDir, pickCharacterPortrait, pickPortraitBg, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
+import { config, pluginDir, pickCharacterPortrait, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
+import { getPortraitPalette } from '../utils/portraitPalette.js';
 import { replyQuote, replyForward, quoteEnabled } from '../utils/replyHelper.js';
 import { renderTpl } from '../utils/render.js';
 import { prepareMysContext, resolveAuth } from '../utils/runtimePatch.js';
@@ -1098,13 +1100,12 @@ export class TL extends plugin {
 
   /**
    * 构建体力卡通用数据（立绘卡 / 小组件卡共用）
-   * 返回 d = { game, uid, time, portrait, bg, bars, stats, status }
+   * 返回 d = { game, uid, time, portrait, bars, stats, status }
    */
   async buildStaminaData(game, item, displayInfo) {
     const showUid = await getShowUid(displayInfo.qq);
     const uid = showUid ? item.uid : '****';
     const portrait = pickCharacterPortrait(game);
-    const bg = pickPortraitBg();
 
     const pct = (cur, max) => {
       const c = Number(cur) || 0, m = Number(max) || 0;
@@ -1214,7 +1215,6 @@ export class TL extends plugin {
       uid,
       time: item.time || '已满',
       portrait,
-      bg,
       bars,
       stats,
       status,
@@ -1440,7 +1440,11 @@ export class TL extends plugin {
   async renderPortraitImage(e, game, items, displayInfo) {
     const ds = [];
     for (const item of items || []) {
-      ds.push(await this.buildStaminaData(game, item, displayInfo));
+      const d = await this.buildStaminaData(game, item, displayInfo);
+      // 原图取色后再内联；每张卡独立配色，多 UID 并排时互不串色。
+      d.palette = await getPortraitPalette(d.portrait);
+      d.portrait = toDataUrl(d.portrait);
+      ds.push(d);
     }
     if (!ds.length) return false;
 
@@ -1450,7 +1454,10 @@ export class TL extends plugin {
       plugin: '小火花',
       tplFile: pluginDir + '/resources/Tl/Portrait.html',
       ppath: '../../../../../plugins/xhh-TL/resources/',
-      data: { ds, qq: displayInfo.qq, qqname: displayInfo.qqname, totalWidthRem: 900 * ds.length },
+      data: {
+        ds, qq: displayInfo.qq, qqname: displayInfo.qqname, totalWidthRem: 900 * ds.length,
+        cardCss: fs.readFileSync(new URL('../resources/Tl/portrait.css', import.meta.url), 'utf8'),
+      },
       baseScale: 1.0,
       rem: true,
       saveId: `Portrait_${game}`,
@@ -1474,9 +1481,11 @@ export class TL extends plugin {
       const [primary] = d.bars || [];
       d.primary = primary || null;
 
+      // 先从原图取色，再裁边展示，保持不同卡型使用同一套颜色。
+      d.palette = await getPortraitPalette(d.portrait);
       // 顶部横幅立绘内联为 data URI：CSS background-image 加载 file:// 不阻塞截图，
       // 偶发会截到背景尚未解码的一帧（渐变底色露出）；内联后像素随 HTML 到位，消除该竞态。
-      if (d.portrait) d.portrait = await toDataUrlTrim(d.portrait);
+      if (d.portrait) d.portrait = await toDataUrlTrim(d.portrait, { trimSolid: true });
 
       // 限时活动区块：数据来自 widget 接口自带字段（buildStaminaData 已解析进 d.acts）
       // 与官方桌面小组件同源，零额外请求；可关，为空则模板自动不显示
@@ -1496,7 +1505,10 @@ export class TL extends plugin {
       plugin: '小火花',
       tplFile: pluginDir + '/resources/Tl/Widget.html',
       ppath: '../../../../../plugins/xhh-TL/resources/',
-      data: { ds, qq: displayInfo.qq, qqname: displayInfo.qqname, totalWidthRem: 620 * ds.length },
+      data: {
+        ds, qq: displayInfo.qq, qqname: displayInfo.qqname, totalWidthRem: 620 * ds.length,
+        cardCss: fs.readFileSync(new URL('../resources/Tl/widget.css', import.meta.url), 'utf8'),
+      },
       baseScale: 1.4,
       rem: true,
       saveId: `Widget_${game}`,
@@ -1550,7 +1562,7 @@ export class TL extends plugin {
 
     // 立绘内联为 data URI：CSS background-image 加载 file:// 不阻塞截图，
     // 偶发会截到尚未解码的一帧（渐变底色露出）；内联后像素随 HTML 到位。
-    if (portrait) d.portrait = await toDataUrlTrim(portrait);
+    if (portrait) d.portrait = await toDataUrlTrim(portrait, { trimSolid: true });
 
     const image = await renderTpl(e, {
       tpl: 'Tl/Remind',

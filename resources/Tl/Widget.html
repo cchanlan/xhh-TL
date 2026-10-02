@@ -4,7 +4,9 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/tl.css" />
+  {{if cardCss}}<style>{{@cardCss}}</style>{{else}}
   <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/widget.css" />
+  {{/if}}
   <style id="rem-root">html { font-size: {{scalePx}}px; } body { width: {{totalWidthRem}}rem; }</style>
 </head>
 
@@ -12,7 +14,7 @@
   <div class="wg-row">
     {{each ds d}}
     <div class="wg-wrap">
-      <div class="wg-card wg-{{d.game}}">
+      <div class="wg-card wg-{{d.game}} {{d.palette ? 'wg-adaptive' : ''}}"{{if d.palette}} style="--panel:{{d.palette.top}};--panel-bottom:{{d.palette.bottom}};--accent:{{d.palette.accent}};--accent2:{{d.palette.accent}};--banner:linear-gradient(180deg,{{d.palette.top}},{{d.palette.bottom}});--list:rgba(255,255,255,.075)"{{/if}}>
       <!-- 顶部立绘横幅 -->
       <div class="wg-banner">
         {{if d.portrait}}

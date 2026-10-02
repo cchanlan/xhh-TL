@@ -134,6 +134,19 @@ body {
   padding: 4rem 26rem 24rem;
 }
 
+/* 逐卡取色，横幅底色与信息面板顶部衔接；缺图时沿用游戏配色。 */
+.wg-adaptive .wg-body {
+  background: linear-gradient(165deg, var(--panel) 0%, var(--panel-bottom) 100%);
+}
+.wg-adaptive .wg-primary-time,
+.wg-adaptive .wg-primary-num i,
+.wg-adaptive .wg-pstat-key,
+.wg-adaptive .wg-uid,
+.wg-adaptive .wg-act-cd,
+.wg-adaptive .wg-trans-sub { color: rgba(255, 255, 255, 0.76); }
+.wg-adaptive .wg-act-cd.urgent { color: #ff8a6b; }
+.wg-adaptive .wg-trans-sub.ready { color: #7fd67f; }
+
 /* 主资源行 */
 .wg-primary {
   display: flex;

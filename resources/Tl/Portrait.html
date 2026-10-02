@@ -4,18 +4,16 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/tl.css" />
+  {{if cardCss}}<style>{{@cardCss}}</style>{{else}}
   <link rel="stylesheet" type="text/css" href="{{ppath}}Tl/portrait.css" />
+  {{/if}}
   <style id="rem-root">html { font-size: {{scalePx}}px; } body { width: {{totalWidthRem}}rem; }</style>
 </head>
 
 <body>
   <div class="pt-row">
     {{each ds d}}
-    <div class="pt-card pt-{{d.game}}">
-    <!-- 最底层背景图（可自定义：单图或目录随机） -->
-    {{if d.bg}}
-    <div class="pt-base" style="background-image: url({{d.bg}})"></div>
-    {{/if}}
+    <div class="pt-card pt-{{d.game}} {{d.palette ? 'pt-adaptive' : ''}}"{{if d.palette}} style="--pt-top:{{d.palette.top}};--pt-bottom:{{d.palette.bottom}};--pt-top-93:{{d.palette.top}}ee;--pt-top-60:{{d.palette.top}}99;--pt-top-15:{{d.palette.top}}26;--pt-bottom-85:{{d.palette.bottom}}d9;--pt-bottom-20:{{d.palette.bottom}}33;--pt-bottom-92:{{d.palette.bottom}}eb"{{/if}}>
     <!-- 右侧清晰立绘 -->
     {{if d.portrait}}
     <div class="pt-portrait" style="background-image: url({{d.portrait}})"></div>
