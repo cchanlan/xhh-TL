@@ -328,7 +328,7 @@ export function buildHelpGroups() {
         },
         {
           icon: 'sr-希儿.webp',
-          title: '*抽卡记录 *武器记录',
+          title: '*抽卡记录 *武器记录 *常驻记录',
           desc: '仿小程序「跃迁记录统计」出图，各池分开看；*全部记录 出总览图',
         },
         {

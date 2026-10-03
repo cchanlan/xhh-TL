@@ -38,13 +38,22 @@ const REFERER = 'https://act.mihoyo.com/sr/event/gt-aio/gacha-records/index.html
 const UA =
   'Mozilla/5.0 (Linux; Android 13; V2183A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 miHoYoBBS/2.71.1'
 
-/** 小程序的卡池枚举 → genshin srJson 的文件名（数字 gacha_type）。接口没有常驻池 */
+/**
+ * 小程序的卡池枚举 → genshin srJson 的文件名（数字 gacha_type）。
+ *
+ * ⚠️ 常驻池的枚举是 `GachaType_Standard`，**不能**照角色池的命名规律猜成
+ * `GachaType_Normal` / `GachaType_AvatarStandard` 之类 —— 猜错的名字接口回 -502
+ * （实测 8 个候选里只有 Standard 是通的）。之前这张表漏了它，表现是
+ * 「*更新抽卡记录 跑完角色池有更新、常驻池纹丝不动」，本地 1.json 只能靠
+ * 游戏内抽卡链接（authkey）补，链接不发就永远停在旧数据上。
+ */
 const POOLS = [
   { key: 'GachaType_AvatarUp', type: '11', name: '角色活动跃迁' },
   { key: 'GachaType_EquipmentUp', type: '12', name: '光锥活动跃迁' },
   { key: 'GachaType_CollabAvatarUp', type: '21', name: '联动角色跃迁' },
   { key: 'GachaType_CollabEquipmentUp', type: '22', name: '联动光锥跃迁' },
   { key: 'GachaType_Newbie', type: '2', name: '新手跃迁' },
+  { key: 'GachaType_Standard', type: '1', name: '常驻跃迁' },
 ]
 
 const ITEM_TYPE = { ItemType_Avatar: '角色', ItemType_Equipment: '光锥' }
@@ -249,10 +258,17 @@ async function fetchFiveStars(cookie, poolKey) {
   return { list, pity: pity || 0 }
 }
 
-/** 卡池期次统计，用来给记录补 gacha_id（按 up 五星的 item_id 对应） */
+/**
+ * 卡池期次统计，用来给记录补 gacha_id（按 up 五星的 item_id 对应）。
+ *
+ * 常驻池（群星跃迁）也走这个接口，但只回一张「整池」卡：up_item 是 null、
+ * gacha_id 固定 1001、total_count 是全池累计（实测 55 抽）。up_item 为 null
+ * 意味着 byUpItem 建不出条目，所以常驻池的 gacha_id 靠 gachaOf 兜底成 1001。
+ */
 async function fetchPoolStat(cookie, poolKey) {
   const q = new URLSearchParams({ gacha_type: poolKey })
   const { json } = await api(`${GACHA_BASE}/pool_stat?${q}`, { cookie })
+  // 失败一律当空（个别池 / 个别账号会回非 0），调用方对空 cards 有兜底
   const cards = json?.retcode === 0 ? json.data?.cards || [] : []
   const byUpItem = new Map()
   for (const c of cards) {
@@ -499,6 +515,20 @@ const dupKeyBucket = (itemId, id) => {
 }
 
 /**
+ * 常驻池的 gacha_id 恒为 1001（不是期次编号，是「群星跃迁」这个池本身的固定 id）。
+ * pool_stat 对常驻池只回一张整池卡、up_item 是 null，byUpItem 建不出条目，
+ * 所以要单独兜底；缺了它 gacha_id 会写空串，出图判 UP 和总览分组都会受影响。
+ */
+const STANDARD_GACHA_ID = '1001'
+
+/** 取某条记录该挂的 gacha_id：活动池走 pool_stat 的期次映射，常驻池用固定值 */
+function gachaOf(type, poolStat, itemId) {
+  const mapped = poolStat?.byUpItem?.get?.(String(itemId))
+  if (mapped) return mapped
+  return String(type) === '1' ? STANDARD_GACHA_ID : ''
+}
+
+/**
  * 把接口拿到的五星 + 垫抽并进本地某个池的记录。
  * 真实记录只增不删；占位每次重建，所以重复执行不会累加。
  */
@@ -615,7 +645,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i]
     const { hit } = anchors[i]
-    const gachaId = poolStat.byUpItem.get(String(s.item.item_id)) || ''
+    const gachaId = gachaOf(type, poolStat, s.item.item_id)
     finalCount[i] = Number(s.gacha_count) || 0
     if (hit) {
       skipped++
@@ -658,7 +688,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
       name: s.item.name,
       count: finalCount[i],
       anchorId: anchors[i].anchorId,
-      gachaId: poolStat.byUpItem.get(String(s.item.item_id)) || '',
+      gachaId: gachaOf(type, poolStat, s.item.item_id),
       time: idToTime(s.id),
     })),
     ...legacy,
@@ -985,9 +1015,8 @@ async function prepareCookie(e, uid, user, { allowFix = false } = {}) {
 }
 
 
-/** 数字 gacha_type → 小程序里的池名 */
+/** 数字 gacha_type → 小程序里的池名（常驻池也在 POOLS 里，不用再手补一条） */
 const POOL_LABEL = Object.fromEntries(POOLS.map(p => [p.type, p.name]))
-POOL_LABEL['1'] = '常驻跃迁'
 
 /**
  * 从消息里的文件段拿下载直链。
@@ -1276,7 +1305,7 @@ function lazyGachaCookie(e, uid) {
 /** 出图前顺手把当前池的垫抽刷新一下（缓存超过 10 分钟才动，失败就沿用旧值） */
 async function refreshPity(e, uid, type, getCookie) {
   const pool = POOLS.find(p => p.type === String(type))
-  if (!pool) return // 常驻池接口不给，本地算得出来
+  if (!pool) return
   const entry = readPoolCache()[String(uid)]?.[String(type)]
   if (entry?.at && Date.now() - entry.at < 10 * 60 * 1000) return
   try {
@@ -1369,6 +1398,8 @@ async function buildAllViewData(e, uid) {
   const upMap = upMapFromCache()
   // 也共用一次登录：真有池要刷垫抽时才会去换凭证
   const getCookie = lazyGachaCookie(e, uid)
+  // 总览图的池子顺序是显式写死的（活动池在前、常驻靠后，跟小程序观感一致），
+  // 不是按 POOLS 表顺序 —— 以后 POOLS 里加了新池，这里要跟着补一个 type
   for (const type of ['11', '12', '21', '22', '1', '2']) {
     const list = readLocalForView(e.user_id, uid, type)
     if (!list.length) continue
@@ -1521,7 +1552,8 @@ async function fetchAllByAuthkey(params, userId, { full = false, onPool } = {}) 
   let uid = ''
   let stopId = new Map()
   try {
-    for (const pool of [...POOLS.map(p => p.type), '1']) {
+    // 池名全部走 POOLS：常驻池（type 1）已经在表里，别再手写一遍，会重复拉
+    for (const pool of POOLS.map(p => p.type)) {
       let endId = '0'
       let got = 0
       let reachedOld = false
@@ -1959,22 +1991,38 @@ export class srGachaLog extends plugin {
     let skipped = 0
     let patchedTotal = 0
     let remoteTotal = 0
+    let failed = 0
 
     for (const pool of POOLS) {
-      const remote = await fetchFiveStars(gachaCookie, pool.key)
-      const poolStat = await fetchPoolStat(gachaCookie, pool.key)
-      savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
-      const res = mergePool(userId, uid, pool.type, remote, poolStat)
+      // ⚠️ 单池失败不能拖垮整轮：这套接口会限流（实测短时间连打十来个请求就回 -100），
+      // 六个池每轮十几个请求，最后几个池踩到限流是常态。原来这里直接往外抛，
+      // 表现是「前面几个池更新好了、后面的池纹丝不动」，用户还以为整轮成功了。
+      // 现在按池兜住，失败只记一笔，其余池照常合并，全挂才对外报错。
+      try {
+        const remote = await fetchFiveStars(gachaCookie, pool.key)
+        const poolStat = await fetchPoolStat(gachaCookie, pool.key)
+        savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
+        const res = mergePool(userId, uid, pool.type, remote, poolStat)
 
-      added5 += res.added5
-      addedPh += res.addedPh
-      skipped += res.skipped
-      patchedTotal += res.patched || 0
-      remoteTotal += remote.list.length
-      notes.push(...res.notes)
-      if (remote.pity > 0) pityParts.push(`${pool.name}${remote.pity}抽`)
-      lines.push(`${pool.name} 五星${remote.list.length}条`)
+        added5 += res.added5
+        addedPh += res.addedPh
+        skipped += res.skipped
+        patchedTotal += res.patched || 0
+        remoteTotal += remote.list.length
+        notes.push(...res.notes)
+        if (remote.pity > 0) pityParts.push(`${pool.name}${remote.pity}抽`)
+        lines.push(`${pool.name} 五星${remote.list.length}条`)
+      } catch (err) {
+        failed++
+        notes.push(`${pool.name}拉取失败`)
+        logger?.warn?.(`[xhh-TL][抽卡记录] ${pool.name} 拉取失败：${err.message}`)
+      }
       await sleep(400)
+    }
+
+    // 一个池都没成，说明凭证或接口整体不通，交给上层报错（别再出一张空图）
+    if (failed === POOLS.length) {
+      throw new Error(`所有卡池都拉取失败：${notes.filter(n => n.endsWith('拉取失败')).join('、')}`)
     }
 
     // 结果直接出图，这段只进日志，方便回查合并细节
