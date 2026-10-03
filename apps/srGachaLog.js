@@ -1707,8 +1707,7 @@ export class srGachaLog extends plugin {
       { at: true },
     )
 
-    // 第一次导入（本地一条记录都没有）出总览图，之后照旧出单池图
-    const first = !hasLocalRecords(this.e.user_id, linkUid)
+    // 拉完直接出总览图（每个池一块）
     try {
       const perPool = []
       const { records } = await fetchAllByAuthkey(params, this.e.user_id, {
@@ -1718,7 +1717,7 @@ export class srGachaLog extends plugin {
       const uid = linkUid
       if (!records.length) {
         await this.reply('拉完了，没有新记录', false, { at: true })
-        await (first ? this.renderAll(uid) : this.renderMini(uid))
+        await this.renderAll(uid)
         return true
       }
 
@@ -1733,7 +1732,7 @@ export class srGachaLog extends plugin {
           `（${perPool.join('、')}）`,
       )
       await this.reply(`更新完成，新增 ${stat.added} 条${recall}`, false, { at: true })
-      await (first ? this.renderAll(uid) : this.renderMini(uid))
+      await this.renderAll(uid)
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] 链接拉取失败：${err.stack || err.message}`)
       // 中断前已经翻到的记录先存下来，下次发链接会从这里接着拉
@@ -1837,11 +1836,26 @@ export class srGachaLog extends plugin {
       // 绑的 UID 可能跟米游社对不上，这里拿到的才是真正要用的号
       const { cookie, region, uid: realUid } = await prepareCookie(this.e, uid, user, { allowFix: true })
       const gachaCookie = await badgeLogin(cookie, realUid, region)
-      // 第一次更新（本地一条记录都没有）出总览图，让人一眼看到所有池；之后照旧出单池图
-      const first = !hasLocalRecords(this.e.user_id, realUid)
-      // 更新完不发文案，统计只落日志，直接出图
-      logger?.info?.(`[xhh-TL][抽卡记录] ${realUid} ${await this.runUpdate(realUid, gachaCookie)}`)
-      await (first ? this.renderAll(realUid) : this.renderMini(realUid))
+      // 更新完先回一条只列变动池的文字，再出总览图（每个池一块，一眼看完）
+      const { log, pools } = await this.runUpdate(realUid, gachaCookie)
+      logger?.info?.(`[xhh-TL][抽卡记录] ${realUid} ${log}`)
+      const changed = pools.filter(p => p.changed)
+      // 一个池都没变动就不发文字，只出图
+      if (changed.length) {
+        await this.reply(
+          [
+            '崩铁抽卡记录更新完成',
+            `UID：${realUid}`,
+            `合计新增五星 ${pools.reduce((n, p) => n + p.added5, 0)} 条`,
+            ...changed.map(
+              p => `${p.name}：新增五星 ${p.added5} 条，本地共 ${p.total} 条，当前垫抽 ${p.pity} 抽`,
+            ),
+          ].join('\n'),
+          false,
+          { at: true },
+        )
+      }
+      await this.renderAll(realUid)
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
       await this.reply(`崩铁抽卡记录更新失败，请稍后重试`, false, { at: true })
@@ -1980,12 +1994,13 @@ export class srGachaLog extends plugin {
     return true
   }
 
-  /** 逐池拉取 → 合并 → 组装汇总文案 */
+  /** 逐池拉取 → 合并 → 汇总。返回值里 log 进日志，pools 供更新完的文字汇报用 */
   async runUpdate(uid, gachaCookie) {
     const userId = this.e.user_id
     const lines = []
     const pityParts = []
     const notes = []
+    const pools = []
     let added5 = 0
     let addedPh = 0
     let skipped = 0
@@ -2001,6 +2016,8 @@ export class srGachaLog extends plugin {
       try {
         const remote = await fetchFiveStars(gachaCookie, pool.key)
         const poolStat = await fetchPoolStat(gachaCookie, pool.key)
+        // 垫抽有没有变，要在写缓存**之前**取旧值比
+        const prevPity = cachedPity(uid, pool.type)
         savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
         const res = mergePool(userId, uid, pool.type, remote, poolStat)
 
@@ -2012,6 +2029,16 @@ export class srGachaLog extends plugin {
         notes.push(...res.notes)
         if (remote.pity > 0) pityParts.push(`${pool.name}${remote.pity}抽`)
         lines.push(`${pool.name} 五星${remote.list.length}条`)
+        pools.push({
+          name: pool.name,
+          added5: res.added5,
+          total: res.total,
+          pity: remote.pity,
+          // 「有变动」的判据不能直接用 res.changed —— 占位每轮全清重建，
+          // 那个标志几乎恒为 true，六个池会全被列出来，等于没过滤。
+          // 只认出图里看得见的变化：新增五星 / 补齐接口抽数 / 垫抽数变了
+          changed: res.added5 > 0 || (res.patched || 0) > 0 || remote.pity !== prevPity,
+        })
       } catch (err) {
         failed++
         notes.push(`${pool.name}拉取失败`)
@@ -2025,8 +2052,8 @@ export class srGachaLog extends plugin {
       throw new Error(`所有卡池都拉取失败：${notes.filter(n => n.endsWith('拉取失败')).join('、')}`)
     }
 
-    // 结果直接出图，这段只进日志，方便回查合并细节
-    return [
+    // 明细只进日志，方便回查合并细节；pools 交给上层拼「更新完成」那条文字
+    const log = [
       `新增五星 ${added5} 条（接口给出 ${remoteTotal} 条，${skipped} 条本地已有）`,
       `占位 ${addedPh} 条`,
       patchedTotal ? `补齐 ${patchedTotal} 条记录的接口抽数` : '',
@@ -2036,6 +2063,7 @@ export class srGachaLog extends plugin {
     ]
       .filter(Boolean)
       .join('；')
+    return { log, pools, failed }
   }
 }
 
