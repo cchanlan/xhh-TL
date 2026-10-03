@@ -1,6 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { allAbyss } from './allAbyssModule.js'
 import { config } from '../utils/pluginConfig.js'
+import { guardModule } from '../utils/modules.js'
 
 export class Abyss extends plugin {
   constructor(e) {
@@ -24,3 +25,7 @@ export class Abyss extends plugin {
     return await allAbyss(e)
   }
 }
+
+// 关掉 all_abyss 后 *全部深渊 / *深渊总览 / #星铁全部深渊 不再响应。
+// allAbyssModule.js 是纯实现库（没有自己的 rule），开关只需管住这个入口
+guardModule(Abyss, 'sr_all_abyss', ['allAbyss'])

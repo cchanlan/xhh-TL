@@ -22,6 +22,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { config } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { captchaTip } from '../utils/captchaTip.js'
+import { isModuleEnabled } from '../utils/modules.js'
 
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
@@ -84,6 +85,10 @@ export class captchaNotice extends plugin {
    * @param reject 调用即表示「本 handler 不处理，交给下一个」
    */
   async onMysReqErr(e, args, reject) {
+    // 撞码自动处理被关掉时直接 reject：不自动过码、不自动重试，
+    // 也不去吃掉 genshin / miao-plugin 原本的验证码提示，一切照旧
+    if (!isModuleEnabled('captcha')) return reject()
+
     const rc = Number(args?.res?.retcode)
     // 非风控码：不是过码能解决的事，原样放行
     if (!CAPTCHA_RC.includes(rc)) return reject()

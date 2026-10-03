@@ -19,6 +19,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { config as cfg, pluginDir } from '../utils/pluginConfig.js'
 import { replyProgress, replyQuote, quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
+import { guardModule } from '../utils/modules.js'
 import {
   ELEM_CN,
   ELEM_CLASS,
@@ -1049,5 +1050,9 @@ export class nanokaAbyss extends plugin {
     }
   }
 }
+
+// 关掉 nanoka_abyss_enable 后，#版本深渊 / #版本剧诗 / #版本危战 与
+// *版本混沌 / *版本虚构 / *版本末日 / *版本异相 等全部不再响应
+guardModule(nanokaAbyss, 'nanoka', ['giTower', 'giTheater', 'giHard', 'hsrMaze'])
 
 export default nanokaAbyss

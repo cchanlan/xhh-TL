@@ -20,6 +20,7 @@ import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { getHardRank, pickTeamList, buildAvatarUrlNameMap } from '../utils/yshelperApi.js'
 import { resolveTargetQq, resolveDisplayName, faceUrl, pickGsBgImage, loadAvatarData } from '../utils/gsHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 /** 三半区元数据：key 对应 combo 里的 xxx_use_num 字段 */
 const HALVES = [
@@ -252,3 +253,6 @@ export class hardTeam extends plugin {
     })
   }
 }
+
+// 关掉 hard_team 后 #危战配队 / #危战组队 不再响应
+guardModule(hardTeam, 'hard_team', ['query'])

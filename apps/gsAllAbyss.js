@@ -16,6 +16,7 @@ import { config, pluginDir } from '../utils/pluginConfig.js'
 import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { resolveTargetQq, resolveDisplayName, faceUrl, pickGsBgImage } from '../utils/gsHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 function getVal(obj, pathStr) {
   return pathStr.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj)
@@ -847,3 +848,6 @@ export class gsAllAbyss extends plugin {
     })
   }
 }
+
+// 关掉 gs_all_abyss 后 #全部深渊 不再响应
+guardModule(gsAllAbyss, 'gs_all_abyss', ['query'])

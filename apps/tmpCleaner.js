@@ -15,6 +15,7 @@ import path from 'path'
 import plugin from '../../../lib/plugins/plugin.js'
 import { config, pluginDir } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 const DEFAULT_CRON = '17 4 * * *'
 const DEFAULT_MAX_AGE_HOURS = 24
@@ -195,3 +196,6 @@ export class TmpCleaner extends plugin {
 }
 
 export default TmpCleaner
+
+// 关掉 tmp_clean_enable 后 #清理临时文件 不再响应（定时任务另有自己的开关判断）
+guardModule(TmpCleaner, 'tmp_clean', ['manualClean'])

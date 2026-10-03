@@ -124,6 +124,21 @@ export function mergeMissingDefaults() {
   const { ok, data: user } = parseUserConfigFile(userConfigPath)
   if (!ok) return user
   let changed = false
+
+  // 一次性迁移：tl_widget_activity（布尔）→ tl_widget_activity_limit 填 0。
+  // 必须在补默认键之前做，才能分辨用户有没有自己设过新键。
+  // 不迁移的话，残留的 false 会永久压住新键 —— 用户在锅巴里把条数改回 4 也不生效。
+  if ('tl_widget_activity' in user) {
+    const oldVal = user.tl_widget_activity
+    delete user.tl_widget_activity
+    // ⚠️ 旧键 false 是「不要活动」的明确意图，必须强制写 0，不能因为新键已存在（
+    // 老版本就带上了 limit:4 的默认值）就放过 —— 否则用户升级后活动自己又冒出来。
+    // 旧键 true 时只在缺新键的情况下补默认 4。
+    if (oldVal === false) user.tl_widget_activity_limit = 0
+    else if (!('tl_widget_activity_limit' in user)) user.tl_widget_activity_limit = 4
+    changed = true
+  }
+
   for (const [k, v] of Object.entries(defaults)) {
     if (!(k in user)) {
       user[k] = v

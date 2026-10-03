@@ -16,3 +16,6 @@ resources/ww_role_pile/
 
 # 框架在本目录下写的运行时日志
 logs/
+
+# 本地 AI 工具的工作目录（含 worktree 残留，体积大）
+.claude/

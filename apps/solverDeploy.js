@@ -16,6 +16,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { config, pluginDir, patchUserConfig } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { pm2, pm2Jlist, hasPm2, ensurePm2, pm2HasProcess, launcherInfo } from '../utils/pm2.js'
+import { guardModule } from '../utils/modules.js'
 
 const exec = promisify(execFile)
 const SERVICE_DIR = path.join(pluginDir, 'service', 'geetest')
@@ -626,5 +627,8 @@ export class solverDeploy extends plugin {
     return true
   }
 }
+
+// 关掉 solver_deploy_enable 后，部署与状态两条指令都不再响应
+guardModule(solverDeploy, 'solver', ['deploy', 'status'])
 
 export { SERVICE_DIR, PM2_NAME, PORT }

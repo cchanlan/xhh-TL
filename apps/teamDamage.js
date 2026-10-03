@@ -21,6 +21,7 @@ import { replyProgress, quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { faceUrl, resolveTargetQq, resolveDisplayName, pickGsBgImage } from '../utils/gsHelper.js'
 import { createUser } from '../utils/userBind.js'
+import { guardModule } from '../utils/modules.js'
 import {
   ELEM_CN,
   applyLoadoutMods,
@@ -649,3 +650,6 @@ function talentBgUrl(elemCn) {
   const file = path.join(MIAO_RES, 'common/bg', `talent-${key}.webp`)
   return fs.existsSync(file) ? toFileUrl(file) : ''
 }
+
+// 关掉 team_damage 后 #队伍伤害 与其帮助指令都不再响应
+guardModule(teamDamage, 'team_damage', ['query', 'help'])

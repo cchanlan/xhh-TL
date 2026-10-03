@@ -20,6 +20,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { getAliveMysIds } from '../utils/userBind.js'
 import { loadStokenYaml } from '../utils/pluginConfig.js'
 import { addDeleted } from '../utils/deletedCk.js'
+import { guardModule } from '../utils/modules.js'
 
 // genshin 删除是异步的（写 SQLite + save）。固定单次 3s 定时在删除慢于 3s 时会漏记，
 // 改为短间隔轮询：每 500ms 比对一次存活集合，一旦检测到差集立即处理；最长等到 8s 超时。
@@ -108,3 +109,7 @@ export class TLDelCkHook extends plugin {
     setTimeout(tick, POLL_INTERVAL_MS)
   }
 }
+
+// 关掉 del_ck_hook_enable 后本钩子直接放行（返回 false），
+// genshin 的 #删除ck 照常执行，只是不再记录残留 stoken
+guardModule(TLDelCkHook, 'del_ck', ['onDelCk'])

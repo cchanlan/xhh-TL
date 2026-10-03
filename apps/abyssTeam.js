@@ -18,6 +18,7 @@ import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { getAbyssRank, pickTeamList, pickHasList } from '../utils/yshelperApi.js'
 import { resolveTargetQq, resolveDisplayName, faceUrl, pickGsBgImage, loadAvatarData } from '../utils/gsHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 /**
  * 把 yshelper 的配队数据整理成 { floor: 12, up:[{item,rate}], down:[...] }
@@ -296,3 +297,6 @@ export class abyssTeam extends plugin {
     })
   }
 }
+
+// 关掉 abyss_team 后 #深渊配队 / #深渊组队 不再响应
+guardModule(abyssTeam, 'abyss_team', ['query'])

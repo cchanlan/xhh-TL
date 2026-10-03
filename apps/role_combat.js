@@ -6,6 +6,7 @@ import { prepareMysContext } from '../utils/runtimePatch.js';
 import { config, pickRoleCombatBgImage, pluginDir, toFileUrl } from '../utils/pluginConfig.js'
 import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
+import { guardModule } from '../utils/modules.js'
 
 import { fetchIndex, fetchPhase, findIndexByMonth, giMonsterDb, aliothText } from '../utils/alioth.js'
 
@@ -416,3 +417,13 @@ export class role_combat extends plugin {
     });
   }
 }
+
+/**
+ * role_combat 开关同时管住「幻想角色」与「小剧诗」。
+ *
+ * 历史遗留：这个键过去只在 miniRoleCombat.js 里被读，role_combat.js 一次都没读，
+ * 于是锅巴里关掉「启用幻想真境剧诗 / 小剧诗」后 #小剧诗 停了、
+ * #幻想角色 / #幻想剧诗 / #幻想202607 却照常出图 —— 说明与实现不符。
+ * 小剧诗那一侧由 miniRoleCombat.js 自己守卫，这里补上幻想角色这半边。
+ */
+guardModule(role_combat, 'role_combat', ['nextRoleCombat', 'roleCombat'])

@@ -30,6 +30,7 @@ import { pluginDir, loadStokenYaml } from '../utils/pluginConfig.js'
 import { renderTpl } from '../utils/render.js'
 import { parseImportFile } from '../utils/gachaImport.js'
 import { analyse, buildLine, getIcon, poolMax } from '../utils/gachaStat.js'
+import { guardModule } from '../utils/modules.js'
 
 const BADGE_LOGIN = 'https://api-takumi.mihoyo.com/common/badge/v1/login/account'
 const SR_ROLES = 'https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie?game_biz=hkrpg_cn'
@@ -2066,6 +2067,11 @@ export class srGachaLog extends plugin {
     return { log, pools, failed }
   }
 }
+
+// 关掉 sr_gacha_enable 后，*更新抽卡记录 / *抽卡记录 / *导入记录 都不再响应。
+// logUrl 也一并守卫：守卫返回 false 与「这不是星铁链接」同义，
+// 抽卡链接会照常交给 genshin 等其它插件处理，不会把事件吞掉
+guardModule(srGachaLog, 'sr_gacha', ['logUrl', 'updateLog', 'importLog', 'viewAll', 'viewLog'])
 
 
 

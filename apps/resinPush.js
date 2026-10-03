@@ -42,6 +42,7 @@ import { config, getRenderScaleStyle, pluginDir } from '../utils/pluginConfig.js
 import { listWavesAccounts, fetchWavesStamina, isWavesTlEnabled, getWavesEnvError } from '../utils/wavesData.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { registerReminderHooks, scheduleTimers, refreshUidTimers, timerStats, timerSnapshot, evaluateSnapshot } from '../utils/resinTimer.js'
+import { guardModule } from '../utils/modules.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'resin_push.json')
@@ -1009,3 +1010,15 @@ export class resinPush extends plugin {
 }
 
 export default resinPush
+
+/**
+ * 关掉 resin_push_enable 后，全部体力推送订阅指令不再响应。
+ * 定时检查任务本身在构造函数里已按同一个键决定要不要注册，这里只管指令入口。
+ */
+guardModule(resinPush, 'resin_push', [
+  'offGsAll', 'offSrAll', 'offZzzAll', 'offWwAll',
+  'setGsAll', 'setSrAll', 'setZzzAll', 'setWwAll',
+  'offGs', 'offSr', 'offZzz', 'offWw',
+  'setGs', 'setSr', 'setZzz', 'setWw',
+  'usage', 'listSubs',
+])

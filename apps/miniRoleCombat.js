@@ -13,6 +13,7 @@ import { config, pluginDir } from '../utils/pluginConfig.js'
 import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { faceUrl, pickGsBgImage } from '../utils/gsHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 function intToRoman(num) {
   if (num < 1 || num > 3999) return String(num)
@@ -367,3 +368,7 @@ export class miniRoleCombat extends plugin {
     })
   }
 }
+
+// 关掉 role_combat 后 #小剧诗 / #小幻想 不再响应。
+// 同一开关的另一半（#幻想角色）在 role_combat.js 里守卫
+guardModule(miniRoleCombat, 'role_combat', ['mini'])

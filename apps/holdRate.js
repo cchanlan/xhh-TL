@@ -19,6 +19,7 @@ import { replyProgress } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
 import { getAbyssRank, pickHasList } from '../utils/yshelperApi.js'
 import { resolveTargetQq, resolveDisplayName, faceUrl, pickGsBgImage, loadAvatarData } from '../utils/gsHelper.js'
+import { guardModule } from '../utils/modules.js'
 
 /**
  * 把 has_list 整理成按星级分组的持有率列表。
@@ -145,3 +146,6 @@ export class holdRate extends plugin {
     })
   }
 }
+
+// 关掉 hold_rate 后 #角色持有率 / #持有率 不再响应
+guardModule(holdRate, 'hold_rate', ['query'])

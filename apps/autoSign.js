@@ -28,6 +28,7 @@ import LiteMysApi from '../utils/mysClient.js'
 import { config, pluginDir, pickHelpBgImage, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
+import { guardModule } from '../utils/modules.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'auto_sign.json')
@@ -602,3 +603,11 @@ export class autoSign extends plugin {
 }
 
 export default autoSign
+
+// 关掉 auto_sign_enable 后，签到与自动签到订阅指令都不再响应
+guardModule(autoSign, 'auto_sign', [
+  'offGs', 'offSr', 'offZzz',
+  'onGs', 'onSr', 'onZzz',
+  'signGs', 'signSr', 'signZzz',
+  'manualVerify', 'listSubs',
+])

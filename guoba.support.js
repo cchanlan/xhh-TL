@@ -105,21 +105,18 @@ export function supportGuoba() {
           }
         },
         {
-          field: 'tl_widget_activity',
-          label: '小组件卡·限时活动',
-          bottomHelpMessage:
-            '仅桌面小组件卡生效。开启后卡片底部展示当前限时活动（活动名 + 进度 + 倒计时）。星铁/绝区零取自体力 widget 接口自带字段，零额外请求；原神 widget 不返回活动，需完整 CK 额外拉取 act_calendar，失败静默隐藏。关闭则不显示',
-          component: 'Switch'
-        },
-        {
+          // 原「小组件卡·限时活动」开关已合并到这里：填 0 = 不显示该区块。
+          // 锅巴不支持按另一个字段条件显示，两个开关挨着只会让人分不清谁管谁。
+          // 旧键 tl_widget_activity 仍兼容读取（填 false 等同填 0）
           field: 'tl_widget_activity_limit',
           label: '小组件卡·活动条数',
-          bottomHelpMessage: '限时活动最多显示几条，默认 4',
+          bottomHelpMessage:
+            '仅桌面小组件卡生效。卡片底部展示当前限时活动（活动名 + 进度 + 倒计时），这里填最多显示几条；填 0 则不显示该区块。星铁/绝区零取自体力 widget 接口自带字段，零额外请求；原神 widget 不返回活动，需完整 CK 额外拉取 act_calendar，失败静默隐藏。默认 4',
           component: 'InputNumber',
           componentProps: {
-            min: 1,
+            min: 0,
             max: 10,
-            placeholder: '默认 4'
+            placeholder: '默认 4，填 0 不显示'
           }
         },
         {
@@ -220,58 +217,39 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
-          label: '全部深渊'
+          label: '体力阈值推送'
         },
         {
-          field: 'all_abyss',
-          label: '启用全部深渊查询',
-          bottomHelpMessage: '是否启用星铁全部深渊三合一查询（混沌回忆、虚构叙事、末日幻影）',
+          field: 'resin_push_enable',
+          label: '启用体力阈值推送',
+          bottomHelpMessage:
+            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需打开上方「启用鸣潮体力」）',
           component: 'Switch'
         },
         {
-          field: 'all_abyss_render_mode',
-          label: '深渊渲染模式',
-          bottomHelpMessage: '桌面端渲染(1200px宽)或手机端渲染(480px宽)',
-          component: 'Select',
+          field: 'resin_push_cron',
+          label: '检查频率 cron',
+          bottomHelpMessage:
+            '标准 5 段 cron（分 时 日 月 周）。默认每 10 分钟检查一次：*/10 * * * *。不建议太频繁以免触发米游社风控',
+          component: 'Input',
           componentProps: {
-            options: [
-              { label: '桌面端', value: 'desktop' },
-              { label: '手机端', value: 'mobile' }
-            ]
+            placeholder: '*/10 * * * *'
           }
         },
         {
           component: 'Divider',
-          label: '幻想真境剧诗'
+          label: '质变仪 / 洞天宝钱到期提醒'
         },
         {
-          field: 'role_combat',
-          label: '启用幻想真境剧诗 / 小剧诗',
-          bottomHelpMessage: '是否启用 #幻想角色、#小剧诗 等原神幻想真境剧诗相关查询',
+          field: 'resin_timer_enable',
+          label: '启用到期提醒',
+          bottomHelpMessage:
+            '向已开启体力推送的人，在「参量质变仪可再次使用」「洞天宝钱已满」时于其订阅群 @ 提醒一次（配一张提醒卡）。数据来自用户查询体力时的快照，需至少查询过一次；到点时刻会落盘，重启后自动恢复定时',
           component: 'Switch'
         },
         {
-          field: 'role_combat_theme',
-          label: '幻想角色 / 小剧诗主题',
-          bottomHelpMessage: '#幻想角色、#小剧诗 共用。可选浅色、深色半透明主题；留空跟随「全部深渊主题」',
-          component: 'Select',
-          componentProps: {
-            options: [
-              { label: '跟随全部深渊', value: '' },
-              { label: '浅色', value: 'light' },
-              { label: '深色', value: 'dark' }
-            ]
-          }
-        },
-        {
-          field: 'role_combat_bg_folder',
-          label: '深渊/剧诗/配队背景',
-          bottomHelpMessage:
-            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 的背景来源。可填单张图片、角色面板目录或多层分类目录。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。支持 Win/Linux 相对或绝对路径；留空使用 bg1.png',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
-          }
+          component: 'Divider',
+          label: '原神 · 成绩汇总'
         },
         {
           field: 'gs_all_abyss',
@@ -292,8 +270,16 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
-          label: '深渊配队'
+          field: 'gs_all_abyss_priority',
+          label: '全部深渊优先级',
+          bottomHelpMessage:
+            '插件优先级，数字越小越优先。留空默认 -99：压在 genshin / xiaoyao-cvs 等同样接管「全部深渊」的插件之前，避免指令被抢',
+          component: 'InputNumber',
+          componentProps: {
+            min: -9999,
+            max: 9999,
+            placeholder: '默认 -99'
+          }
         },
         {
           field: 'abyss_team',
@@ -327,10 +313,6 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
-          label: '危战配队'
-        },
-        {
           field: 'hard_team',
           label: '启用危战配队',
           bottomHelpMessage:
@@ -360,10 +342,6 @@ export function supportGuoba() {
             max: 9999,
             placeholder: '默认 -98'
           }
-        },
-        {
-          component: 'Divider',
-          label: '角色持有率'
         },
         {
           field: 'hold_rate',
@@ -397,8 +375,37 @@ export function supportGuoba() {
           }
         },
         {
+          field: 'role_combat',
+          label: '启用幻想真境剧诗 / 小剧诗',
+          bottomHelpMessage: '是否启用 #幻想角色、#幻想剧诗、#小剧诗 等原神幻想真境剧诗相关查询。关掉后这些指令不再响应，帮助图里对应条目一并隐藏',
+          component: 'Switch'
+        },
+        {
+          field: 'role_combat_theme',
+          label: '幻想角色 / 小剧诗主题',
+          bottomHelpMessage: '#幻想角色、#小剧诗 共用。可选浅色、深色半透明主题；留空跟随「全部深渊主题」',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '跟随全部深渊', value: '' },
+              { label: '浅色', value: 'light' },
+              { label: '深色', value: 'dark' }
+            ]
+          }
+        },
+        {
+          field: 'role_combat_bg_folder',
+          label: '深渊/剧诗/配队背景',
+          bottomHelpMessage:
+            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 的背景来源。可填单张图片、角色面板目录或多层分类目录。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。支持 Win/Linux 相对或绝对路径；留空使用 bg1.png',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
+          }
+        },
+        {
           component: 'Divider',
-          label: '队伍伤害'
+          label: '原神 · 队伍伤害'
         },
         {
           field: 'team_damage',
@@ -432,70 +439,52 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
-          label: '帮助图'
+          label: '星铁 · 全部深渊'
         },
         {
-          field: 'help_bg',
-          label: '帮助图背景',
-          bottomHelpMessage:
-            '#小火花帮助 背景。默认 plugins/xhh-TL/resources/bg/bg2.png（插件自带，Win/Linux 通用正斜杠）。可填单张图片，或目录（随机抽一张）。Windows 也可用绝对路径如 D:/Yunzai/plugins/.../xxx.png',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/bg/bg2.png'
-          }
-        },
-        {
-          component: 'Divider',
-          label: 'CK / SToken 路径'
-        },
-        {
-          field: 'stoken_paths',
-          label: 'SToken/CK 搜索路径',
-          bottomHelpMessage:
-            '按优先级从上到下查找 {QQ}.yaml。支持多行，可写绝对路径或相对 Yunzai 根目录。留空则用默认：xhh / 逍遥 / 本插件 data/Stoken',
-          component: 'Input',
-          componentProps: {
-            type: 'textarea',
-            rows: 4,
-            placeholder:
-              'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
-          }
-        },
-        {
-          component: 'Divider',
-          label: '体力阈值推送'
-        },
-        {
-          field: 'resin_push_enable',
-          label: '启用体力阈值推送',
-          bottomHelpMessage:
-            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需打开上方「启用鸣潮体力」）',
+          field: 'all_abyss',
+          label: '启用全部深渊查询',
+          bottomHelpMessage: '是否启用星铁全部深渊三合一查询（混沌回忆、虚构叙事、末日幻影）。关掉后 *全部深渊 / *深渊总览 / #星铁全部深渊 不再响应，帮助图里该板块一并隐藏',
           component: 'Switch'
         },
         {
-          field: 'resin_push_cron',
-          label: '检查频率 cron',
-          bottomHelpMessage:
-            '标准 5 段 cron（分 时 日 月 周）。默认每 10 分钟检查一次：*/10 * * * *。不建议太频繁以免触发米游社风控',
-          component: 'Input',
+          field: 'all_abyss_render_mode',
+          label: '深渊渲染模式',
+          bottomHelpMessage: '桌面端渲染(1200px宽)或手机端渲染(480px宽)',
+          component: 'Select',
           componentProps: {
-            placeholder: '*/10 * * * *'
+            options: [
+              { label: '桌面端', value: 'desktop' },
+              { label: '手机端', value: 'mobile' }
+            ]
+          }
+        },
+        {
+          field: 'abyss_priority',
+          label: '深渊 / 版本配置优先级',
+          bottomHelpMessage:
+            '插件优先级，数字越小越优先。留空默认 -98：压在其它接管同名深渊指令的插件之前。版本配置在此基础上 +1',
+          component: 'InputNumber',
+          componentProps: {
+            min: -9999,
+            max: 9999,
+            placeholder: '默认 -98'
           }
         },
         {
           component: 'Divider',
-          label: '质变仪 / 洞天宝钱到期提醒'
+          label: '星铁 · 抽卡记录'
         },
         {
-          field: 'resin_timer_enable',
-          label: '启用到期提醒',
+          field: 'sr_gacha_enable',
+          label: '启用星铁抽卡记录',
           bottomHelpMessage:
-            '向已开启体力推送的人，在「参量质变仪可再次使用」「洞天宝钱已满」时于其订阅群 @ 提醒一次（配一张提醒卡）。数据来自用户查询体力时的快照，需至少查询过一次；到点时刻会落盘，重启后自动恢复定时',
+            '是否启用 *更新抽卡记录 / *抽卡记录 / *武器记录 / *常驻记录 / *导入记录。关掉后这些指令不再响应，帮助图里该板块一并隐藏；发来的抽卡链接也不再被本插件接管，会交给 genshin 等其它插件处理',
           component: 'Switch'
         },
         {
           component: 'Divider',
-          label: '米游社自动签到'
+          label: '米游社签到'
         },
         {
           field: 'auto_sign_enable',
@@ -549,8 +538,22 @@ export function supportGuoba() {
           }
         },
         {
+          field: 'solver_deploy_enable',
+          label: '启用过码服务部署',
+          bottomHelpMessage:
+            '是否允许在群里发 #过码部署 / #过码服务状态。关掉后这两条指令不再响应（已装好的过码服务不受影响，撞码时照常自动处理）；不想让任何人在群里触发部署就关掉它',
+          component: 'Switch'
+        },
+        {
+          field: 'captcha_notice_enable',
+          label: '启用撞码自动处理',
+          bottomHelpMessage:
+            '查询撞米游社风控码（1034/10035/10041）时自动过码并重试原请求，用户无感。关掉后退回只提醒「发 #过码」，不自动解滑块、不自动重试',
+          component: 'Switch'
+        },
+        {
           component: 'Divider',
-          label: '米游币社区任务'
+          label: '米游币任务'
         },
         {
           field: 'bbs_coin_enable',
@@ -607,7 +610,41 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
-          label: '临时文件清理'
+          label: '版本配置（Alioth）'
+        },
+        {
+          field: 'nanoka_abyss_enable',
+          label: '启用版本配置查询',
+          bottomHelpMessage:
+            '是否启用 #版本深渊 / #版本剧诗 / #版本危战 与 *版本混沌 / *版本虚构 / *版本末日 / *版本异相 等静态版本配置查询（原神与星铁共用本开关）。关掉后这些指令不再响应，帮助图里两个版本板块一并隐藏',
+          component: 'Switch'
+        },
+        {
+          component: 'Divider',
+          label: '管理 · 其它'
+        },
+        {
+          field: 'help_bg',
+          label: '帮助图背景',
+          bottomHelpMessage:
+            '#小火花帮助 背景。默认 plugins/xhh-TL/resources/bg/bg2.png（插件自带，Win/Linux 通用正斜杠）。可填单张图片，或目录（随机抽一张）。Windows 也可用绝对路径如 D:/Yunzai/plugins/.../xxx.png',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/bg/bg2.png'
+          }
+        },
+        {
+          field: 'stoken_paths',
+          label: 'SToken/CK 搜索路径',
+          bottomHelpMessage:
+            '按优先级从上到下查找 {QQ}.yaml。支持多行，可写绝对路径或相对 Yunzai 根目录。留空则用默认：xhh / 逍遥 / 本插件 data/Stoken',
+          component: 'Input',
+          componentProps: {
+            type: 'textarea',
+            rows: 4,
+            placeholder:
+              'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
+          }
         },
         {
           field: 'tmp_clean_enable',
@@ -634,7 +671,15 @@ export function supportGuoba() {
             max: 720,
             placeholder: '24'
           }
+        },
+        {
+          field: 'del_ck_hook_enable',
+          label: '启用删除 CK 对账',
+          bottomHelpMessage:
+            '配合 genshin 的 #删除ck：记录被删账号的残留 stoken，避免它被体力查询「复活」。关掉后 #删除ck 照常由 genshin 执行，只是不再记录（没装 genshin 的环境本来就不会触发，关掉零影响）',
+          component: 'Switch'
         }
+      
       ],
       getConfigData() {
         // 返回「默认 + 用户」合并结果，方便锅巴展示完整项

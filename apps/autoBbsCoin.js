@@ -35,6 +35,7 @@ import {
   toFileUrl,
   toDataUrl,
 } from '../utils/pluginConfig.js'
+import { guardModule } from '../utils/modules.js'
 
 const DATA_DIR = path.join(pluginDir, 'data')
 const CONFIG_FILE = path.join(DATA_DIR, 'bbs_coin.json')
@@ -533,3 +534,6 @@ export class autoBbsCoin extends plugin {
 }
 
 export default autoBbsCoin
+
+// 关掉 bbs_coin_enable 后，米游币相关指令不再响应
+guardModule(autoBbsCoin, 'bbs_coin', ['off', 'on', 'runNow', 'balance', 'listSubs'])

@@ -9,9 +9,25 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { pickHelpBgImage, pluginDir } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
+import { filterHelpGroups, disabledModuleLabels, isModuleEnabled } from '../utils/modules.js'
 
 /** 帮助图标目录（相对插件 resources，渲染时拼到 ppath） */
 const HELP_ICON_DIR = 'help/icons'
+
+/**
+ * 出图服务不可用时的文字兜底。
+ * 与帮助图同源（同一份 groups），所以关掉的模块在这里同样不出现。
+ */
+function groupsToText(groups) {
+  const lines = ['小火花指令一览（出图服务不可用，先发文字版）']
+  for (const g of groups) {
+    lines.push('', `【${g.group}】`)
+    for (const item of g.list || []) {
+      lines.push(`  ${item.title}${item.desc ? `　— ${item.desc}` : ''}`)
+    }
+  }
+  return lines.join('\n')
+}
 
 function readVersion() {
   try {
@@ -74,6 +90,13 @@ function checkIconUnique(groups) {
  * - 多游戏 / 管理 → multi / signin / mask / plugin / active / spark
  */
 export function buildHelpGroups() {
+  // 鸣潮有独立开关：关掉时这条里连它的名字和别名都不列，
+  // 否则用户照着帮助图发 #鸣潮体力 却毫无反应（note_ 已被 waves 挡住）
+  const wwOn = isModuleEnabled('waves')
+  const soloGames = ['原神', '星铁', '绝区零'].concat(wwOn ? ['鸣潮'] : [])
+  const soloAlias = ['#ystl', '#xttl', '#zzztl'].concat(wwOn ? ['#mctl'] : []).join(' ')
+  // 质变仪 / 洞天宝钱提醒是独立开关（resin_timer），关掉时列表里不该还写着"含…提醒"
+  const timerOn = isModuleEnabled('resin_timer')
   return [
     {
       group: '体力查询',
@@ -83,142 +106,65 @@ export function buildHelpGroups() {
         {
           icon: 'gs-logo.webp',
           icon2: 'sr-logo.webp',
+          module: 'tl',
           title: '#体力 #tl #体力总览',
           desc: '一次查原神 / 星铁 / 绝区零（鸣潮需先自行开启）',
         },
         {
-          icon: 'gs-纳西妲.webp',
-          title: '#原神体力 #ystl',
-          desc: '仅查原神体力',
-        },
-        {
-          icon: 'sr-花火.webp',
-          title: '#星铁体力 #xttl *体力',
-          desc: '仅查星穹铁道体力',
-        },
-        {
-          icon: 'zzz-battery.webp',
-          title: '#绝区零体力 #zzztl',
-          desc: '仅查绝区零电量',
-        },
-        {
-          icon: 'ww-01.webp',
-          title: '#鸣潮体力 #mctl',
-          desc: '库街区数据 + 本插件模板出图；需主人先启用并登录鸣潮',
+          // 四游戏单查只是名字不同（TL.js 的 note_ 用同一套游戏别名），合成一条
+          // 图标用「开拓力」（体力意象），与推送那条的「原粹树脂」同族但不撞图
+          icon: 'sr-trailblaze.webp',
+          module: 'tl',
+          title: soloGames.map((g) => `#${g}体力`).join(' / '),
+          desc: `单查某一游戏；别名 ${soloAlias}（*体力 = #星铁体力）；支持 @他人`,
         },
         {
           icon: 'multi.webp',
+          module: 'tl',
           title: '#开启/关闭 原神 / 星铁 / 绝区零 / 鸣潮 体力',
           desc: '控制「体力总览」是否包含对应游戏（前三个默认显示、鸣潮默认关，单独查询不受影响）',
         },
         {
           icon: 'mask.webp',
-          title: '#关闭原神123456789',
-          desc: '按 UID 屏蔽：该小号不再出现在任何体力卡里（星铁/绝区零/鸣潮同理）；恢复：#开启原神123456789',
+          module: 'tl',
+          // 标题按旁边那条「开启/关闭 原神/星铁/绝区零/鸣潮 体力」的写法列全四游戏，
+          // 别只举原神一个例子 —— 用户只看标题，desc 里的「同理」等于没写
+          title: '#关闭原神/星铁/绝区零/鸣潮 123456789',
+          desc: '屏蔽单个号（不解绑、不影响推送）；#屏蔽星铁体力123456789 / #隐藏鸣潮123456789 都认；恢复：#开启原神123456789',
         },
         {
-          icon: 'mask.webp',
+          icon: 'sr-忘归人.webp',
+          module: 'tl',
           title: '#体力屏蔽列表',
-          desc: '查看被屏蔽的 UID；屏蔽只影响显示，不解绑、不影响体力推送',
+          desc: '查看自己已屏蔽的 UID；屏蔽只影响显示，不解绑、不影响体力推送',
         },
         {
           icon: 'gs-resin.webp',
-          title: '#原神体力推送 130',
-          desc: '树脂达阈值时在群@你发图；关闭：#原神体力推送关闭',
-        },
-        {
-          icon: 'sr-trailblaze.webp',
-          title: '#星铁体力推送 200',
-          desc: '开拓力达阈值时在群@你发图；关闭：#星铁体力推送关闭',
-        },
-        {
-          icon: 'zzz-01.webp',
-          title: '#绝区零体力推送 220',
-          desc: '电量达阈值时在群@你发图；关闭：#绝区零体力推送关闭',
-        },
-        {
-          icon: 'ww-02.webp',
-          title: '#开启鸣潮体力推送 200',
-          desc: '结晶波片达阈值时在群@你发图；需主人先启用鸣潮；关闭：#关闭鸣潮体力推送',
+          module: 'resin_push',
+          // 四游戏只是名字不同，正则也是同一个模板套游戏名，合成一条更清爽
+          // （对应 setReg：`#?[开启]?<游戏名>体力推送 <阈值>`，开启前缀可省）
+          title: '#原神/星铁/绝区零/鸣潮体力推送 <阈值>',
+          desc: '只盯主号：达标即在群@你发图（原粹树脂/开拓力/电量/结晶波片）；鸣潮需先启用；关闭：加「关闭」',
         },
         {
           icon: 'gs-枫原万叶.webp',
-          title: '#原神/星铁/绝区零/鸣潮体力全推送 130',
-          desc: '监控名下所有UID，各自达标各自@发图；关闭：加「关闭」',
+          module: 'resin_push',
+          title: '#原神/星铁/绝区零/鸣潮体力全推送 <阈值>',
+          desc: '盯名下所有号：各自达标各自@发图；关闭：加「关闭」',
         },
         {
           icon: 'signin.webp',
+          module: 'resin_push',
           title: '#体力推送列表',
-          desc: '查看自己的体力推送订阅（含全id、质变仪/洞天宝钱到期提醒）',
+          // resin_timer 关掉时就不提提醒了，免得用户以为开了却没收到
+          desc: `查看自己的体力推送订阅（含全id${timerOn ? '、质变仪/洞天宝钱到期提醒' : ''}）`,
         },
         {
-          icon: 'mask.webp',
+          icon: 'sr-砂金.webp',
+          module: 'tl',
           title: '#开启体力uid / #关闭体力uid',
-          desc: '控制卡片是否显示游戏 UID',
-        },
-        {
-          icon: 'plugin.webp',
-          title: '#体力插件更新 #小火花更新 #更新小火花',
-          desc: '拉取插件更新；加「强制」放弃本地修改',
-        },
-      ],
-    },
-    {
-      group: '米游社签到',
-      desc: '原神 / 星铁 / 绝区零 · 需绑定',
-      color: 'orange',
-      list: [
-        {
-          icon: 'gs-迪卢克.webp',
-          title: '#原神签到',
-          desc: '立即签到原神；星铁 #星铁签到、绝区零 #zzz签到',
-        },
-        {
-          icon: 'gs-温迪.webp',
-          title: '#原神自动签到',
-          desc: '开启每日自动签；星铁/绝区零同理，加「关闭」停用',
-        },
-        {
-          icon: 'gs-丽莎.webp',
-          title: '#过码 #米游社验证 #手动过码',
-          desc: '清掉米游社验证（默认全自动）；可带游戏名（#星铁过码 / #绝区零过码），默认原神',
-        },
-        {
-          icon: 'gs-七七.webp',
-          title: '#签到列表',
-          desc: '查看自己已开启的自动签到订阅',
-        },
-        {
-          icon: 'plugin.webp',
-          title: '#过码部署 #过码服务状态',
-          desc: '一键装好全自动过码服务；装完撞码自动处理，不用再管',
-        },
-      ],
-    },
-    {
-      group: '米游币任务',
-      desc: '社区做任务赚币 · 需 stoken',
-      color: 'gold',
-      list: [
-        {
-          icon: 'active.webp',
-          title: '#开启自动米游币',
-          desc: '开启每日自动做任务；停用发 #关闭自动米游币',
-        },
-        {
-          icon: 'gs-艾尔海森.webp',
-          title: '#米游币签到',
-          desc: '立即跑一次：版块签到+看帖+点赞+分享',
-        },
-        {
-          icon: 'gs-流浪者.webp',
-          title: '#米游币余额',
-          desc: '只查米游币余额与今日剩余可获取',
-        },
-        {
-          icon: 'sr-大黑塔.webp',
-          title: '#自动米游币列表',
-          desc: '查看自己是否已开启每日自动米游币',
+          // toggleUidDisplay 的 redis key 是 xhh:show_uid:<qq>，没有 game 维度 —— 确实一次管四游戏
+          desc: '一次管四个游戏：卡片是否显示 UID（与「#开启原神体力」不同，那个是控制总览含哪几个游戏）',
         },
       ],
     },
@@ -229,68 +175,92 @@ export function buildHelpGroups() {
       list: [
         {
           icon: 'gs-钟离.webp',
+          module: 'gs_all_abyss',
           title: '#全部深渊',
-          desc: '螺旋 + 危战 + 小剧诗 三列合一',
+          // 这条只有原神：星铁同名功能走 * 前缀（见下方「星铁 · 全部深渊」板块），
+          // 不带 * 的 #全部深渊 就是原神，所以标题不加游戏名，desc 里点明去处
+          desc: '原神：螺旋 + 危战 + 小剧诗 三列合一；星铁同名功能发 *全部深渊',
         },
         {
           icon: 'gs-莫娜.webp',
+          module: 'abyss_team',
           title: '#深渊配队 #深渊组队',
           desc: '12层满星热门双队；绑CK按练度排序',
         },
         {
           icon: 'gs-胡桃.webp',
+          module: 'hard_team',
           title: '#危战配队 #危战组队',
           desc: '幽境危战上/中/下三关热门队；绑CK按练度排序',
         },
         {
           icon: 'gs-刻晴.webp',
+          module: 'hold_rate',
           title: '#角色持有率 #持有率',
           desc: '深渊玩家各角色持有比例；绑CK标记已持有',
         },
         {
-          icon: 'gs-胡桃.webp',
-          title: '#队伍伤害 钟离,班尼特,香菱,行秋',
-          desc: '小助手算队伍DPS；需先#更新面板。加「详情」出逐条伤害',
-        },
-        {
-          icon: 'gs-夜兰.webp',
-          title: '#队伍伤害 …队伍… 钟离e,班尼特q,香菱q',
-          desc: '自定义手法：e/长e/短e/q/zj/a1~a6，同角色连招可省名',
-        },
-        {
-          icon: 'gs-纳西妲.webp',
-          title: '#队伍伤害 香菱换六命换精5换4千岩',
-          desc: '换装模拟：换武器/圣遗物/命座/精炼/天赋101313/90级',
-        },
-        {
-          icon: 'gs-钟离.webp',
-          title: '#队伍伤害帮助',
-          desc: '手法与换装的全部写法说明（出图）',
-        },
-        {
           icon: 'gs-芙宁娜.webp',
+          module: 'role_combat',
           title: '#小剧诗 #小幻想',
           desc: '幻想真境剧诗关键关卡通关速览',
         },
         {
           icon: 'gs-那维莱特.webp',
+          module: 'role_combat',
           title: '#小剧诗上期 #上期小幻想',
           desc: '查询上期小剧诗成绩',
         },
         {
           icon: 'gs-八重神子.webp',
+          module: 'role_combat',
           title: '#幻想角色',
           desc: '当期限制元素 / 特邀 / 可用角色',
         },
         {
           icon: 'gs-妮露.webp',
+          module: 'role_combat',
           title: '#下期幻想角色',
           desc: '下期限制元素 / 特邀 / 可用角色（未发布则回退最新）',
         },
         {
           icon: 'gs-甘雨.webp',
+          module: 'role_combat',
           title: '#幻想202607 #幻想2026年7月',
           desc: '按月份回看幻想剧诗角色池',
+        },
+      ],
+    },
+    {
+      // 队伍伤害从「原神 · 成绩汇总」独立出来：它不吃米游社成绩、走的是提瓦特小助手 + miao 面板，
+      // 依赖和受众都与同板块其它条目不同，故单独成块、单独开关
+      group: '原神 · 队伍伤害',
+      desc: '提瓦特小助手算 DPS · 需 miao 面板',
+      color: 'cyan',
+      list: [
+        {
+          icon: 'gs-胡桃.webp',
+          module: 'team_damage',
+          title: '#队伍伤害 钟离,班尼特,香菱,行秋',
+          desc: '算队伍 DPS；需先 #更新面板。加「详情」出逐条伤害',
+        },
+        {
+          icon: 'gs-夜兰.webp',
+          module: 'team_damage',
+          title: '#队伍伤害 …队伍… 钟离e,班尼特q,香菱q',
+          desc: '自定义手法：e/长e/短e/q/zj/a1~a6，同角色连招可省名',
+        },
+        {
+          icon: 'gs-纳西妲.webp',
+          module: 'team_damage',
+          title: '#队伍伤害 香菱换六命换精5换4千岩',
+          desc: '换装模拟：换武器/圣遗物/命座/精炼/天赋101313/90级',
+        },
+        {
+          icon: 'gs-钟离.webp',
+          module: 'team_damage',
+          title: '#队伍伤害帮助',
+          desc: '手法与换装的全部写法说明（出图）',
         },
       ],
     },
@@ -301,16 +271,15 @@ export function buildHelpGroups() {
       list: [
         {
           icon: 'sr-黄泉.webp',
-          title: '*全部深渊 *深渊总览',
-          desc: '混沌 / 虚构 / 末日 / 异相 一张图',
-        },
-        {
-          icon: 'sr-知更鸟.webp',
-          title: '*深渊汇总 #星铁全部深渊',
-          desc: '同上；需 * 或「星铁」前缀',
+          module: 'sr_all_abyss',
+          // 这三条其实是同一个 rule（Abyss.js 一条正则同时吃 全部深渊/深渊总览/深渊汇总），
+          // 别名并排写出来即可，不再单占一格
+          title: '*全部深渊 *深渊总览 *深渊汇总',
+          desc: '混沌 / 虚构 / 末日 / 异相 一张图；也可写 #星铁全部深渊',
         },
         {
           icon: 'sr-流萤.webp',
+          module: 'sr_all_abyss',
           title: '*全部深渊上期 *上期全部深渊',
           desc: '查询上期四模式成绩',
         },
@@ -323,18 +292,90 @@ export function buildHelpGroups() {
       list: [
         {
           icon: 'sr-卡芙卡.webp',
+          module: 'sr_gacha',
           title: '*更新抽卡记录',
           desc: '免抽卡链接，直接拉五星记录与垫抽，合并进本地记录不丢旧数据；更新完回一条变动池明细并出总览图；也可发 *xhh更新抽卡记录',
         },
         {
           icon: 'sr-希儿.webp',
+          module: 'sr_gacha',
           title: '*抽卡记录 *武器记录 *常驻记录',
           desc: '仿小程序「跃迁记录统计」出图，各池分开看；*全部记录 出总览图',
         },
         {
           icon: 'sr-灵砂.webp',
+          module: 'sr_gacha',
           title: '*导入记录',
           desc: '发完指令再丢文件：SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或导出的 Excel',
+        },
+      ],
+    },
+    {
+      group: '米游社签到',
+      desc: '原神 / 星铁 / 绝区零 · 需绑定',
+      color: 'orange',
+      list: [
+        {
+          icon: 'gs-迪卢克.webp',
+          module: 'auto_sign',
+          // 标题列全三游戏（与「#开启/关闭 …体力」那条同一写法）；星铁别名多，desc 里补上
+          title: '#原神/星铁/绝区零签到',
+          desc: '立即签到；星铁也可写 #崩铁签到 / #星穹铁道签到 / #xt签到',
+        },
+        {
+          icon: 'gs-温迪.webp',
+          module: 'auto_sign',
+          title: '#原神/星铁/绝区零自动签到',
+          desc: '开启每日自动签；加「关闭 / 关 / 取消 / 停止」停用',
+        },
+        {
+          icon: 'gs-丽莎.webp',
+          module: 'auto_sign',
+          title: '#过码 #米游社验证 #手动过码',
+          desc: '清掉米游社验证（默认全自动）；可带游戏名（#星铁过码 / #绝区零过码），默认原神',
+        },
+        {
+          icon: 'gs-七七.webp',
+          module: 'auto_sign',
+          title: '#签到列表',
+          desc: '查看自己已开启的自动签到订阅',
+        },
+        {
+          icon: 'sr-花火.webp',
+          module: 'solver',
+          title: '#过码部署 #过码服务状态',
+          desc: '一键装好全自动过码服务；装完撞码自动处理，不用再管',
+        },
+      ],
+    },
+    {
+      group: '米游币任务',
+      desc: '社区做任务赚币 · 需 stoken',
+      color: 'gold',
+      list: [
+        {
+          icon: 'active.webp',
+          module: 'bbs_coin',
+          title: '#开启自动米游币',
+          desc: '开启每日自动做任务；停用发 #关闭自动米游币',
+        },
+        {
+          icon: 'gs-艾尔海森.webp',
+          module: 'bbs_coin',
+          title: '#米游币签到',
+          desc: '立即跑一次：版块签到+看帖+点赞+分享',
+        },
+        {
+          icon: 'gs-流浪者.webp',
+          module: 'bbs_coin',
+          title: '#米游币余额',
+          desc: '只查米游币余额与今日剩余可获取',
+        },
+        {
+          icon: 'sr-大黑塔.webp',
+          module: 'bbs_coin',
+          title: '#自动米游币列表',
+          desc: '查看自己是否已开启每日自动米游币',
         },
       ],
     },
@@ -345,31 +386,37 @@ export function buildHelpGroups() {
       list: [
         {
           icon: 'gs-雷电将军.webp',
+          module: 'nanoka',
           title: '#版本深渊 #版本螺旋',
           desc: '深境螺旋祝福与楼层（正式服）',
         },
         {
           icon: 'gs-可莉.webp',
+          module: 'nanoka',
           title: '#下期深渊 #下期螺旋',
           desc: '测试包最新深渊配置',
         },
         {
           icon: 'gs-夜兰.webp',
+          module: 'nanoka',
           title: '#版本剧诗 #下期剧诗',
           desc: '幻想真境剧诗限制元素与 Boss',
         },
         {
           icon: 'gs-神里绫华.webp',
+          module: 'nanoka',
           title: '#版本危战 #危战版本',
           desc: '幽境危战强敌；#下期危战 看下期',
         },
         {
           icon: 'sr-符玄.webp',
+          module: 'nanoka',
           title: '#版本深渊列表 #版本危战列表',
           desc: '最近期数一览（剧诗同理）',
         },
         {
           icon: 'sr-丹恒.webp',
+          module: 'nanoka',
           title: '上期 / 第N期 / 9月',
           desc: '接在版本指令后：#版本深渊上期 · #版本深渊9月',
         },
@@ -382,26 +429,31 @@ export function buildHelpGroups() {
       list: [
         {
           icon: 'sr-景元.webp',
+          module: 'nanoka',
           title: '*版本混沌 *版本深渊',
           desc: '混沌回忆配置；*下期混沌 看下期',
         },
         {
           icon: 'sr-银狼.webp',
+          module: 'nanoka',
           title: '*版本虚构 *下期虚构',
           desc: '虚构叙事',
         },
         {
           icon: 'sr-刃.webp',
+          module: 'nanoka',
           title: '*版本末日 *下期末日',
           desc: '末日幻影',
         },
         {
           icon: 'sr-星期日.webp',
+          module: 'nanoka',
           title: '*版本异相 *下期异相',
           desc: '异相仲裁',
         },
         {
           icon: 'sr-黑天鹅.webp',
+          module: 'nanoka',
           title: '*版本混沌列表 等',
           desc: '各模式最近期数；可接上期/第N期',
         },
@@ -418,12 +470,20 @@ export function buildHelpGroups() {
           desc: '显示本指令总览图',
         },
         {
+          // 属运维类，从「体力查询」移过来；正则里带「体力插件」是历史别名，不是体力功能
+          icon: 'plugin.webp',
+          title: '#更新小火花 #体力插件更新',
+          desc: '拉取插件更新；加「强制」放弃本地修改',
+        },
+        {
           icon: 'sr-藿藿.webp',
+          module: 'tmp_clean',
           title: '#清理临时文件 #小火花清理tmp',
           desc: '主人：清理 data/tmp（加「全部」清空）',
         },
         {
           icon: 'sr-镜流.webp',
+          module: 'del_ck',
           title: '#删除ck #原神删除ck',
           desc: '配合 genshin 删号：清理残留 stoken，避免被删账号复活查询',
         },
@@ -450,21 +510,31 @@ export class help extends plugin {
   }
 
   async help(e) {
+    // 提到 try 外面：渲染失败时还要用它退文字版
+    let groups = []
     try {
-      if (!e.runtime?.render) {
-        return e.reply('出图服务不可用，请稍后重试', quoteEnabled())
-      }
-
       const rawGroups = buildHelpGroups()
       checkIconUnique(rawGroups)
-      const groups = withIconSrc(rawGroups)
+      // 关掉的模块连同它的板块一起从帮助图里去掉：
+      // 板块内条目全被过滤时整组消失，不留空标题
+      groups = withIconSrc(filterHelpGroups(rawGroups))
       const cmdCount = groups.reduce((n, g) => n + (g.list?.length || 0), 0)
       const version = readVersion()
+      const offModules = disabledModuleLabels()
       const note =
         '<b>提示</b>：指令大多可省略 #（过码相关须带 #）；星铁相关请带 <b>*</b> 或「星铁」前缀。' +
         '版本指令支持 <b>列表 / 上期 / 第N期</b>；个人成绩类需先绑定账号。' +
         '鸣潮体力需主人先启用并登录鸣潮。' +
-        '支持 @他人查询（对方需已绑定）。'
+        '支持 @他人查询（对方需已绑定）。' +
+        // 有关掉的模块时点名，避免用户以为指令写错了
+        (offModules.length
+          ? `<br><b>已关闭</b>（锅巴里可重新开启）：${offModules.join('、')}`
+          : '')
+
+      // 出图服务不可用时退文字版，而不是只回一句「请稍后重试」
+      if (!e.runtime?.render) {
+        return e.reply(groupsToText(groups), quoteEnabled())
+      }
 
       const bgImage = pickHelpBgImage({ logTag: 'xhh-TL[help]' })
 
@@ -490,6 +560,12 @@ export class help extends plugin {
       })
     } catch (err) {
       logger?.error?.('[xhh-TL][help]', err)
+      // 图挂了也别只丢一句「稍后重试」——把同一份清单用文字发出去
+      if (groups.length) {
+        try {
+          return e.reply(groupsToText(groups), quoteEnabled())
+        } catch (_) {}
+      }
       return e.reply(`帮助图渲染失败，请稍后重试`, quoteEnabled())
     }
   }

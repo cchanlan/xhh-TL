@@ -9,6 +9,7 @@ import { createUser, getAliveMysIds, hasRuntimeBinding } from '../utils/userBind
 import { getstoken, cookiePart, stokenToCookie } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
 import { config, pluginDir, pickCharacterPortrait, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
+import { guardModule } from '../utils/modules.js';
 import { getPortraitPalette } from '../utils/portraitPalette.js';
 import { replyQuote, replyForward, quoteEnabled } from '../utils/replyHelper.js';
 import { renderTpl } from '../utils/render.js';
@@ -22,6 +23,18 @@ import { solveByLocalService } from '../utils/mysVerify.js';
 
 /** 质变仪补拉撞码后的重试梯度（毫秒），与 captchaNotice 同一套：总窗口 21 秒 */
 const TRANSFORMER_RETRY_GAPS = [0, 6000, 15000];
+
+/**
+ * 桌面小组件卡「限时活动」显示条数：0 = 不显示该区块。
+ * 原来另有一个 tl_widget_activity 布尔开关，锅巴上两个开关挨着、用户分不清谁管谁，
+ * 已合并到这里的 0 —— 但仍兼容读取旧键，免得老用户升级后活动区块自己冒出来。
+ * 返回 -1 之外的有限数都当有效值；未配置回退 4。
+ */
+function widgetActLimit() {
+  if (config().tl_widget_activity === false) return 0;
+  const n = Number(config().tl_widget_activity_limit);
+  return Number.isFinite(n) ? n : 4;
+}
 
 // ============ 用户 UID 显示设置 ============
 async function getShowUid(qq) {
@@ -1488,13 +1501,9 @@ export class TL extends plugin {
       if (d.portrait) d.portrait = await toDataUrlTrim(d.portrait, { trimSolid: true });
 
       // 限时活动区块：数据来自 widget 接口自带字段（buildStaminaData 已解析进 d.acts）
-      // 与官方桌面小组件同源，零额外请求；可关，为空则模板自动不显示
-      if (config().tl_widget_activity === false) {
-        d.acts = [];
-      } else {
-        const limit = Number(config().tl_widget_activity_limit) || 4;
-        d.acts = (d.acts || []).slice(0, limit);
-      }
+      // 与官方桌面小组件同源，零额外请求；条数填 0 即不显示（模板对空数组自动隐藏）
+      const actLimit = widgetActLimit();
+      d.acts = actLimit > 0 ? (d.acts || []).slice(0, actLimit) : [];
       ds.push(d);
     }
     if (!ds.length) return false;
@@ -1788,7 +1797,7 @@ export class TL extends plugin {
     // ⚠️ 必须按「本张卡片的 uid」查，不能沿用事件的默认主 UID：多号时主 UID 可能属于
     // 另一个米游社账号，活动会挂错账号。MysInfo 按 targetType 缓存在 runtime 上，这里清掉
     // 缓存让它按 uid 重新解析；autoRegUid 对已有主 UID 的用户不会改绑定，查完还原 e.uid。
-    if (game === 'gs' && config().tl_widget_activity !== false && opts.allowDetail !== false) {
+    if (game === 'gs' && widgetActLimit() > 0 && opts.allowDetail !== false) {
       const prevUid = e.uid;
       e.uid = uid;
       try {
@@ -1989,3 +1998,20 @@ export class TL extends plugin {
   }
 
 }
+
+/**
+ * 关掉 Tl 后，体力查询与「体力显示开关」类指令一律不再响应。
+ *
+ * 刻意**不**守卫 updatePlugin：插件更新是唯一的自救入口，
+ * 把体力功能关掉之后仍要能发 #小火花更新 拉新版本。
+ */
+guardModule(TL, 'tl', [
+  'note_',
+  'toggleUidDisplay',
+  'toggleGsDisplay',
+  'toggleSrDisplay',
+  'toggleZzzDisplay',
+  'toggleWavesDisplay',
+  'toggleUidHidden',
+  'hiddenUidList',
+]);
