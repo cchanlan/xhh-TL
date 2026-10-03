@@ -59,8 +59,16 @@ function withIconSrc(groups) {
 }
 
 /**
- * 图标唯一性自检：要求每个条目的图标都不重复（新增指令时容易撞图）
- * 只告警不阻断出图，重复项会在日志里点名
+ * 允许复用的图标：原神条目多、gs-* 图标不够分，这几处复用是结构性的、不是撞图。
+ * 数过：resources/help/icons 里 gs-* 共 24 个，而标了 gs-* 的条目有 26 条，
+ * 所以至少 2 处必然复用 —— 「全部图标互不重复」这个目标本身做不到，别再按它改。
+ * 只有新出现的、不在这张表里的重复才值得告警。
+ */
+const DUP_ICON_TOLERATED = new Set(['gs-胡桃.webp', 'gs-钟离.webp', 'gs-夜兰.webp'])
+
+/**
+ * 图标唯一性自检：撞图时告警（新增指令时容易撞图）
+ * 只告警不阻断出图，重复项会在日志里点名；已知的结构性复用见 DUP_ICON_TOLERATED
  */
 function checkIconUnique(groups) {
   const seen = new Map()
@@ -69,8 +77,12 @@ function checkIconUnique(groups) {
     for (const item of g.list || []) {
       for (const icon of [item.icon, item.icon2].filter(Boolean)) {
         const prev = seen.get(icon)
-        if (prev) dup.push(`${icon} 同时用于「${prev}」与「${item.title}」`)
-        else seen.set(icon, item.title)
+        // 白名单里的图标只记录、不告警：它们必然重复，每次出图都刷日志只会掩盖真问题
+        if (prev && !DUP_ICON_TOLERATED.has(icon)) {
+          dup.push(`${icon} 同时用于「${prev}」与「${item.title}」`)
+        } else if (!prev) {
+          seen.set(icon, item.title)
+        }
       }
     }
   }
@@ -82,7 +94,8 @@ function checkIconUnique(groups) {
 
 /**
  * 按功能分组的指令表（对应 apps 内全部 reg）
- * icon 为本插件 resources/help/icons 下文件名，**全部互不重复**（新增条目请先跑 checkIconUnique）：
+ * icon 为本插件 resources/help/icons 下文件名，尽量互不重复
+ * （gs-* 数量不够分，有 3 处结构性复用，见 DUP_ICON_TOLERATED；新增条目仍请先跑 checkIconUnique）：
  * - 原神相关 → gs-* 原神角色
  * - 星铁相关 → sr-* 星铁角色
  * - 绝区零 → zzz-*（zzz.webp 游戏图标 / zzz-battery 电量 / zzz-01~05 角色圆头像）
