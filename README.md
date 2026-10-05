@@ -235,6 +235,7 @@ gsuid_core + 鸣潮插件（鸣潮体力）、Node ≥ 22.5（鸣潮读库更省
 
 ```yaml
 reply_quote: true           # 出图和提示是否引用你发的那条消息
+img_type: jpeg              # 出图格式 jpeg / png / webp（详见下表）
 render_scale: 1.0           # 全局出图清晰度倍率（上限 2.5）
 role_combat_theme: ""      # 幻想角色/小剧诗：空串跟随全部深渊 / light 浅色 / dark 深色
 tl_card_style: classic      # 体力卡样式 classic / portrait / widget
@@ -249,6 +250,20 @@ resin_timer_enable: true    # 质变仪/洞天宝钱到期提醒（复用查询�
 auto_sign_cron: "0 30 8 * * *"    # 自动签到时间
 team_damage: true           # 队伍伤害（与 FanSky_Qs 同名指令冲突时可关）
 ```
+
+### 输出图片类型
+
+锅巴面板 → 小火花 →「出图 → 输出图片类型」，或改 `img_type`。插件所有出图指令
+（体力卡 / 立绘卡 / 桌面小组件 / 全部深渊 / 抽卡记录 / 帮助面板…）统一用它，改完下次出图生效。
+
+| 取值 | 说明 |
+| --- | --- |
+| `jpeg` | 默认。体积小、全平台通用 |
+| `png` | 无损，体积最大 |
+| `webp` | 体积最小。⚠️ 微信（ComWeChat）适配器不认，会把图降级成「文件」发出去；QQ / OneBot 正常 |
+
+选 `jpeg` 时，质变仪 / 洞天宝钱到期提醒卡的圆角会自动改成直角 ——
+JPEG 装不下透明通道，硬裁会让四角变黑。
 
 ## 模块开关
 
