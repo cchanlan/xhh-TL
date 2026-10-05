@@ -8,7 +8,7 @@ import plugin from '../../../lib/plugins/plugin.js';
 import { createUser, getAliveMysIds, hasRuntimeBinding } from '../utils/userBind.js';
 import { getstoken, cookiePart, stokenToCookie } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
-import { config, pluginDir, pickCharacterPortrait, toDataUrl, toDataUrlTrim } from '../utils/pluginConfig.js';
+import { config, pluginDir, pickCharacterPortrait, toDataUrl, toDataUrlTrim, getImageFormat } from '../utils/pluginConfig.js';
 import { guardModule } from '../utils/modules.js';
 import { getPortraitPalette } from '../utils/portraitPalette.js';
 import { replyQuote, replyForward, quoteEnabled } from '../utils/replyHelper.js';
@@ -1587,9 +1587,10 @@ export class TL extends plugin {
     if (!image) return null;
     // 圆角外裁成透明：渲染器截图不支持透明底，body 填色又会吃掉底部圆角，
     // 所以在插件侧用 sharp 裁（见 renderImage.roundCorners）。
-    // 传进来的 image 已被 renderTpl 压成 webp，roundCorners 默认也出 webp（质量同 82），
-    // 别改成 png —— 那会把压好的图重新膨胀回无损（实测大 12 倍）。
-    const rounded = await roundCorners(image);
+    // 输出格式跟随「输出图片类型」配置，别再写死 webp —— 那会让用户改成 PNG 之后
+    // 这张提醒卡还是 webp，跟插件其它图不一致。
+    // 选 JPEG 时 roundCorners 会自己跳过裁切（JPEG 装不下透明通道，裁了是四个黑角）。
+    const rounded = await roundCorners(image, { imgType: getImageFormat() });
     return segment.image(rounded);
   }
 

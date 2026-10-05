@@ -207,6 +207,39 @@ export function getRenderScaleValue(config = {}, baseScale = 1) {
   return Number(scale.toFixed(2))
 }
 
+/** 出图格式的合法取值（跟锅巴「输出图片类型」下拉一致，也跟渲染器认的值一致） */
+const IMG_TYPES = ['jpeg', 'png', 'webp']
+
+/**
+ * 读「输出图片类型」（配置项 img_type）→ 'jpeg' | 'png' | 'webp'
+ *
+ * 为什么不复用王者那套 imgType 名字：本插件原来把 imgType 当**渲染器参数**用
+ * （renderTpl 的 opts.imgType 一直是 'png'），配置项再叫 imgType 容易看串，
+ * 所以配置项叫 img_type，函数名也点明是"格式"而不是"渲染器参数"。
+ *
+ * 非法值 / 配置读不到一律退回 jpeg：出图链路上绝不能因为一个配置项写错就整张图发不出去。
+ *
+ * 另外把常见写法归一化掉：jpg / JPG / image/jpeg 都算 jpeg。
+ */
+export function getImageFormat() {
+  try {
+    const raw = String(readPluginConfig()?.img_type ?? '').trim().toLowerCase()
+    if (raw === 'jpg' || raw === 'image/jpeg') return 'jpeg'
+    if (raw === 'image/png') return 'png'
+    if (raw === 'image/webp') return 'webp'
+    return IMG_TYPES.includes(raw) ? raw : 'jpeg'
+  } catch (_) {
+    return 'jpeg'
+  }
+}
+
+/**
+ * 出图格式对应的文件扩展名（带点）——发图用不着，但要跟 content-type 对齐的场景用得上。
+ */
+export function getImageExt() {
+  return `.${getImageFormat()}`
+}
+
 /** 强制刷新缓存 */
 export function reloadPluginConfig() {
   _cache = null

@@ -40,6 +40,30 @@ export function supportGuoba() {
         },
         {
           component: 'Divider',
+          label: '出图'
+        },
+        {
+          field: 'img_type',
+          label: '输出图片类型',
+          helpMessage: '插件所有出图指令（体力卡 / 立绘卡 / 桌面小组件 / 全部深渊 / 抽卡记录 / 帮助面板…）统一用这个格式',
+          bottomHelpMessage:
+            '改完下次出图就生效，不用重启。' +
+            'JPEG 体积小、全平台通用（推荐）；PNG 无损但体积最大；' +
+            '⚠️ 选 WebP 之前先看你的适配器：微信（ComWeChat）的图片接口不认 webp，' +
+            '会把图降级成「文件」发出去 —— 群友收到的是 xxx.webp 文件卡片而不是图。' +
+            'QQ / OneBot 等平台用 webp 能省三成左右体积。' +
+            '另外 JPEG 装不下透明通道，质变仪 / 洞天宝钱到期提醒卡的圆角会自动改成直角（不然四角是黑的）。',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: 'JPEG（推荐，全平台通用）', value: 'jpeg' },
+              { label: 'PNG（无损，体积最大）', value: 'png' },
+              { label: 'WebP（体积小，微信下会变成文件）', value: 'webp' }
+            ]
+          }
+        },
+        {
+          component: 'Divider',
           label: '体力查询'
         },
         {
