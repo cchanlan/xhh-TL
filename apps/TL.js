@@ -163,7 +163,47 @@ function getServer(uid, game) {
   return 'prod_gf_cn';
 }
 
-function getHeaders(e, ck, Ds_ = true, info) {
+/**
+ * 取一枚**当次有效**的 device_fp（复刻 LiteMysApi 的 getFp 流程）。
+ *
+ * ⚠️ 为什么必须现取：原先 getHeaders 里写死常量 '38d7f0aac0ab7'，2026-10-07 实测它已被
+ * 米游社判死 —— 同一把凭证、同一份 header，带该常量打 dailyNote **恒 retcode=5003**；
+ * 换成现取的指纹**立刻 retcode=0**，宝钱 cur/max/sec 与质变仪 recovery_time 全都回来。
+ * 判死的不只是这一个值：任何「写死/长期复用」的 fp 都会失效，只有现取的可信。
+ *
+ * ⚠️ 只对 dailyNote 有意义，别顺手给钱包接口也套上：同一实验里原神 widget
+ * （体力图走的那条）在「常量 fp / 真 fp / 不带 fp」三态下全是 retcode=0 —— 它根本不校验 fp。
+ * 这正是过去的现象成因：体力一直正常，只有质变仪哑火、宝钱拿不到 sec，
+ * 很容易被误诊成「凭证坏了」。诊断 game_record 的 dailyNote 时先怀疑 fp，别先怀疑 ck。
+ *
+ * ⚠️ 刻意**不缓存**：常量复用正是这次事故的根因（'38d7f0aac0ab7' 已判死），
+ * 而现取的值每次都有效。实测同一枚**现取**的 fp 短时间复用也是通的，所以不缓存
+ * 不是「复用必挂」，而是不想赌某枚 fp 的有效期 —— 补拉已被「视图缓存 30 分钟 +
+ * 风控冷却 10 分钟」压到很低频，每次多一次 getFp 的开销可以接受。
+ * 取不到就返回空串，让调用方走「进冷却等下次重试」，绝不要退回那个常量硬顶。
+ *
+ * 跨框架：getFp 走 public-data-api，不带 Cookie 也不校验登录态，`ck` 只是构造
+ * LiteMysApi 需要；LiteMysApi 是纯 fetch 实现、不依赖 Bot/cfg，Yunzai 与 JiuLi 都能跑。
+ *
+ * @param {string} device 与随后那次请求**同一个** x-rpc-device_id —— 指纹按 device 签发，
+ *   取指纹与发请求用同一个设备更稳妥，也对齐 signClient / bbsCoinClient 的既有做法。
+ *   传空则回落 LiteMysApi 的确定性 deviceId(uid)。
+ */
+async function fetchDeviceFp(uid, ck, device) {
+  try {
+    const api = new LiteMysApi(uid, ck, { game: 'gs', log: false, ...(device ? { device } : {}) });
+    const fpRes = await api.getData('getFp', {
+      seed_id: md5(String(uid) + Date.now()).slice(0, 16),
+      Getfp: true,
+    });
+    return fpRes?.data?.device_fp || '';
+  } catch (err) {
+    logger.debug?.(`[xhh-TL][transformer] getFp 失败 ${uid}: ${err?.message}`);
+    return '';
+  }
+}
+
+function getHeaders(e, ck, Ds_ = true, info, deviceFp, deviceId) {
   return {
     Origin: 'https://app.mihoyo.com',
     'User-Agent': `Mozilla/5.0 (Linux; Android 13; ${info?.deviceModel || 'Mi 10'} Build/UKQ1.230804.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.186 Mobile Safari/537.36 miHoYoBBS/2.71.1`,
@@ -173,13 +213,17 @@ function getHeaders(e, ck, Ds_ = true, info) {
     'x-rpc-app_version': '2.71.1',
     'x-rpc-sys_version': '13',
     'x-rpc-client_type': '2',
-    'x-rpc-device_id': getDeviceGuid(),
+    // 默认仍是一次性 GUID（钱包/GameRoles 那条老路径的行为整块不动，见调用点注释）。
+    // 只有 dailyNote 那条会显式传 deviceId，让它与签发 fp 用的设备保持一致。
+    'x-rpc-device_id': deviceId || getDeviceGuid(),
     'x-rpc-device_name': info ? info.deviceFingerprint.split('/')[0] + ' ' + info.deviceModel : randomString(lodash.random(1, 10)),
     'x-rpc-device_model': info?.deviceModel || 'Mi 10',
     'x-rpc-channel': 'miyousheluodi',
     'x-rpc-verify_key': 'bll8iq97cem8',
     'x-rpc-app_id': 'bll8iq97cem8',
-    'x-rpc-device_fp': '38d7f0aac0ab7',
+    // ⚠️ 这里原来写死常量 '38d7f0aac0ab7'，2026-10-07 实测已被米游社判死（见 fetchDeviceFp）。
+    // 取不到真指纹时宁可不带这个 header —— 带上已知失效的常量只会稳定换来 5003。
+    ...(deviceFp ? { 'x-rpc-device_fp': deviceFp } : {}),
     DS: Ds_ ? getDs() : getDs2(),
     Cookie: ck ?? '',
   };
@@ -1886,18 +1930,26 @@ export class TL extends plugin {
               // ⚠️ 这里不走 LiteMysApi，必须用本文件的 getHeaders：dailyNote 要带
               // x-rpc-device_fp，缺了它米游社直接回 5003（同凭证同 header 下补上 fp 立刻 0，
               // 四象限实测过：App/Web 两种 header 无 fp 都 5003，带 fp 都 0，与 header 风格无关）。
-              // getHeaders 里 fp 是常量，必带；LiteMysApi 要靠 getFp 现取，取不到就不带 → 5003。
+              //
+              // ⚠️⚠️ fp 必须**每次现取**，不能再写常量。2026-10-07 实测：常量 '38d7f0aac0ab7'
+              // 已被判死 —— 带它打 dailyNote 恒 5003，换成现取的立刻 0。这就是「质变仪不推、
+              // 宝钱拿不到 sec」的根因（宝钱 sec 只在这份响应里，拿不到就挂不上到期提醒）。
+              // 详见 fetchDeviceFp 的注释。
+              //
               // ⚠️ 1034 是 game_record 域的账号级验证码风控（index/character 同码，凭证是活的），
               // 间歇性发作：撞上就得过码，过码能解开（本地服务实测）。深渊等接口撞码有
               // captchaNotice 兜底，这条裸 fetch 没经过 MysInfo，必须自己接过码+梯度重试。
               if (ck) {
                 const noteUrl = `https://api-takumi-record.mihoyo.com/game_record/app/genshin/api/dailyNote?role_id=${uid}&server=${getServer(uid, 'gs')}`;
+                // 指纹与 device_id 用同一枚设备（复刻用同一个，过码后重试换指纹等于换个身份进来，白过）
+                const noteDevice = `Yz-${md5(String(uid)).substring(0, 5)}`;
+                const noteFp = await fetchDeviceFp(uid, ck, noteDevice);
                 const fetchNote = () => fetch(noteUrl, {
                   method: 'GET',
-                  headers: getHeaders(e, ck, true),
+                  headers: getHeaders(e, ck, true, null, noteFp, noteDevice),
                   signal: AbortSignal.timeout(12000),
                 }).then((r) => r.json()).catch(() => false);
-                let noteRes = await fetchNote();
+                let noteRes = noteFp ? await fetchNote() : false;
                 // 撞风控码且配了过码服务：自动过码后按梯度重试（过码到放行有延迟，立刻重打仍 1034）
                 if (noteRes && [1034, 10035, 10041].includes(Number(noteRes.retcode)) && config().auto_verify_addr) {
                   logger.info?.(`[xhh-TL][transformer] dailyNote 撞码 retcode=${noteRes.retcode}，自动过码后重试`);
@@ -1910,17 +1962,24 @@ export class TL extends plugin {
                     }
                   }
                 }
-                if (noteRes?.retcode === 0 && noteRes.data?.transformer) {
-                  data.transformer = noteRes.data.transformer;
-                  view = formatTransformer(data.transformer);
-                  if (view) redisSetEx(`xhh:transformer_view:${stuid}`, JSON.stringify(view), 1800).catch(() => {});
-                  // 洞天宝钱的恢复剩余秒只在 dailyNote 里有（widget 不返回），
-                  // 同一份响应顺手取回，零额外请求 —— 否则挂不上「宝钱满了」的到期提醒。
+                if (noteRes?.retcode === 0) {
+                  // ⚠️ 宝钱字段必须**独立于质变仪**取，别塞进 data.transformer 的分支里。
+                  // 两者是同一份 dailyNote 响应的不同字段：原先写在 `noteRes.data.transformer`
+                  // 为真的分支内，于是「尚未获得质变仪」或该字段缺失的账号，宝钱 sec 会一起被丢掉
+                  // —— 而 sec 只在这份响应里（widget 不返回），丢了就挂不上宝钱的满仓提醒。
                   if (data.home_coin_recovery_time === undefined && noteRes.data.home_coin_recovery_time !== undefined) {
                     data.home_coin_recovery_time = noteRes.data.home_coin_recovery_time;
                     data.current_home_coin = noteRes.data.current_home_coin ?? data.current_home_coin;
                     data.max_home_coin = noteRes.data.max_home_coin ?? data.max_home_coin;
                   }
+                  if (noteRes.data.transformer) {
+                    data.transformer = noteRes.data.transformer;
+                    view = formatTransformer(data.transformer);
+                    if (view) redisSetEx(`xhh:transformer_view:${stuid}`, JSON.stringify(view), 1800).catch(() => {});
+                  }
+                  // 响应成功但没带 transformer 字段（比如尚未获得质变仪）：什么都不标，
+                  // 让质变仪行按 data.transformer 自身的情况归一（通常整行隐藏）。
+                  // ⚠️ 千万别把这种「没字段」当成「已可用」——那正是 5003 修复前的老毛病。
                 } else {
                   redisSetEx(`xhh:transformer_cool:${stuid}`, '1', 600).catch(() => {});
                   logger.info?.(`[xhh-TL][transformer] dailyNote 未取到: retcode=${noteRes?.retcode} ${noteRes?.message || ''}（冷却10分钟）`);
@@ -1980,11 +2039,15 @@ export class TL extends plugin {
   async noteViaCookie(e, game, cookie, uid) {
     try {
       const api = new LiteMysApi(uid, cookie, { game, log: false });
-      // dailyNote 必须带 x-rpc-device_fp，否则 5003。LiteMysApi 的 fp 靠 getFp 现取，
-      // 取不到（接口抖动/风控）就不带 header —— 这里钉一个兜底值，保证这条路径可用。
-      const res = await api.getData('dailyNote', {
-        headers: { 'x-rpc-device_fp': '38d7f0aac0ab7' },
-      });
+      // dailyNote 必须带 x-rpc-device_fp，否则米游社回 5003。
+      //
+      // ⚠️ 这里原本显式传 headers: { 'x-rpc-device_fp': '38d7f0aac0ab7' } 钉一个「兜底值」，
+      // 2026-10-07 实测该常量已被判死，而且它在 LiteMysApi 里是**先于**真指纹赋值的
+      // （getData 是先合并 data.headers、再判 `!headers['x-rpc-device_fp']` 才补真指纹），
+      // 于是这个「兜底」实际效果是**把现取的真指纹顶掉**，把本该可用的路径打成 5003。
+      // 现在交给 LiteMysApi 自己 getFp 现取；取不到就让它不带 —— 不带同样 5003，
+      // 但至少不会用一个已知失效的常量假装还在工作。
+      const res = await api.getData('dailyNote');
       if (!res || res.retcode !== 0 || !res.data) return res || false;
       // gs/sr 的 dailyNote 字段与 widget 完全同名（gs: current_resin/max_resin/
       // resin_recovery_time/expeditions…；sr: current_stamina/max_stamina/
