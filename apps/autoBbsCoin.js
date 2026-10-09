@@ -1,5 +1,7 @@
 /**
- * 米游币社区任务 —— 自动做任务（原神 / 星铁 / 绝区零 版块）
+ * 米游币社区任务 —— 每日自动版块签到赚米游币
+ *
+ * 规则已变：各版块共享进度，任一版块签一次即拿满当日奖励（浏览/点赞/分享已取消）。
  *
  * 与 autoSign.js（游戏签到领原石）是两套独立功能，互不影响：
  *   autoSign  : 游戏 UID 维度，认证 cookie_token，签到领原石
@@ -81,15 +83,18 @@ function saveSubs(subs) {
   }
 }
 
-/** 解析配置里的版块列表，非法值回落到全部 */
+/**
+ * 解析签到版块。规则已变——任一版块签到即拿满，故只取第一个有效版块；
+ * 配置留空或全错则回落到 gs（原神）。返回单元素数组供下游通用。
+ */
 function resolveGames() {
   const raw = String(config().bbs_coin_games || '').trim()
-  if (!raw) return Object.keys(FORUMS)
+  if (!raw) return ['gs']
   const list = raw
     .split(/[,，\s]+/)
     .map((x) => x.trim().toLowerCase())
     .filter((x) => FORUMS[x])
-  return list.length ? list : Object.keys(FORUMS)
+  return list.length ? [list[0]] : ['gs']
 }
 
 export class autoBbsCoin extends plugin {
@@ -99,7 +104,7 @@ export class autoBbsCoin extends plugin {
 
     super({
       name: '[小火花]米游币社区任务',
-      dsc: '原神/星铁/绝区零 版块签到+看帖+点赞+分享，每日自动赚米游币',
+      dsc: '任一版块签到即拿满当日米游币（浏览/点赞/分享已取消）',
       event: 'message',
       priority: -Infinity,
       rule: [
@@ -254,18 +259,17 @@ export class autoBbsCoin extends plugin {
 
     const games = resolveGames()
     e.reply(
-      `开始米游币任务：${accounts.length} 个账号 × ${games.length} 个版块，请稍候~`,
+      `开始米游币任务：${accounts.length} 个账号（任一版块签到即拿满），请稍候~`,
       true,
     )
 
     const results = await this.runAccounts(accounts, games, e)
     const lines = ['米游币任务结果：']
     for (const r of results) {
-      if (r.code === 'ok') {
-        const detail = r.rows
-          .map((x) => `${x.name}${x.signed ? '✓' : '✗'}${x.err ? `(${x.err})` : ''}`)
-          .join(' ')
-        lines.push(`· ${r.stuid}：+${r.gained} 币，共 ${r.after}\n  ${detail}`)
+      if (r.code === 'ok' || r.code === 'done') {
+        const row = r.rows[0]
+        const tag = row ? `${row.name}${row.signed ? '✓' : '✗'}${row.err ? `(${row.err})` : ''}` : ''
+        lines.push(`· ${r.stuid}：+${r.gained} 币，共 ${r.after}${tag ? `\n  ${tag}` : ''}`)
       } else {
         lines.push(`· ${r.stuid}：${r.msg}`)
       }
@@ -340,7 +344,7 @@ export class autoBbsCoin extends plugin {
         rows: {},
       }
       for (const g of games) {
-        agg.rows[g] = { signed: 0, read: 0, vote: 0, share: 0, err: 0 }
+        agg.rows[g] = { signed: 0, err: 0 }
       }
 
       for (const qq of plan[gid]) {
@@ -365,9 +369,6 @@ export class autoBbsCoin extends plugin {
               const bucket = agg.rows[row.game]
               if (!bucket) continue
               if (row.signed) bucket.signed++
-              bucket.read += row.read
-              bucket.vote += row.vote
-              bucket.share += row.share
               if (row.err && row.err !== '已签过') bucket.err++
             }
           }
@@ -384,16 +385,6 @@ export class autoBbsCoin extends plugin {
     }
 
     logger?.mark?.('[xhh-TL][米游币] 定时任务结束')
-  }
-
-  /**
-   * 预估耗时。每版块约 13 次请求（签到1+列表1+看帖5+点赞5+分享1），请求间 jitter 均值 2 秒；
-   * 另有每账号查询/复查各 1 次、账号间 3 秒间隔。
-   * 原来按「账号×版块=分钟数」报，3 版块说 3 分钟、实测 1 分 28 秒，偏保守一倍。
-   */
-  _estimate(accountCount, gameCount) {
-    const seconds = accountCount * (gameCount * 13 * 2 + 2 * 2 + 3)
-    return this._fmtCost(seconds * 1000)
   }
 
   /** 毫秒 → “X小时Y分Z秒” */
@@ -422,9 +413,6 @@ export class autoBbsCoin extends plugin {
         name: FORUMS[game].name,
         icon: toFileUrl(path.join(pluginDir, 'resources', GAME_ICON[game])),
         signed: b.signed,
-        read: b.read,
-        vote: b.vote,
-        share: b.share,
         err: b.err,
       })
     }
@@ -440,7 +428,7 @@ export class autoBbsCoin extends plugin {
     } else if (!rows.length) {
       note = '无可渲染版块，请主人检查米游币版块配置'
     } else {
-      const idle = !rows.some((r) => r.signed || r.read || r.vote || r.share)
+      const idle = !rows.some((r) => r.signed)
       if (idle) {
         note = agg.failed
           ? '本次未能完成，可发送 #米游币签到 重试'

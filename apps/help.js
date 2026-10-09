@@ -376,7 +376,7 @@ export function buildHelpGroups() {
           icon: 'gs-艾尔海森.webp',
           module: 'bbs_coin',
           title: '#米游币签到',
-          desc: '立即跑一次：版块签到+看帖+点赞+分享',
+          desc: '立即跑一次：任一版块签到即拿满',
         },
         {
           icon: 'gs-流浪者.webp',

@@ -159,9 +159,6 @@ body {
 .c-game .g-name { font-weight: 700; color: #f2f5ff; font-size: 16rem; }
 
 .n-signed { color: #4ad2a0; font-weight: 800; }
-.n-read { color: #6ba8ff; font-weight: 700; }
-.n-vote { color: #c89bff; font-weight: 700; }
-.n-share { color: #ffc46b; font-weight: 700; }
 .n-err { color: #8b93a7; font-weight: 600; }
 .n-err.bad { color: #ff6b6b; font-weight: 800; }
 
@@ -215,9 +212,6 @@ body {
             <th class="c-idx">#</th>
             <th class="c-game" style="text-align:left;padding-left:16rem;">版块</th>
             <th>签到</th>
-            <th>浏览</th>
-            <th>点赞</th>
-            <th>分享</th>
             <th>异常</th>
           </tr>
         </thead>
@@ -231,9 +225,6 @@ body {
               </div>
             </td>
             <td class="n-signed">{{r.signed}}</td>
-            <td class="n-read">{{r.read}}</td>
-            <td class="n-vote">{{r.vote}}</td>
-            <td class="n-share">{{r.share}}</td>
             <td class="n-err {{if r.err}}bad{{/if}}">{{r.err}}</td>
           </tr>
           {{/each}}

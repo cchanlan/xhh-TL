@@ -583,7 +583,7 @@ export function supportGuoba() {
           field: 'bbs_coin_enable',
           label: '启用米游币任务',
           bottomHelpMessage:
-            '与上面「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区做任务（版块签到+看帖+点赞+分享）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
+            '与上面「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区任务（版块签到即拿满）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
           component: 'Switch'
         },
         {
@@ -598,9 +598,9 @@ export function supportGuoba() {
         },
         {
           field: 'bbs_coin_games',
-          label: '做哪些版块',
+          label: '签到版块',
           bottomHelpMessage:
-            '逗号分隔：gs=原神 sr=星铁 zzz=绝区零。米游币每日上限通常单版块即可拿满；版块越多耗时越长、风控概率略高。留空或填错则默认全部',
+            '填一个：gs=原神 sr=星铁 zzz=绝区零。规则已变——任一版块签到即拿满当日米游币，无需多版块；只有列表[0]会被签到，其余忽略。留空或填错则默认 gs（原神）',
           component: 'Input',
           componentProps: {
             placeholder: 'gs,sr,zzz'

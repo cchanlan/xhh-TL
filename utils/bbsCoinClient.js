@@ -5,8 +5,8 @@
  *   signClient : api-takumi.mihoyo.com/event/luna/*  认证要 cookie_token  主体是游戏 UID
  *   本模块     : bbs-api.mihoyo.com 社区接口         认证要 stoken        主体是米游社账号 stuid
  *
- * 任务构成（做满一天约 +20~22 米游币/账号）：
- *   版块签到 → 浏览帖子 ×N → 点赞 ×N → 分享 ×1
+ * 米游币任务规则已变：各版块共享进度，任意版块签一次即可拿满当日全部奖励，
+ * 浏览 / 点赞 / 分享不再计入。故每日任务只剩「版块签到」一步，单账号一请求搞定。
  *
  * 移植自 xiaoyao-cvs-plugin，途中修掉了源实现两处问题：
  *   1) gids 混用：源码 bbsSign 传 `gids: forumId`，把「版块 id」当「游戏 id」用了。
@@ -14,9 +14,6 @@
  *   2) DS2 签名体算错：源码 mihoyoApi.js:370 用 `board.forumid`，而该路径传进去的对象
  *      只有驼峰 `forumId`，故签名恒按 {"gids":null} 计算，与真实 body 不一致。
  *      本模块按真实 body 串签名。
- *
- * 另外源码对帖子列表 20 篇逐个「看帖+点赞」（40+ 请求）纯属浪费且易风控——
- * 官方日任务上限就是看帖 3~5、点赞 5、分享 1，本模块按需求数收敛（约 12~15 请求/账号）。
  *
  * 降风控沿用本插件既定做法（见 signClient.js 头注释）：稳定 device_id + 请求前 getFp 拿真指纹。
  */
@@ -57,19 +54,15 @@ const SALT_K2 = 'lX8m5VO5at5JG7hR8hzqFwzyL5aB1tYo'
 const SALT_X6 = 't0qEgfub6cvueAPgR5m9aQWWVciEer7v'
 
 /**
- * 版块表。gids = 游戏 id（签到用）；forumId = 版块 id（拉帖子用）。两者不可互换。
+ * 版块表。gids = 游戏 id（签到 body 用）。
+ * 原 forumId（拉帖子列表用）已随浏览/点赞/分享一并删除。
  * 注：mys.json 里绝区零 id 记的是 7，真实 gids 为 8。
  */
 const FORUMS = {
-  gs: { gids: 2, forumId: 26, name: '原神' },
-  sr: { gids: 6, forumId: 52, name: '星铁' },
-  zzz: { gids: 8, forumId: 57, name: '绝区零' },
+  gs: { gids: 2, name: '原神' },
+  sr: { gids: 6, name: '星铁' },
+  zzz: { gids: 8, name: '绝区零' },
 }
-
-// 每日任务需求数（按官方上限收敛，不做无谓请求）
-const NEED_READ = 5
-const NEED_VOTE = 5
-const NEED_SHARE = 1
 
 /**
  * 撞风控 → 过码成功后的重签梯度（毫秒，相对上一次尝试）。
@@ -213,42 +206,6 @@ async function signForum(cookie, device, deviceFp, gids, challenge = '') {
     deviceFp,
     body: { gids: Number(gids) },
     extraHeaders: challenge ? { 'x-rpc-challenge': challenge } : null,
-  })
-}
-
-/** 拉版块帖子列表 */
-async function getPostList(cookie, device, deviceFp, forumId) {
-  const query = `forum_id=${forumId}&is_good=false&is_hot=false&page_size=20&sort_type=1`
-  const res = await req(`${BBS_HOST}/post/api/getForumPostList?${query}`, {
-    cookie,
-    device,
-    deviceFp,
-  })
-  const list = res?.data?.list || []
-  return list.map((x) => x?.post?.post_id).filter(Boolean)
-}
-
-/** 浏览帖子 */
-async function readPost(cookie, device, deviceFp, postId) {
-  return req(`${BBS_HOST}/post/api/getPostFull?post_id=${postId}`, { cookie, device, deviceFp })
-}
-
-/** 点赞 */
-async function votePost(cookie, device, deviceFp, postId) {
-  return req(`${BBS_HOST}/apihub/sapi/upvotePost`, {
-    cookie,
-    device,
-    deviceFp,
-    body: { post_id: String(postId), is_cancel: false },
-  })
-}
-
-/** 分享 */
-async function sharePost(cookie, device, deviceFp, postId) {
-  return req(`${BBS_HOST}/apihub/api/getShareConf?entity_id=${postId}&entity_type=1`, {
-    cookie,
-    device,
-    deviceFp,
   })
 }
 
@@ -430,8 +387,7 @@ export async function runCoinTask(account, opts = {}) {
   }
   base.before = before.total
   base.after = before.total
-  // states 里带各子任务的完成度，本可用来跳过今天已做满的看帖/点赞/分享（现在是无脑全做）。
-  // 要按它短路得先确认 mission_key 的真实取值，猜错会漏做任务，故先只记录不使用。
+  // 规则已简化为「签到即拿满」，不再解析 states 里的子任务完成度，只留 debug 备查。
   log.debug(
     `[xhh-TL][米游币] ${stuid} states: ${JSON.stringify(before.states)}`,
   )
@@ -443,14 +399,15 @@ export async function runCoinTask(account, opts = {}) {
     }
   }
 
-  // 2) 逐版块做任务
+  // 2) 单版块签到
+  // 米游币任务已改为各版块共享进度：任一版块签一次即可拿满，故只签 games[0]。
   // 中途 stoken 失效要区别于「跑完了但没赚到」——否则上层只看 code 会报成 “+0 币”
-  let diedMidway = false
-  for (const game of games) {
-    const forum = FORUMS[game]
-    if (!forum) continue
-    const row = { game, name: forum.name, signed: false, already: false, read: 0, vote: 0, share: 0, err: '' }
+  const game = games.find((g) => FORUMS[g]) || Object.keys(FORUMS)[0]
+  const forum = FORUMS[game]
+  const row = { game, name: forum.name, signed: false, already: false, err: '' }
 
+  let diedMidway = false
+  {
     try {
       // 2.1 版块签到（撞风控则过码 + 梯度重签）
       // ⚠️ 判据不能只看 e：定时任务（runAll）给 runAccounts 传的是 null，
@@ -490,10 +447,9 @@ export async function runCoinTask(account, opts = {}) {
         }
       }
       if (isExpired(signRes)) {
+        // 失效只标 diedMidway，由函数末尾统一 return；不再另行 push（末尾会补一次）
         row.err = '登录失效'
-        base.rows.push(row)
         diedMidway = true
-        break
       }
       // -5003 = 今日该版块已签过，算完成但标记出来，避免看着像刚签的
       const rc = Number(signRes?.retcode)
@@ -502,41 +458,9 @@ export async function runCoinTask(account, opts = {}) {
       if (row.already) row.err = '已签过'
       else if (!row.signed && isCaptcha(signRes)) row.err = '需要验证'
       else if (!row.signed && isBadSign(signRes)) row.err = '请求被拒'
-      await jitter()
-
-      // 2.2 拉帖子列表
-      const postIds = await getPostList(cookie, device, deviceFp, forum.forumId)
-      if (!postIds.length) {
-        row.err = row.err || '帖子列表为空'
-        base.rows.push(row)
-        await jitter()
-        continue
-      }
-      await jitter()
-
-      // 2.3 浏览（只取需求数，不遍历 20 篇）
-      for (const postId of postIds.slice(0, NEED_READ)) {
-        const res = await readPost(cookie, device, deviceFp, postId)
-        if (Number(res?.retcode) === 0) row.read++
-        await jitter()
-      }
-
-      // 2.4 点赞
-      for (const postId of postIds.slice(0, NEED_VOTE)) {
-        const res = await votePost(cookie, device, deviceFp, postId)
-        if (Number(res?.retcode) === 0) row.vote++
-        await jitter()
-      }
-
-      // 2.5 分享（官方日上限就 1 次，循环只是与上面写法保持一致）
-      for (const postId of postIds.slice(0, NEED_SHARE)) {
-        const res = await sharePost(cookie, device, deviceFp, postId)
-        if (Number(res?.retcode) === 0) row.share++
-        await jitter()
-      }
 
       log.mark(
-        `[xhh-TL][米游币] ${stuid} ${forum.name}: 签到${row.signed ? '✓' : '✗'} 浏览${row.read} 点赞${row.vote} 分享${row.share}`,
+        `[xhh-TL][米游币] ${stuid} ${forum.name}: 签到${row.signed ? '✓' : '✗'}${row.err ? `(${row.err})` : ''}`,
       )
     } catch (err) {
       row.err = '异常'
