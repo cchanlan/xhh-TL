@@ -21,7 +21,7 @@
 import md5 from 'md5'
 import fetch from 'node-fetch'
 import LiteMysApi, { getServer } from './mysClient.js'
-import { quoteEnabled } from './replyHelper.js'
+import { quoteEnabled, scheduleRecall } from './replyHelper.js'
 
 const log = {
   mark: (...a) => (typeof logger !== 'undefined' ? logger.mark(...a) : console.log(...a)),
@@ -155,7 +155,9 @@ async function solveGeetest(e, { uid, create, verifyAddr, polls = 80, intervalMs
   }
 
   try {
-    await e.reply(`需要验证，请在 2 分钟内点开链接划过：\n${reg.data.link}`, quoteEnabled(), { recallMsg: 120 })
+    // 不用 e.reply 的 recallMsg：框架撤回时会连带把触发者那条指令也撤掉
+    const tipRes = await e.reply(`需要验证，请在 2 分钟内点开链接划过：\n${reg.data.link}`, quoteEnabled())
+    scheduleRecall(e, tipRes, 120)
   } catch (_) {}
 
   let loggedShape = false
