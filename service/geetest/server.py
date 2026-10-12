@@ -37,6 +37,9 @@ from w import generate_w
 _DS_SALT = 'xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs'
 
 PORT = int(os.environ.get('GT_PORT', 8766))
+# 监听地址。默认 127.0.0.1（只给本机用）；要给别的机器当远程过码服务时才改成
+# 0.0.0.0 —— 此时务必配好防火墙/安全组，别把端口裸露到公网
+HOST = os.environ.get('GT_HOST', '127.0.0.1')
 MAX_ROUNDS = int(os.environ.get('GT_MAX_ROUNDS', 8))
 CONCURRENCY = int(os.environ.get('GT_CONCURRENCY', 4))
 
@@ -310,6 +313,6 @@ def self_check():
 
 
 if __name__ == '__main__':
-    log(f'米游社过码服务已启动 http://127.0.0.1:{PORT}（最多 {MAX_ROUNDS} 轮/次）')
+    log(f'米游社过码服务已启动 http://{HOST}:{PORT}（最多 {MAX_ROUNDS} 轮/次）')
     self_check()
-    ThreadingHTTPServer(('127.0.0.1', PORT), Handler).serve_forever()
+    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
