@@ -67,12 +67,50 @@ const log = {
  * 只传一个键会把用户 config.yaml 里其余几十项全洗掉（卡片样式、回复引用、
  * 多账号模式、鸣潮开关…全部静默回退默认值，用户毫无察觉）。
  * 写失败只记日志：配置没写成不该让已经装好的服务被判成部署失败。
+ *
+ * ⚠️ 只在「没配过」或「本来就指向本机 8766」时才写：auto_verify_addr 也允许填
+ * 别人部署的远程服务链接，不能因为跑了一次部署就把用户的远程地址洗回本机。
  */
 function patchAutoVerify() {
   try {
+    const cur = String(config().auto_verify_addr || '').trim()
+    const isLocal = !cur || isLocalSolverAddr(cur)
+    if (!isLocal) {
+      log.mark(`[xhh-TL][部署] 过码地址已指向远程服务（${cur}），不改写`)
+      return
+    }
     patchUserConfig({ auto_verify_addr: `http://127.0.0.1:${PORT}/solve` })
   } catch (err) {
     log.error('[xhh-TL][部署] 写配置失败:', err?.message)
+  }
+}
+
+/**
+ * 地址是否指向本机部署出来的过码服务（127.0.0.1 / localhost 的 8766 端口）。
+ * 用来区分「本机服务」和「用户自己填的远程服务」——远程服务不该被改写、
+ * 也不该拿本机进程表去判状态。
+ */
+function isLocalSolverAddr(addr) {
+  try {
+    const u = new URL(String(addr))
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false
+    const host = u.hostname
+    const isLocalHost = host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]'
+    if (!isLocalHost) return false
+    const port = u.port ? Number(u.port) : 80
+    return port === PORT
+  } catch (_) {
+    return false
+  }
+}
+
+/** 过码服务地址去掉 /solve 后的根（用来探 /health）；解析失败返回空串 */
+function solverBase(addr) {
+  try {
+    const u = new URL(String(addr))
+    return `${u.protocol}//${u.host}`
+  } catch (_) {
+    return ''
   }
 }
 
@@ -88,8 +126,10 @@ async function run(cmd, args, opts = {}) {
 
 /** 服务是否已经在正常响应（探 /health，比看 pm2 状态更准） */
 async function isServiceAlive() {
+  // 允许传根地址：配置指向远程服务时探它的根，而不是写死本机端口
+  const base = solverBase(config().auto_verify_addr) || `http://127.0.0.1:${PORT}`
   try {
-    const res = await fetch(`http://127.0.0.1:${PORT}/health`, { signal: AbortSignal.timeout(4000) })
+    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(4000) })
     return res.ok
   } catch (_) {
     return false
@@ -99,6 +139,12 @@ async function isServiceAlive() {
 async function has(cmd, args = ['--version']) {
   const r = await run(cmd, args)
   return r.ok
+}
+
+/** 配置里的过码地址是否指向远程（别的机器/别人部署的）服务 */
+function isRemoteSolver() {
+  const cur = String(config().auto_verify_addr || '').trim()
+  return !!cur && !isLocalSolverAddr(cur)
 }
 
 /**
@@ -401,6 +447,24 @@ export class solverDeploy extends plugin {
   }
 
   async deploy(e) {
+    // 配置指向远程服务：这台机上没有也不需要任何本机组件（Python/pm2/服务文件），
+    // 整套部署流程都不适用 —— 只验活 + 确认配置不被改写，然后收工。
+    // 必须在所有本机检查之前短路，否则会掉进「起本机服务」分支，
+    // 在本机 pm2 里真起一个跟远程各管各的 geetest-solver。
+    if (isRemoteSolver()) {
+      await e.reply('过码服务使用远程地址，验证连通中，稍等~', quoteEnabled())
+      await new Promise((r) => setTimeout(r, 2000))
+      const alive = await isServiceAlive()
+      log.mark(`[xhh-TL][部署] 远程模式：${alive ? '连通' : '连不上'} ${config().auto_verify_addr}`)
+      await e.reply(
+        alive
+          ? '远程过码服务连通正常，撞码会自动处理，不用再管~'
+          : '远程过码服务连不上：先确认服务那台机开着、地址和端口填对；服务端需监听 0.0.0.0 并放行防火墙端口',
+        quoteEnabled(),
+      )
+      return true
+    }
+
     // 首次要装 Python 依赖（慢），之后只是检查一下（快）
     const firstTime = !fs.existsSync(path.join(SERVICE_DIR, '.venv', 'bin', 'python'))
       && !fs.existsSync(path.join(SERVICE_DIR, '.venv', 'Scripts', 'python.exe'))
@@ -503,6 +567,7 @@ export class solverDeploy extends plugin {
     // 所以只要这次动过文件，就必须重启，否则就是「改了没反应」。
     //
     // 其余情况保持原样不动：重启会打断正在进行的过码。
+    // （配置指向远程时上面已经短路返回，走不到这里。）
     const running = await isServiceAlive()
     // 进程是不是归本插件的 daemon 管（Windows 上是隔离的 data/pm2；
     // Linux / macOS 用默认 ~/.pm2，进程表本来就是本插件的）。
@@ -573,6 +638,25 @@ export class solverDeploy extends plugin {
 
   async status(e) {
     const lines = []
+    const remoteMode = isRemoteSolver()
+    const addr = String(config().auto_verify_addr || '').trim()
+
+    if (remoteMode) {
+      // 远程模式：进程不在这台机上，pm2 / 本机文件全都没意义，只探远端健康。
+      const base = solverBase(addr)
+      let alive = false
+      try {
+        const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) })
+        alive = res.ok
+      } catch (_) {}
+      lines.push(`过码服务：远程（${base}）`)
+      lines.push(`远程服务：${alive ? '正常' : '连不上'}`)
+      lines.push('插件配置：已指向远程服务')
+      if (!alive) lines.push('', '连不上时先确认服务那台机开着、地址和端口填对，再发 #过码部署 验证')
+      await e.reply(lines.join('\n'), quoteEnabled())
+      return true
+    }
+
     // 用的是哪种启动方式（平台分工见 utils/pm2.js 文件头）：
     // Windows 走 lpm2 + 隔离 PM2_HOME；Linux / macOS 直连 pm2、用默认 ~/.pm2
     const launcher = launcherInfo()
@@ -589,7 +673,8 @@ export class solverDeploy extends plugin {
     // 健康检查
     let alive = false
     try {
-      const res = await fetch(`http://127.0.0.1:${PORT}/health`, { signal: AbortSignal.timeout(5000) })
+      const base = solverBase(addr) || `http://127.0.0.1:${PORT}`
+      const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) })
       alive = res.ok
     } catch (_) {}
     lines.push(`端口 ${PORT}：${alive ? '正常' : '连不上'}`)
@@ -603,7 +688,7 @@ export class solverDeploy extends plugin {
       lines.push('服务文件：完整')
     }
 
-    lines.push(`插件配置：${config().auto_verify_addr ? '已指向本机服务' : '未启用自动过码'}`)
+    lines.push(`插件配置：${addr ? '已指向本机服务' : '未启用自动过码'}`)
 
     // 文件残废优先报：这种情况服务看着是活的，但一发过码就全轮失败
     if (missing.length) {

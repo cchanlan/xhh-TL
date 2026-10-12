@@ -94,7 +94,7 @@ function isCaptcha(res) {
  * @param {object} [opts]
  * @param {object} [opts.e] 实时事件；只有「发手动链接」那条路需要它，全自动过码不需要
  * @param {string} [opts.verifyAddr] 手动打码服务地址；为空则不发手动链接
- * @param {string} [opts.autoVerifyAddr] 本地全自动过码服务地址；配了则撞码自动过（定时任务也走这条）
+ * @param {string} [opts.autoVerifyAddr] 全自动过码服务地址（本机或远程）；配了则撞码自动过（定时任务也走这条）
  * @returns {Promise<{ code, msg, game, uid }>}
  *   code: 'ok' 签到成功 | 'already' 今日已签 | 'captcha' 触发验证码（未过/过码失败）|
  *         'expired' 登录失效 | 'first_bind' 需先手动签 | 'fail' 其他失败

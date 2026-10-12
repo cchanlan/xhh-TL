@@ -411,7 +411,7 @@ export async function runCoinTask(account, opts = {}) {
     try {
       // 2.1 版块签到（撞风控则过码 + 梯度重签）
       // ⚠️ 判据不能只看 e：定时任务（runAll）给 runAccounts 传的是 null，
-      //    e 为空 → 整条过码分支短路，本地全自动服务配了也用不上。
+      //    e 为空 → 整条过码分支短路，全自动过码服务配了也用不上。
       //    改成「有自动服务」或「能发手动链接（e + verifyAddr）」二选一即可。
       const autoVerifyAddr = config().auto_verify_addr || ''
       let signRes = await signForum(cookie, device, deviceFp, forum.gids)
