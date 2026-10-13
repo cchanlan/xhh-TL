@@ -10,6 +10,19 @@ import { createUser, hasRuntimeBinding } from './userBind.js'
 import LiteMysApi, { getServer, gameKey as resolveGame } from './mysClient.js'
 import { cookiePart, stokenToCookie, findStokenEntry } from './auth.js'
 
+/** miao-plugin 的 MysApi（懒加载，避免循环依赖） */
+let _miaoMysApi = null
+async function getMiaoMysApi() {
+  if (_miaoMysApi) return _miaoMysApi
+  try {
+    const mod = await import('../../miao-plugin/models/index.js')
+    _miaoMysApi = mod?.MysApi || null
+  } catch (_) {
+    _miaoMysApi = null
+  }
+  return _miaoMysApi
+}
+
 const COOKIE_AUTH_APIS = new Set([
   'cookie',
   'detail',
@@ -307,6 +320,28 @@ export async function ensureRuntime(e, opts = {}) {
 }
 
 /**
+ * 旧版 miao-plugin 的 MysApi 没有 checkCk 方法（如 #全部深渊 issue IKLCLU 报的
+ * "mys.checkCk is not a function"）。给原型补一次兜底：有 ck 就算可用，
+ * 真正的接口失败由后续请求自己的错误分支处理。
+ * 只在缺失时挂，不覆盖新版 miao 自带的真校验实现。
+ */
+async function patchMysApiCheckCk() {
+  try {
+    const MysApi = await getMiaoMysApi()
+    const proto = MysApi?.prototype
+    if (proto && typeof proto.checkCk !== 'function') {
+      proto.checkCk = async function () {
+        try {
+          return !!(this.ckInfo?.ck || this.ckUser?.ck || this.ck)
+        } catch (_) {
+          return false
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+/**
  * 在调用 miao MysApi.init 前使用
  */
 export async function prepareMysContext(e, gameHint) {
@@ -318,6 +353,7 @@ export async function prepareMysContext(e, gameHint) {
   } else if (gameHint === 'zzz') {
     e.game = 'zzz'
   }
+  await patchMysApiCheckCk()
   await ensureRuntime(e, { game: gameHint })
   return e
 }
