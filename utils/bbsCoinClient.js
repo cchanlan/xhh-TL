@@ -72,6 +72,16 @@ const FORUMS = {
  */
 const CAPTCHA_RETRY_GAPS = [0, 6000, 15000, 30000, 60000]
 
+/**
+ * 签到成功后复查「今日收益」的重试梯度（毫秒，相对上一次尝试）。
+ *
+ * 米游社的奖励是**异步入账**的：签到回了 retcode=0，但 today_total_points / total_points
+ * 都可能还没更新。2026-10-14 实测过这个坑——五个账号全部签到成功、各实收 50 币，
+ * 而签完约 4 秒复查到的余额一个都没变，于是汇总图报「本次获得 +0」。
+ * 拿到增量就停，最多三次 —— 定时任务在凌晨跑，等得起这十来秒。
+ */
+const COIN_RECHECK_GAPS = [0, 3000, 8000]
+
 /** GET 类 DS：md5(salt=K2&t=&r=) —— r 为 6 位随机串 */
 function getBbsDs() {
   const t = Math.round(Date.now() / 1000)
@@ -178,7 +188,17 @@ async function req(url, { cookie, device, deviceFp, body = null, extraHeaders = 
 
 // ============ 单接口封装 ============
 
-/** 查米游币余额与任务态 */
+/**
+ * 查米游币余额与任务态。
+ *
+ * 字段取舍（2026-10-14 实测五个账号确认）：
+ *   total_points             账号总余额。⚠️ **异步入账**：签到 retcode=0 的那一刻它还没加钱，
+ *                            所以它不能用来算本次收益，详见 runCoinTask 的复查段
+ *   today_total_points       今日已获得 ← 今日收益认这个字段
+ *   already_received_points  今日已领取
+ *   can_get_points           还能赚多少，做满才是 0
+ *   is_unclaimed             有未领奖励（含 bind_game_role 这类一次性任务，与每日签到无关）
+ */
 export async function queryMissions(cookie, device, deviceFp) {
   const res = await req(`${BBS_HOST}/apihub/sapi/getUserMissionsState`, {
     cookie,
@@ -189,6 +209,9 @@ export async function queryMissions(cookie, device, deviceFp) {
   return {
     ok: true,
     total: Number(res.data.total_points) || 0,
+    todayTotal: Number(res.data.today_total_points) || 0,
+    received: Number(res.data.already_received_points) || 0,
+    unclaimed: !!res.data.is_unclaimed,
     canGet: Number(res.data.can_get_points) || 0,
     states: res.data.states || [],
     res,
@@ -352,13 +375,16 @@ async function expiredMsg(stuid, cookies) {
  * @param {string[]} [opts.games] 版块，默认 ['gs','sr','zzz']
  * @param {object} [opts.e] 实时事件；有它 + verifyAddr 才能撞码当场过码
  * @param {string} [opts.verifyAddr] 外部打码服务地址
- * @returns {Promise<object>} { code, msg, stuid, before, after, gained, rows }
+ * @returns {Promise<object>} { code, msg, stuid, before, after, gained, pending, rows }
  *   code: 'ok' 已执行 | 'done' 今日已完成 | 'expired' stoken 失效 | 'fail' 异常
+ *   gained: **今日已获得**的米游币（不是「本次新增」）。见下方复查段的注释——
+ *           米游社异步入账，「本次新增」这个口径在服务端根本查不准。
+ *   pending: 签到接口认了但收益还没入账，图上要据此改口径，别报成「没赚到」
  */
 export async function runCoinTask(account, opts = {}) {
   const { games = Object.keys(FORUMS), e = null, verifyAddr = '' } = opts
   const { stuid } = account
-  const base = { stuid, before: 0, after: 0, gained: 0, rows: [] }
+  const base = { stuid, before: 0, after: 0, gained: 0, pending: false, rows: [] }
 
   if (!stuid || !account.cookie) {
     return { ...base, code: 'expired', msg: '登录信息缺失，请【#扫码登录】' }
@@ -387,15 +413,19 @@ export async function runCoinTask(account, opts = {}) {
   }
   base.before = before.total
   base.after = before.total
+  // 复查拿不到新值时的兜底：至少报「签到前就已经赚到的今日收益」，不要凭空变 0
+  base.gained = before.todayTotal
   // 规则已简化为「签到即拿满」，不再解析 states 里的子任务完成度，只留 debug 备查。
   log.debug(
     `[xhh-TL][米游币] ${stuid} states: ${JSON.stringify(before.states)}`,
   )
   if (before.canGet === 0) {
+    // 已拿满的号也把今日收益报上去（gained 是「今日已获得」口径），
+    // 否则汇总图会把「今天早就签完了」算成 0，跟「一个号都没签上」长得一样。
     return {
       ...base,
       code: 'done',
-      msg: `今日已签到过了，请勿重复签到（当前 ${before.total} 米游币）`,
+      msg: `今日已签到过了，请勿重复签到（今日已获得 ${before.todayTotal} 币，当前共 ${before.total}）`,
     }
   }
 
@@ -469,21 +499,57 @@ export async function runCoinTask(account, opts = {}) {
     base.rows.push(row)
   }
 
-  // 3) 复查余额，算增量
+  // 3) 复查今日收益
   // 中途失效就不复查了：这一发必然也是 -100，白白多一次请求
   if (diedMidway) {
     return { ...base, code: 'expired', msg: await expiredMsg(stuid, allCookies) }
   }
-  const after = await queryMissions(cookie, device, deviceFp)
-  if (after.ok) {
-    base.after = after.total
-    base.gained = after.total - before.total
+  // ⚠️ 这里曾用「签到前后 total_points 之差」当收益，是错的 —— 米游社异步入账，
+  //    签到回了 retcode=0 时余额还没加钱，差值恒 0（2026-10-14 实测：五个账号全部
+  //    签到成功、各实收 50 币，汇总图却报「本次获得 +0」）。
+  //    改认 today_total_points，并给它几次短重试等入账落地。
+  //    没签上（撞码/被拒）和「已签过」都不用等：收益压根不会涨，白耗十来秒。
+  const gaps = row.signed && !row.already ? COIN_RECHECK_GAPS : [0]
+  let after = null
+  for (const gap of gaps) {
+    if (gap) await sleep(gap)
+    after = await queryMissions(cookie, device, deviceFp)
+    // 查都查不动就别耗着，交给下面统一记日志
+    if (!after.ok) break
+    if (after.todayTotal > before.todayTotal) break
+  }
+
+  if (!after?.ok) {
+    // 复查失败不能静默当 0：否则「今天没赚到」和「余额查不到」在图上、在日志里一模一样。
+    // 这是老实现的另一个坑位 —— 它走的是 if (after.ok) 的隐式 else，一行日志都不留。
+    log.mark(
+      `[xhh-TL][米游币] ${stuid} 复查今日收益失败：retcode=${after?.res?.retcode ?? '-'} ${after?.res?.message || ''}`,
+    )
+    return {
+      ...base,
+      code: 'ok',
+      pending: true,
+      msg: `签到完成，收益稍后到账（今日已获得 ${base.gained} 币）`,
+    }
+  }
+
+  base.after = after.total
+  base.gained = after.todayTotal
+  // 签到接口认了，但等到最后一轮重试今日收益还是没涨 —— 入账比重试窗口更慢。
+  // 标出来让上层换口径，别把「米游社还没结账」说成「一分没赚到」。
+  base.pending = row.signed && !row.already && after.todayTotal <= before.todayTotal
+  if (base.pending) {
+    log.mark(
+      `[xhh-TL][米游币] ${stuid} 签到成功但收益未入账（今日 ${after.todayTotal} 币），米游社延迟结账`,
+    )
   }
 
   return {
     ...base,
     code: 'ok',
-    msg: `获得 ${base.gained} 米游币（当前 ${base.after}）`,
+    msg: base.pending
+      ? `签到完成，收益稍后到账（今日已获得 ${base.gained} 币）`
+      : `今日已获得 ${base.gained} 米游币（当前共 ${base.after}）`,
   }
 }
 
@@ -500,7 +566,7 @@ export async function queryCoin(account) {
         : `查询失败：${r.res?.message || '未知错误'}`,
     }
   }
-  return { ok: true, total: r.total, canGet: r.canGet }
+  return { ok: true, total: r.total, canGet: r.canGet, todayTotal: r.todayTotal }
 }
 
 // ============ 账号枚举 ============

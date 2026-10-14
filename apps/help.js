@@ -382,7 +382,7 @@ export function buildHelpGroups() {
           icon: 'gs-流浪者.webp',
           module: 'bbs_coin',
           title: '#米游币余额',
-          desc: '只查米游币余额与今日剩余可获取',
+          desc: '只查米游币余额、今日已获得与还可获取',
         },
         {
           icon: 'sr-大黑塔.webp',

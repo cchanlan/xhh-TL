@@ -223,7 +223,7 @@ export class autoBbsCoin extends plugin {
       const r = await queryCoin(acc)
       lines.push(
         r.ok
-          ? `· ${acc.stuid}：${r.total} 币，今日剩余可获取 ${r.canGet}`
+          ? `· ${acc.stuid}：${r.total} 币，今日已获得 ${r.todayTotal}，还可获取 ${r.canGet}`
           : `· ${acc.stuid}：${r.msg}`,
       )
     }
@@ -269,7 +269,9 @@ export class autoBbsCoin extends plugin {
       if (r.code === 'ok' || r.code === 'done') {
         const row = r.rows[0]
         const tag = row ? `${row.name}${row.signed ? '✓' : '✗'}${row.err ? `(${row.err})` : ''}` : ''
-        lines.push(`· ${r.stuid}：+${r.gained} 币，共 ${r.after}${tag ? `\n  ${tag}` : ''}`)
+        // pending = 签到成功但米游社还没结账，这时报币数会误导（见 bbsCoinClient 复查段）
+        const amount = r.pending ? '已签到，收益稍后到账' : `今日已获得 ${r.gained} 币，共 ${r.after}`
+        lines.push(`· ${r.stuid}：${amount}${tag ? `\n  ${tag}` : ''}`)
       } else {
         lines.push(`· ${r.stuid}：${r.msg}`)
       }
@@ -287,7 +289,7 @@ export class autoBbsCoin extends plugin {
         results.push(await runCoinTask(acc, { games, e, verifyAddr }))
       } catch (err) {
         logger?.error?.(`[xhh-TL][米游币] ${acc.stuid} 任务异常: ${err.message}`)
-        results.push({ code: 'fail', msg: '任务异常', stuid: acc.stuid, rows: [], gained: 0, after: 0 })
+        results.push({ code: 'fail', msg: '任务异常', stuid: acc.stuid, rows: [], gained: 0, after: 0, pending: false })
       }
       // 账号间间隔，降低风控
       await new Promise((r) => setTimeout(r, 2000 + Math.floor(Math.random() * 2000)))
@@ -341,6 +343,8 @@ export class autoBbsCoin extends plugin {
         gained: 0,
         totalCoin: 0,
         failed: 0,
+        // 签到成功但米游社还没结账的账号数；全员如此时图上要换口径，别说成「一分没赚」
+        pending: 0,
         rows: {},
       }
       for (const g of games) {
@@ -361,6 +365,7 @@ export class autoBbsCoin extends plugin {
             if (r.code === 'ok' || r.code === 'done') {
               agg.gained += r.gained || 0
               agg.totalCoin += r.after || 0
+              if (r.pending) agg.pending++
             } else {
               agg.failed++
               logger?.mark?.(`[xhh-TL][米游币] ${r.stuid} 失败(${r.code})：${r.msg || '未知'}`)
@@ -433,6 +438,9 @@ export class autoBbsCoin extends plugin {
         note = agg.failed
           ? '本次未能完成，可发送 #米游币签到 重试'
           : '今日米游币已拿满，无需重复任务'
+      } else if (agg.pending) {
+        // 签上了但米游社还没结账：数字一时是旧的，得说一句，否则看着像白跑一趟
+        note = '米游社结账有延迟，本次收益稍后到账'
       }
     }
 
@@ -453,7 +461,7 @@ export class autoBbsCoin extends plugin {
     try {
       const group = Bot.pickGroup(Number(gid))
       await group.sendMsg(segment.image(image))
-      logger?.mark?.(`[xhh-TL][米游币] 已发送群 ${gid} 汇总图（+${agg.gained} 币，${rows.length} 个版块${note ? `，${note}` : ''}）`)
+      logger?.mark?.(`[xhh-TL][米游币] 已发送群 ${gid} 汇总图（今日 +${agg.gained} 币，${rows.length} 个版块${agg.pending ? `，${agg.pending} 个待入账` : ''}${note ? `，${note}` : ''}）`)
     } catch (err) {
       logger?.error?.(`[xhh-TL][米游币] 群 ${gid} 汇总图发送失败: ${err.message}`)
     }
