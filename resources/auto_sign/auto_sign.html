@@ -149,10 +149,6 @@ body {
 .c-game .g-name { font-weight: 700; color: #f2f5ff; font-size: 16rem; }
 
 .n-ok { color: #4ad2a0; font-weight: 800; }
-.n-already { color: #6ba8ff; font-weight: 700; }
-.n-refresh { color: #b8c0d4; font-weight: 600; }
-.n-expired { color: #8b93a7; font-weight: 600; }
-.n-expired.warn { color: #ffb86b; font-weight: 800; }
 .n-fail { color: #8b93a7; font-weight: 600; }
 .n-fail.bad { color: #ff6b6b; font-weight: 800; }
 
@@ -202,9 +198,6 @@ body {
             <th class="c-idx">#</th>
             <th class="c-game" style="text-align:left;padding-left:16rem;">签到游戏</th>
             <th>成功</th>
-            <th>已签</th>
-            <th>刷新成功</th>
-            <th>失效</th>
             <th>失败</th>
           </tr>
         </thead>
@@ -218,9 +211,6 @@ body {
               </div>
             </td>
             <td class="n-ok">{{r.ok}}</td>
-            <td class="n-already">{{r.already}}</td>
-            <td class="n-refresh">{{r.refresh}}</td>
-            <td class="n-expired {{if r.expired}}warn{{/if}}">{{r.expired}}</td>
             <td class="n-fail {{if r.fail}}bad{{/if}}">{{r.fail}}</td>
           </tr>
           {{/each}}

@@ -454,7 +454,7 @@ export class autoSign extends plugin {
     for (const gid of Object.keys(plan)) {
       const startTs = Date.now()
       const agg = { participants: new Set(), games: {} }
-      for (const g of GAMES) agg.games[g] = { ok: 0, already: 0, refresh: 0, expired: 0, fail: 0 }
+      for (const g of GAMES) agg.games[g] = { ok: 0, already: 0, expired: 0, fail: 0 }
 
       for (const { qq, game } of plan[gid]) {
         try {
@@ -507,21 +507,21 @@ export class autoSign extends plugin {
   /** 渲染并发送某群的签到汇总图 */
   async reportGroup(gid, agg, totalCost) {
     // 只列有签到活动的游戏（任一计数 > 0）
+    // 图上只给「成功 / 失败」两列：already（今天已签过）本就是签上了的正常终态，
+    // expired（凭证失效）和 fail 一样都是没签上 —— 这也正是下面 unsigned 的口径。
+    // 细分（已签 / 失效 / 撞码）留在日志里，不往用户眼前堆。
     const rows = []
     let unsigned = 0
     for (const game of GAMES) {
       const b = agg.games[game]
-      const total = b.ok + b.already + b.refresh + b.expired + b.fail
+      const total = b.ok + b.already + b.expired + b.fail
       if (!total) continue
       unsigned += b.expired + b.fail
       rows.push({
         name: GAME_LABEL[game],
         icon: toFileUrl(path.join(pluginDir, 'resources', GAME_ICON[game])),
-        ok: b.ok,
-        already: b.already,
-        refresh: b.refresh,
-        expired: b.expired,
-        fail: b.fail,
+        ok: b.ok + b.already,
+        fail: b.expired + b.fail,
       })
     }
     if (!rows.length) return // 该群本轮无任何可签账号
@@ -536,7 +536,14 @@ export class autoSign extends plugin {
     try {
       const group = Bot.pickGroup(Number(gid))
       await group.sendMsg(segment.image(image))
-      logger?.mark?.(`[xhh-TL][自动签到] 已发送群 ${gid} 汇总图（${rows.length} 个游戏，未签 ${unsigned}）`)
+      // 图上只剩「成功 / 失败」两列，细分唯一的去处就是这条日志 ——
+      // 「凭证失效」和「撞码失败」的处理方式完全不同，排查时必须能分开看
+      const detail = GAMES
+        .map((g) => [g, agg.games[g]])
+        .filter(([, b]) => b.ok + b.already + b.expired + b.fail)
+        .map(([g, b]) => `${g} 签上${b.ok}/已签${b.already}/失效${b.expired}/失败${b.fail}`)
+        .join('，')
+      logger?.mark?.(`[xhh-TL][自动签到] 已发送群 ${gid} 汇总图（${rows.length} 个游戏，未签 ${unsigned}${detail ? `；${detail}` : ''}）`)
     } catch (err) {
       logger?.error?.(`[xhh-TL][自动签到] 群 ${gid} 汇总图发送失败: ${err.message}`)
     }
