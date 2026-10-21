@@ -72,38 +72,54 @@ const MAX_DEFER = 6
 /** 长退避间隔（复核反复拿不到有效倒计时时用） */
 const DEFER_BACKOFF_MS = 2 * 60 * 60 * 1000
 
-/** 内存缓存（首次读盘后常驻，写入时同步更新） */
-let _store = null
+/** 热重载会重新求值整个模块；状态按插件目录共享，不能每一代各挂一套定时器。 */
+const RUNTIME_KEY = Symbol.for('xhh-TL.resinTimer')
+const runtimes = globalThis[RUNTIME_KEY] || (globalThis[RUNTIME_KEY] = new Map())
+let runtime = runtimes.get(pluginDir)
+if (!runtime) {
+  runtime = { store: null, timers: new Map(), inflight: new Set(), retries: new Map(), generation: null, resume: null }
+  runtimes.set(pluginDir, runtime)
+}
+const GENERATION = Symbol()
+const isCurrentGeneration = () => runtime.generation === GENERATION
 /** 已挂的定时器：`${game}:${uid}:${type}` → Timeout */
-const _timers = new Map()
+const _timers = runtime.timers
+/** 重试预约也跨代保存，热重载清定时器后仍能恢复剩余退避时间。 */
+const _retries = runtime.retries || (runtime.retries = new Map())
 /**
  * 正在投递中的提醒（fire 已开始、还没落盘 fired）。
- * 挡住这段时间里 arm()/scheduleTimers() 的重挂，避免同一人收到多条重复推送。
- * 复核（可能是一次 12 秒超时的接口查询）也算在这个窗口里。
+ * 跨代共享：新一代不能抢发旧一代已经开始投递的提醒。
  */
-const _inflight = new Set()
+const _inflight = runtime.inflight
+/** 新一代主动接管，不依赖宿主是否会调用该 app 的 onUnload。 */
+clearAllTimers()
+runtime.generation = GENERATION
+runtime.resume = (game, uid, type, delay) => {
+  if (delay !== undefined && enabled() && hasTargets(game, uid)) arm(game, uid, type, delay, true)
+  else refreshUidTimers(game, uid)
+}
 /** 由 resinPush 注册：targets 同步反查订阅者，send 异步发送，verify 到点复核 */
 let _hooks = { targets: null, send: null, verify: null }
 
 // ============ 存储 ============
 
 function loadStore() {
-  if (_store) return _store
+  if (runtime.store) return runtime.store
   try {
     if (fs.existsSync(TIMER_FILE)) {
-      _store = JSON.parse(fs.readFileSync(TIMER_FILE, 'utf8')) || {}
+      runtime.store = JSON.parse(fs.readFileSync(TIMER_FILE, 'utf8')) || {}
     } else {
-      _store = {}
+      runtime.store = {}
     }
   } catch (err) {
     log.error(`[xhh-TL][resinTimer] 读取 ${TIMER_FILE} 失败: ${err.message}`)
-    _store = {}
+    runtime.store = {}
   }
-  if (!_store.gs) _store.gs = {}
-  return _store
+  if (!runtime.store.gs) runtime.store.gs = {}
+  return runtime.store
 }
 
-function saveStore(store = _store) {
+function saveStore(store = runtime.store) {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
     fs.writeFileSync(TIMER_FILE, JSON.stringify(store, null, 2))
@@ -268,11 +284,13 @@ function enabled() {
  *                        必须绕过自己的锁，否则重试挂不上、一次失败就永不重试
  */
 function arm(game, uid, type, delay, force = false) {
+  if (!isCurrentGeneration()) return
   const key = timerKey(game, uid, type)
   if (!force && _inflight.has(key)) return
   clearTimer(game, uid, type)
   const wait = Math.max(1, Math.min(Number(delay) || 0, MAX_TIMEOUT))
   const id = setTimeout(() => {
+    if (!isCurrentGeneration() || _timers.get(key) !== id) return
     _timers.delete(key)
     const st = loadStore()?.[game]?.[uid]?.[type]
     // 分段醒来：还没到点就续挂；状态已被改（用户用掉/关订阅）则不再管
@@ -301,6 +319,7 @@ function markFired(game, uid, type) {
   // 重试计数归零：这一轮已了结，下次重新武装（用户用掉后）从 0 开始数
   st.attempt = 0
   st.defer = 0
+  _retries.delete(timerKey(game, uid, type))
   store[game][uid].updatedAt = Date.now()
   saveStore(store)
 }
@@ -369,6 +388,8 @@ function defer(game, uid, type, verdict) {
   }
 
   st.defer = n
+  st.attempt = 0
+  _retries.delete(timerKey(game, uid, type))
   // 复核拿到的新快照顺手写回：下次到点出图/再复核都用它，别拿着过期数据反复算
   if (verdict?.snap && typeof verdict.snap === 'object') {
     store[game][uid].snap = { ...(store[game][uid].snap || {}), ...verdict.snap }
@@ -397,6 +418,7 @@ function defer(game, uid, type, verdict) {
  * 永不忍弃，每 10 分钟白渲染一张图。存进记录后，任何路径重挂都能接着数。
  */
 async function fire(game, uid, type) {
+  if (!isCurrentGeneration()) return
   const key = timerKey(game, uid, type)
   // 已在投递中就别重复发（arm 的入口保护 + 这里兜一道，防同 tick 内的并发调用）
   if (_inflight.has(key)) return
@@ -415,6 +437,7 @@ async function fire(game, uid, type) {
   }
 
   _inflight.add(key)
+  let retryDelay
   try {
     // 到点复核：**发送前必须确认真的到了**。
     // 定时器的 dueAt 是照 dailyNote 的倒计时算的，而那个倒计时会撒谎 ——
@@ -425,6 +448,8 @@ async function fire(game, uid, type) {
     // 复核不通过 → 按服务器新给的倒计时重挂，不推送、不落盘 fired（下一次到点再复核）。
     // 复核本身失败（接口挂了/没凭证）→ 放行发送：宁可偶尔误报，也别把真提醒吞了。
     const verdict = await verifyDeadline({ game, uid, type })
+    // 复核期间可能被热重载接管；还没发送就交给新一代重新处理。
+    if (!isCurrentGeneration()) return
     if (verdict?.ready === false) {
       defer(game, uid, type, verdict)
       return
@@ -442,6 +467,8 @@ async function fire(game, uid, type) {
     }
 
     await _hooks.send?.({ game, uid, type, targets, item })
+    // 已经开始的投递允许收尾，但落盘必须仍在跨代锁内，新一代才不会重复发。
+    if (loadStore()?.[game]?.[uid]?.[type]?.state === 'armed') markFired(game, uid, type)
   } catch (err) {
     const n = Number(st.attempt || 0) + 1
     // 重新取一次状态：这期间可能已被新一轮查询改写（用户用掉了 → 重新 armed）
@@ -449,6 +476,7 @@ async function fire(game, uid, type) {
     if (n <= MAX_RETRY && cur?.state === 'armed') {
       const delay = n === 1 ? RETRY_FIRST_MS : RETRY_DELAY_MS
       cur.attempt = n
+      _retries.set(key, Date.now() + delay)
       const s = loadStore()
       s[game][uid].updatedAt = Date.now()
       saveStore(s)
@@ -458,6 +486,7 @@ async function fire(game, uid, type) {
       )
       // ⚠️ 这时 _inflight 还没释放（在 finally 里），必须 force 绕过自己的锁，
       // 否则重试定时器挂不上，一次失败就再也不重试了。
+      retryDelay = delay
       arm(game, uid, type, delay, true)
     } else {
       log.error(
@@ -468,10 +497,9 @@ async function fire(game, uid, type) {
     return
   } finally {
     _inflight.delete(key)
+    // 接管时跳过了 inflight 的提醒：复核取消则重挂，投递失败则保留重试退避。
+    if (!isCurrentGeneration()) runtime.resume?.(game, uid, type, retryDelay)
   }
-
-  // 发送成功才落盘（先重取状态，避免覆盖这期间别的更新）
-  if (loadStore()?.[game]?.[uid]?.[type]?.state === 'armed') markFired(game, uid, type)
 }
 
 /**
@@ -544,6 +572,7 @@ export function evaluateSnapshot(game, uid, data) {
 
 /** resinPush 构造时注册「发给谁 / 怎么发 / 到点怎么复核」 */
 export function registerReminderHooks(hooks = {}) {
+  if (!isCurrentGeneration()) return
   _hooks = {
     targets: hooks.targets || null,
     send: hooks.send || null,
@@ -556,6 +585,7 @@ export function registerReminderHooks(hooks = {}) {
  * 解析 → 更新记录 → 落盘 → 挂定时器（就是「首次获取之后开个定时器」）。
  */
 export function recordResinTimer(game, uid, data) {
+  if (!isCurrentGeneration()) return
   if (game !== 'gs' || !uid || !data || typeof data !== 'object') return
   if (!enabled()) return
 
@@ -591,13 +621,18 @@ export function recordResinTimer(game, uid, data) {
   rec.snap = next
   rec.updatedAt = now
   saveStore(store)
+  for (const type of TYPES) {
+    if (Number(rec[type]?.attempt || 0) === 0) _retries.delete(timerKey(game, key, type))
+  }
 
   // 立刻挂/换定时器（到期时刻可能刚被刷新）
   for (const type of TYPES) {
     const st = rec[type]
     if (!st) continue
     if (st.state === 'armed' && hasTargets(game, key)) {
-      const left = st.dueAt - Date.now()
+      // 重试中的提醒继续等原来的退避预约，查询不能把它提前成即时发送。
+      const retryAt = _retries.get(timerKey(game, key, type))
+      const left = retryAt !== undefined ? retryAt - Date.now() : st.dueAt - Date.now()
       // ⚠️ left <= 0 也要挂（延时 0）：mergeDeadline 可能刚把 dueAt 提前到「当下」
       // （数据说已到期、旧记录还是未来时刻），这时不补挂的话得等原来那个未来时刻的
       // 定时器醒来才会发，「提前」等于没生效，最长拖到下一次 scheduleTimers。
@@ -613,6 +648,7 @@ export function recordResinTimer(game, uid, data) {
  * 调用时机：插件加载时（重启恢复）、订阅变更后、每轮 checkAll 收尾。
  */
 export function scheduleTimers() {
+  if (!isCurrentGeneration()) return
   if (!enabled()) {
     clearAllTimers()
     return
@@ -639,7 +675,7 @@ export function scheduleTimers() {
           clearTimer(game, uid, type)
           continue
         }
-        const plan = shouldFireNow(st, now)
+        const plan = shouldFireNow(st, now, timerKey(game, uid, type))
         if (plan.arm) {
           arm(game, uid, type, plan.delay)
           armed++
@@ -666,16 +702,22 @@ export function scheduleTimers() {
  * 此刻它正等 15/60 秒的退避（st.attempt > 0）。这种要原样留着，让退避跑完，
  * 否则每轮 cron 都 arm(0) 立刻重发 → 退避形同虚设、失败时疯狂渲染。
  */
-function shouldFireNow(st, now) {
+function shouldFireNow(st, now, key) {
+  // 热重载会清旧 timeout，但不能丢重试预约；进程重启没预约时从首轮退避恢复。
+  if (Number(st.attempt || 0) > 0) {
+    if (!_retries.has(key)) {
+      _retries.set(key, now + (Number(st.attempt) === 1 ? RETRY_FIRST_MS : RETRY_DELAY_MS))
+    }
+    return { arm: true, delay: Math.max(0, _retries.get(key) - now) }
+  }
   if (st.dueAt > now) return { arm: true, delay: st.dueAt - now }
-  // 已到期：在重试退避中就别抢
-  if (Number(st.attempt || 0) > 0) return { arm: false }
   if (st.dueAt > now - OVERDUE_GRACE_MS) return { arm: true, delay: 0 }
   return { arm: false, expired: true }
 }
 
 /** 单个 uid 重算（订阅变更后用，比全量轻） */
 export function refreshUidTimers(game, uid) {
+  if (!isCurrentGeneration()) return
   if (!enabled()) {
     clearTimer(game, uid, 'transformer')
     clearTimer(game, uid, 'homeCoin')
@@ -690,7 +732,7 @@ export function refreshUidTimers(game, uid) {
       clearTimer(game, String(uid), type)
       continue
     }
-    const plan = shouldFireNow(st, now)
+    const plan = shouldFireNow(st, now, timerKey(game, uid, type))
     if (plan.arm) arm(game, String(uid), type, plan.delay)
   }
 }
