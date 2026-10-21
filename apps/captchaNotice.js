@@ -96,6 +96,11 @@ export class captchaNotice extends plugin {
     const uid = String(args?.mysInfo?.uid || args?.data?.uid || '')
     const game = args?.mysApi?.game || args?.mysInfo?.e?.game || 'gs'
     const cookie = args?.mysApi?.cookie || args?.mysInfo?.ckInfo?.ck || ''
+    // 过码要跟撞码那次请求用同一枚设备，米游社才认（genshin 的 MysApi 上就是这枚）
+    const device = args?.mysApi?.device || ''
+    // 客户端形态也要跟着走：国内服是网页端（5），海外服是 App 端（2）
+    const server = String(args?.mysApi?.server || '')
+    const clientType = server ? (/cn_|_cn/.test(server) ? '5' : '2') : ''
     const autoAddr = config().auto_verify_addr || ''
 
     // 没配过码服务，或拿不到 ck / 没有可回复的事件 → 退回提醒
@@ -111,7 +116,7 @@ export class captchaNotice extends plugin {
     try {
       log.mark(`[xhh-TL][撞码] uid=${uid} 自动过码中…`)
       const { solveByLocalService } = await import('../utils/mysVerify.js')
-      const ok = await solveByLocalService({ cookie, autoVerifyAddr: autoAddr })
+      const ok = await solveByLocalService({ cookie, autoVerifyAddr: autoAddr, device, clientType })
       if (!ok) return this.noticeOnly(e, uid, game)
 
       log.mark(`[xhh-TL][撞码] uid=${uid} 过码成功，自动重试原请求`)

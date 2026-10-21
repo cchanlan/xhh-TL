@@ -285,6 +285,8 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
     const solved = await solveByLocalService({
       cookie: ck,
       autoVerifyAddr: config().auto_verify_addr,
+      device: fetchHeaders['x-rpc-device_id'] || '',
+      deviceFp: fetchHeaders['x-rpc-device_fp'] || '',
       clientType: type === 'GameRoles' ? '2' : '5',
     }).catch(() => false);
     if (solved) {
@@ -1953,7 +1955,14 @@ export class TL extends plugin {
                 // 撞风控码且配了过码服务：自动过码后按梯度重试（过码到放行有延迟，立刻重打仍 1034）
                 if (noteRes && [1034, 10035, 10041].includes(Number(noteRes.retcode)) && config().auto_verify_addr) {
                   logger.info?.(`[xhh-TL][transformer] dailyNote 撞码 retcode=${noteRes.retcode}，自动过码后重试`);
-                  const solved = await solveByLocalService({ cookie: ck, autoVerifyAddr: config().auto_verify_addr }).catch(() => false);
+                  const solved = await solveByLocalService({
+                    cookie: ck,
+                    autoVerifyAddr: config().auto_verify_addr,
+                    device: noteDevice,
+                    deviceFp: noteFp,
+                    // dailyNote 是 App 端接口，过码也必须按 App 端形态走
+                    clientType: '2',
+                  }).catch(() => false);
                   if (solved) {
                     for (const gap of TRANSFORMER_RETRY_GAPS) {
                       if (gap) await new Promise((r) => setTimeout(r, gap));
