@@ -22,6 +22,11 @@ const exec = promisify(execFile)
 const SERVICE_DIR = path.join(pluginDir, 'service', 'geetest')
 const PM2_NAME = 'geetest-solver'
 const PORT = 8766
+const LOCAL_BASE = `http://127.0.0.1:${PORT}`
+const LOCAL_SOLVER = `${LOCAL_BASE}/solve`
+// 插件默认带的公共过码服务（与 service/geetest 是同一套接口）。
+// #过码部署 装好本机服务后会把配置切到 LOCAL_SOLVER；用户自己填的远程地址则保持不动。
+const PUBLIC_SOLVER = 'https://geetest.lyln114514.com/solve'
 
 // 服务运行必需的文件（都在 solver 分支上）。少任何一个都跑不起来：
 // w.py 缺了生成不出 w 参数、server.py 缺了服务起不来。
@@ -68,18 +73,18 @@ const log = {
  * 多账号模式、鸣潮开关…全部静默回退默认值，用户毫无察觉）。
  * 写失败只记日志：配置没写成不该让已经装好的服务被判成部署失败。
  *
- * ⚠️ 只在「没配过」或「本来就指向本机 8766」时才写：auto_verify_addr 也允许填
- * 别人部署的远程服务链接，不能因为跑了一次部署就把用户的远程地址洗回本机。
+ * ⚠️ 「没配过」「本来就指向本机 8766」「还是默认的公共地址」这三种才写：
+ * auto_verify_addr 也允许填别人部署的远程服务链接，不能因为跑了一次部署就把用户的远程地址洗回本机。
  */
 function patchAutoVerify() {
   try {
     const cur = String(config().auto_verify_addr || '').trim()
-    const isLocal = !cur || isLocalSolverAddr(cur)
-    if (!isLocal) {
+    const writable = !cur || isLocalSolverAddr(cur) || isPublicSolverAddr(cur)
+    if (!writable) {
       log.mark(`[xhh-TL][部署] 过码地址已指向远程服务（${cur}），不改写`)
       return
     }
-    patchUserConfig({ auto_verify_addr: `http://127.0.0.1:${PORT}/solve` })
+    patchUserConfig({ auto_verify_addr: LOCAL_SOLVER })
   } catch (err) {
     log.error('[xhh-TL][部署] 写配置失败:', err?.message)
   }
@@ -104,6 +109,20 @@ function isLocalSolverAddr(addr) {
   }
 }
 
+/** 地址是否是插件默认的公共过码服务（忽略大小写与末尾斜杠） */
+function isPublicSolverAddr(addr) {
+  const norm = (s) => {
+    try {
+      const u = new URL(String(s).trim())
+      return `${u.protocol}//${u.host}${u.pathname.replace(/\/+$/, '')}`.toLowerCase()
+    } catch (_) {
+      return ''
+    }
+  }
+  const cur = norm(addr)
+  return !!cur && cur === norm(PUBLIC_SOLVER)
+}
+
 /** 过码服务地址去掉 /solve 后的根（用来探 /health）；解析失败返回空串 */
 function solverBase(addr) {
   try {
@@ -124,12 +143,15 @@ async function run(cmd, args, opts = {}) {
   }
 }
 
-/** 服务是否已经在正常响应（探 /health，比看 pm2 状态更准） */
-async function isServiceAlive() {
-  // 允许传根地址：配置指向远程服务时探它的根，而不是写死本机端口
-  const base = solverBase(config().auto_verify_addr) || `http://127.0.0.1:${PORT}`
+/**
+ * 服务是否已经在正常响应（探 /health，比看 pm2 状态更准）。
+ * 传 base 时探指定根地址：部署本机服务时必须显式传本机地址，
+ * 否则配置还指向公共/远程服务时，会把「别人在答」误判成本机服务已经在跑。
+ */
+async function isServiceAlive(base = '') {
+  const root = base || solverBase(config().auto_verify_addr) || LOCAL_BASE
   try {
-    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(4000) })
+    const res = await fetch(`${root}/health`, { signal: AbortSignal.timeout(4000) })
     return res.ok
   } catch (_) {
     return false
@@ -447,11 +469,12 @@ export class solverDeploy extends plugin {
   }
 
   async deploy(e) {
-    // 配置指向远程服务：这台机上没有也不需要任何本机组件（Python/pm2/服务文件），
+    // 配置指向**用户自己填的**远程服务：这台机上没有也不需要任何本机组件（Python/pm2/服务文件），
     // 整套部署流程都不适用 —— 只验活 + 确认配置不被改写，然后收工。
+    // 默认的公共地址不算这种：它是插件自带的兜底，用户发部署就是想在本机装一套，照常往下走。
     // 必须在所有本机检查之前短路，否则会掉进「起本机服务」分支，
     // 在本机 pm2 里真起一个跟远程各管各的 geetest-solver。
-    if (isRemoteSolver()) {
+    if (isRemoteSolver() && !isPublicSolverAddr(config().auto_verify_addr)) {
       await e.reply('过码服务使用远程地址，验证连通中，稍等~', quoteEnabled())
       await new Promise((r) => setTimeout(r, 2000))
       const alive = await isServiceAlive()
@@ -568,7 +591,7 @@ export class solverDeploy extends plugin {
     //
     // 其余情况保持原样不动：重启会打断正在进行的过码。
     // （配置指向远程时上面已经短路返回，走不到这里。）
-    const running = await isServiceAlive()
+    const running = await isServiceAlive(LOCAL_BASE)
     // 进程是不是归本插件的 daemon 管（Windows 上是隔离的 data/pm2；
     // Linux / macOS 用默认 ~/.pm2，进程表本来就是本插件的）。
     // 旧版本直连 pm2 部署出来的进程不在这个表里 —— 下面单独处理，不静默抢占。
@@ -622,7 +645,7 @@ export class solverDeploy extends plugin {
 
     // ⑥ 验活
     await new Promise((r) => setTimeout(r, 8000))
-    const alive = await isServiceAlive()
+    const alive = await isServiceAlive(LOCAL_BASE)
 
     if (alive && refreshed) {
       await e.reply('过码服务已更新到最新版，不用再管~', quoteEnabled())
@@ -638,8 +661,25 @@ export class solverDeploy extends plugin {
 
   async status(e) {
     const lines = []
-    const remoteMode = isRemoteSolver()
     const addr = String(config().auto_verify_addr || '').trim()
+
+    // 默认公共地址：既不是本机部署，也不是用户自填的远程地址，单独显示
+    if (isPublicSolverAddr(addr)) {
+      const base = solverBase(addr)
+      let alive = false
+      try {
+        const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) })
+        alive = res.ok
+      } catch (_) {}
+      lines.push(`过码服务：公共（${base}）`)
+      lines.push(`公共服务：${alive ? '正常' : '连不上'}`)
+      lines.push('插件配置：使用插件自带的公共过码服务')
+      lines.push('', '发 #过码部署 可以装在本机，不依赖公共服务')
+      await e.reply(lines.join('\n'), quoteEnabled())
+      return true
+    }
+
+    const remoteMode = isRemoteSolver()
 
     if (remoteMode) {
       // 远程模式：进程不在这台机上，pm2 / 本机文件全都没意义，只探远端健康。
@@ -673,7 +713,7 @@ export class solverDeploy extends plugin {
     // 健康检查
     let alive = false
     try {
-      const base = solverBase(addr) || `http://127.0.0.1:${PORT}`
+      const base = solverBase(addr) || LOCAL_BASE
       const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) })
       alive = res.ok
     } catch (_) {}
