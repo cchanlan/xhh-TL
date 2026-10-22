@@ -282,11 +282,10 @@ export class autoBbsCoin extends plugin {
 
   /** 逐账号跑任务，账号间留间隔 */
   async runAccounts(accounts, games, e = null) {
-    const verifyAddr = e ? config().auto_sign_verify_addr || '' : ''
     const results = []
     for (const acc of accounts) {
       try {
-        results.push(await runCoinTask(acc, { games, e, verifyAddr }))
+        results.push(await runCoinTask(acc, { games, e }))
       } catch (err) {
         logger?.error?.(`[xhh-TL][米游币] ${acc.stuid} 任务异常: ${err.message}`)
         results.push({ code: 'fail', msg: '任务异常', stuid: acc.stuid, rows: [], gained: 0, after: 0, pending: false })

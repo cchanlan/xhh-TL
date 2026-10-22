@@ -23,8 +23,6 @@ import Runtime from '../../../lib/plugins/runtime.js'
 import { createUser } from '../utils/userBind.js'
 import { resolveAuth } from '../utils/runtimePatch.js'
 import { signOne, GAME_LABEL } from '../utils/signClient.js'
-import { runBbsVerify, solveBatchByLocalService } from '../utils/mysVerify.js'
-import LiteMysApi from '../utils/mysClient.js'
 import { config, pluginDir, pickHelpBgImage, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
@@ -110,9 +108,6 @@ export class autoSign extends plugin {
         { reg: `^\\s*#?${GAME_ALIAS.gs}签到\\s*$`, fnc: 'signGs' },
         { reg: `^\\s*#?${GAME_ALIAS.sr}签到\\s*$`, fnc: 'signSr' },
         { reg: `^\\s*#?${GAME_ALIAS.zzz}签到\\s*$`, fnc: 'signZzz' },
-        // 手动过码（主动清风险；可带游戏名指定，默认原神）
-        // # 必带：这条会真去打接口跑过码，不能让「过码」这种裸词在群里误触发
-        { reg: `^\\s*#(?:${GAME_ALIAS.gs}|${GAME_ALIAS.sr}|${GAME_ALIAS.zzz})?(?:米游社验证|手动过码|过码)\\s*$`, fnc: 'manualVerify' },
         // 列表
         { reg: '^\\s*#?(?:自动)?签到(?:列表|状态|查询)\\s*$', fnc: 'listSubs' },
       ],
@@ -165,138 +160,8 @@ export class autoSign extends plugin {
     for (const r of results) lines.push(`· ${r.uid}：${r.msg}`)
     if (results.some((r) => r.code === 'captcha')) {
       // 配了自动过码服务时，撞码的号已经自动处理过了，这里只说结果
-      lines.push(
-        config().auto_verify_addr
-          ? `（撞验证码的号已自动处理，重发本条即可）`
-          : `（撞验证码的号，发 #${label}过码 点链接手划一下，再重发本条）`,
-      )
+      lines.push(`（撞验证码的号已自动处理，重发本条即可）`)
     }
-    e.reply(lines.join('\n'), quoteEnabled())
-    return true
-  }
-
-  // -------- 手动过码（主动清风险）--------
-  // 不必等撞码，用户可主动跑一次过码清掉该设备风险分，之后签到更顺。
-  // 从消息里识别游戏（默认原神）；对该游戏名下每个绑定 UID 逐个走过码。
-  async manualVerify(e) {
-    if (this._groupOnly(e)) return true
-    if (this._disabled(e)) return true
-    const verifyAddr = config().auto_sign_verify_addr || ''
-    const autoAddr = config().auto_verify_addr || ''
-    // 两个都没配才没得玩：自动服务是首选，手动打码地址是兜底
-    if (!autoAddr && !verifyAddr) {
-      e.reply('未配置过码服务，请主人到锅巴「米游社签到」里填上地址后再试~', quoteEnabled())
-      return true
-    }
-
-    // 识别游戏：消息命中哪个别名就用哪个，默认 gs
-    const msg = String(e.msg || '')
-    let game = 'gs'
-    for (const g of GAMES) {
-      if (new RegExp(GAME_ALIAS[g]).test(msg)) { game = g; break }
-    }
-    const label = GAME_LABEL[game]
-
-    // 枚举该游戏绑定 UID
-    let uidList = []
-    try {
-      const user = await createUser(e.user_id, e)
-      // 只取背后有登录凭证（ltuid / stuid）的 UID，与 _on、signUserGame 的过滤保持一致：
-      // 仅「注册」过的 UID（type=reg，既无 ltuid 也无 stuid）没有 ck 可换，
-      // 过码无从谈起；这类注册态还常是从别人名下带过来的，不能顺手替它过码。
-      uidList = (user.getUidList(game) || [])
-        .filter((x) => x && typeof x === 'object' && (x.ltuid || x.stuid))
-        .map((x) => String(x.uid))
-        .filter(Boolean)
-    } catch (err) {
-      logger?.error?.(`[xhh-TL][过码] 枚举 UID 失败 ${e.user_id}: ${err.message}`)
-    }
-    if (!uidList.length) {
-      e.reply(`你还没有扫码登录${label}账号，请先【#扫码登录】米游社~`, quoteEnabled())
-      return true
-    }
-
-    // 配了本地服务就是全自动，不用用户划；没配才提示看链接
-    const auto = !!config().auto_verify_addr
-    e.reply(
-      auto
-        ? `开始为${label} ${uidList.length} 个账号过码，请稍等~`
-        : `开始为${label} ${uidList.length} 个账号过码，撞到验证时请按提示点链接手划~`,
-      quoteEnabled(),
-    )
-
-    // 先把每个 UID 的凭证解出来（这步必须串行：resolveAuth 依赖 e 上的 uid）
-    const accounts = []
-    for (const uid of uidList) {
-      try {
-        const authE = Object.assign(
-          Object.create(Object.getPrototypeOf(e) || Object.prototype), e, { uid },
-        )
-        const auth = await resolveAuth(authE, { needCookie: true, game })
-        if (!auth?.ck || !/cookie_token|account_id=/.test(auth.ck)) {
-          accounts.push({ uid, realUid: uid, err: '无有效登录，请【#刷新ck】，仍不行则【#扫码登录】' })
-          continue
-        }
-        accounts.push({ uid, realUid: auth.uid || uid, ck: auth.ck })
-      } catch (err) {
-        logger?.error?.(`[xhh-TL][过码] ${e.user_id}/${uid} 取凭证异常: ${err.message}`)
-        accounts.push({ uid, realUid: uid, err: '已知问题，稍后重试' })
-      }
-    }
-
-    const lines = [`${label}过码结果：`]
-
-    // 全自动：一次把所有账号交给服务并发跑（总耗时≈最慢那个号，不是逐个相加）
-    const okMap = new Map()
-    if (auto) {
-      const valid = accounts.filter((a) => a.ck)
-      if (valid.length) {
-        const results = await solveBatchByLocalService(
-          valid.map((a) => a.ck),
-          config().auto_verify_addr,
-        )
-        valid.forEach((a, i) => okMap.set(a.realUid, !!results[i]))
-      }
-    }
-
-    for (const a of accounts) {
-      if (a.err) {
-        lines.push(`· ${a.realUid}：${a.err}`)
-        continue
-      }
-      // 全自动已跑过；没配服务或批量没成功，再回退到逐个（手动链接）流程
-      let ok = okMap.get(a.realUid)
-      if (ok === undefined || ok === false) {
-        try {
-          let device = ''
-          let deviceFp = ''
-          try {
-            const api = new LiteMysApi(a.realUid, a.ck, { game, log: false })
-            device = api.device
-            const fpRes = await api.getData('getFp', { seed_id: String(Date.now()).slice(0, 16), Getfp: true })
-            deviceFp = fpRes?.data?.device_fp || ''
-          } catch (_) {}
-          const r = await runBbsVerify(e, {
-            uid: a.realUid,
-            cookie: a.ck,
-            game,
-            device,
-            deviceFp,
-            verifyAddr,
-            // 批量已失败过，这里不再走自动，直接手动，免得白等
-            autoVerifyAddr: ok === false ? '' : (config().auto_verify_addr || ''),
-          })
-          ok = r
-        } catch (err) {
-          logger?.error?.(`[xhh-TL][过码] ${e.user_id}/${a.realUid} 异常: ${err.message}`)
-          lines.push(`· ${a.realUid}：过码异常`)
-          continue
-        }
-      }
-      lines.push(`· ${a.realUid}：${ok ? '过码成功' : '已知问题，稍后重试'}`)
-    }
-    // 不再补「现在发 #xx签到 即可」：`#过码` 是通用入口，深渊/体力/抽卡撞码都会引导过来，
-    // 预设成「去签到」对从别处来的用户是错的（用户发 #过码 时自己知道要干什么）。
     e.reply(lines.join('\n'), quoteEnabled())
     return true
   }
@@ -412,11 +277,8 @@ export class autoSign extends plugin {
           results.push({ uid, code: 'expired', msg: `${GAME_LABEL[game]} 无有效登录，请【#刷新ck】，仍不行则【#扫码登录】`, game })
           continue
         }
-        // 手动签到(realE)能发链接让人手划；自动 cron 没有 e，但配了全自动过码服务时
-        // 一样能过码 —— runBbsVerify 只在「能 reply」时才走手划，e 为空会安全跳过。
+        // 签到撞码时只会走全自动过码服务，定时任务（e 为空）同样有效
         const opts = {
-          e: realE || null,
-          verifyAddr: realE ? config().auto_sign_verify_addr || '' : '',
           autoVerifyAddr: config().auto_verify_addr || '',
         }
         const r = await signOne(auth.uid || uid, auth.ck, game, opts)
@@ -616,5 +478,5 @@ guardModule(autoSign, 'auto_sign', [
   'offGs', 'offSr', 'offZzz',
   'onGs', 'onSr', 'onZzz',
   'signGs', 'signSr', 'signZzz',
-  'manualVerify', 'listSubs',
+  'listSubs',
 ])

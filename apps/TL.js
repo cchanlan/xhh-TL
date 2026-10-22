@@ -6,7 +6,7 @@ import md5 from 'md5';
 import lodash from 'lodash';
 import plugin from '../../../lib/plugins/plugin.js';
 import { createUser, getAliveMysIds, hasRuntimeBinding } from '../utils/userBind.js';
-import { getstoken, cookiePart, stokenToCookie } from '../utils/auth.js';
+import { getstoken, cookiePart, stokenToCookie, findStokenEntry } from '../utils/auth.js';
 import common from '../../../lib/common/common.js';
 import { config, pluginDir, pickCharacterPortrait, toDataUrl, toDataUrlTrim, getImageFormat } from '../utils/pluginConfig.js';
 import { guardModule } from '../utils/modules.js';
@@ -23,6 +23,9 @@ import { solveByLocalService } from '../utils/mysVerify.js';
 
 /** 质变仪补拉撞码后的重试梯度（毫秒），与 captchaNotice 同一套：总窗口 21 秒 */
 const TRANSFORMER_RETRY_GAPS = [0, 6000, 15000];
+
+/** 体力 widget 撞到这些码就是风控，过码后能解 */
+const NOTE_CAPTCHA_RC = [1034, 10035, 10041];
 
 /**
  * 桌面小组件卡「限时活动」显示条数：0 = 不显示该区块。
@@ -288,6 +291,8 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
       device: fetchHeaders['x-rpc-device_id'] || '',
       deviceFp: fetchHeaders['x-rpc-device_fp'] || '',
       clientType: type === 'GameRoles' ? '2' : '5',
+      // 签到撞的是对应游戏的验证；GameRoles 是账号级接口（game 为空，按默认处理）
+      game: game || '',
     }).catch(() => false);
     if (solved) {
       for (const gap of TRANSFORMER_RETRY_GAPS) {
@@ -314,7 +319,7 @@ async function callApi(e, type, game, uid, server, headers, silent = false) {
         msg = `${uid ? 'UID:' + uid : ''}米游社账号异常,无法查询！`;
         break;
       case 1034: case 10035:
-        msg = captchaTip(game);
+        msg = captchaTip();
         break;
       default:
         msg = '米游社接口异常...';
@@ -1765,6 +1770,11 @@ export class TL extends plugin {
         const fb = await this.noteViaCookie(e, game, sk, uid);
         if (fb) res = fb;
       }
+      // zzz 没有 cookie 版 dailyNote 可换路，撞码只能自己接过码再重打 widget
+      if (game === 'zzz' && NOTE_CAPTCHA_RC.includes(Number(res?.retcode))) {
+        const retry = await this.verifyZzzNote(e, { qq, uid, sk, url, headers, retcode: res?.retcode });
+        if (retry) res = retry;
+      }
     }
 
     if ([-10001, 10001, -100].includes(res?.retcode)) {
@@ -1962,6 +1972,7 @@ export class TL extends plugin {
                     deviceFp: noteFp,
                     // dailyNote 是 App 端接口，过码也必须按 App 端形态走
                     clientType: '2',
+                    game: 'gs',
                   }).catch(() => false);
                   if (solved) {
                     for (const gap of TRANSFORMER_RETRY_GAPS) {
@@ -2036,6 +2047,61 @@ export class TL extends plugin {
       }
     });
     return data;
+  }
+
+  /**
+   * 绝区零体力 widget 撞风控：自动过码后用同一设备重试。
+   *
+   * widget 也是裸 fetch、不经过 MysInfo，captchaNotice 那条全局兜底够不着；
+   * zzz 又没有 cookie 版 dailyNote 可以换路（接口只认 stoken），不自己接过码整条就失败。
+   *
+   * ⚠️ 过码必须带 game=zzz：服务端拿到游戏才会用 x-rpc-challenge_game=8 申请极验，
+   * 否则会按原神走，清不掉 zzz 的风控（表现为「发 zzz 体力却在过原神的码」）。
+   *
+   * @returns {object|false} 成功时返回新的 widget 响应
+   */
+  async verifyZzzNote(e, { qq, uid, sk, url, headers, retcode }) {
+    const autoAddr = config().auto_verify_addr || '';
+    if (!autoAddr) return false;
+    // 过码要完整 cookie；扫码用户常常只有 stoken，先兑换
+    let ck = /cookie_token=|ltoken=|account_id=/.test(sk) ? sk : '';
+    // 先按这串 stoken 本身兑换，避免 findStokenEntry 在多账号时挑到别人
+    if (!ck && /stoken=/.test(sk)) {
+      try {
+        const cand = await stokenToCookie({ ck_stoken: sk });
+        if (/cookie_token=|ltoken=/.test(cand)) ck = cand;
+      } catch (_) {}
+    }
+    if (!ck) {
+      try {
+        const entry = findStokenEntry(qq, uid);
+        if (entry) {
+          const cand = await stokenToCookie(entry);
+          if (/cookie_token=|ltoken=/.test(cand)) ck = cand;
+        }
+      } catch (_) {}
+    }
+    if (!ck) return false;
+
+    const device = headers['x-rpc-device_id'] || '';
+    logger.info?.(`[xhh-TL][note][zzz] uid=${uid} 撞码 retcode=${retcode}，自动过码后重试`);
+    const solved = await solveByLocalService({
+      cookie: ck,
+      autoVerifyAddr: autoAddr,
+      device,
+      game: 'zzz',
+      clientType: '2',
+    }).catch(() => false);
+    if (!solved) return false;
+
+    for (const gap of TRANSFORMER_RETRY_GAPS) {
+      if (gap) await new Promise((r) => setTimeout(r, gap));
+      // DS 按秒签，隔几秒再打要重算；设备不变，过码清的就是这台设备的风险
+      headers.DS = getDs2();
+      const retry = await fetch(url, { method: 'get', headers }).then((r) => r.json()).catch(() => false);
+      if (retry?.retcode === 0) return retry;
+    }
+    return false;
   }
 
   /**

@@ -9,7 +9,7 @@
  *
  * 行为分两种：
  *   - 配了 auto_verify_addr（全自动过码服务，本机或远程）：**直接过码 + 重试原请求**，用户无感
- *   - 没配：退回提醒「发 #过码」，用户自己点链接手划
+ *   - 没配 / 过码失败：只提示「稍后再试」，不发任何手动过码指令
  *
  * 为什么要「吃掉」紧随其后的旧提示：
  *   checkCode 在 handler 全部 reject 之后，会自己补一句
@@ -103,9 +103,9 @@ export class captchaNotice extends plugin {
     const clientType = server ? (/cn_|_cn/.test(server) ? '5' : '2') : ''
     const autoAddr = config().auto_verify_addr || ''
 
-    // 没配过码服务，或拿不到 ck / 没有可回复的事件 → 退回提醒
+    // 没配过码服务，或拿不到 ck / 没有可回复的事件 → 只提醒
     if (!autoAddr || !cookie || !e?.reply) {
-      return this.noticeOnly(e, uid, game)
+      return this.noticeOnly(e, uid)
     }
 
     // 同号 60 秒内不重复过码（一次查询会连撞几码）
@@ -116,8 +116,8 @@ export class captchaNotice extends plugin {
     try {
       log.mark(`[xhh-TL][撞码] uid=${uid} 自动过码中…`)
       const { solveByLocalService } = await import('../utils/mysVerify.js')
-      const ok = await solveByLocalService({ cookie, autoVerifyAddr: autoAddr, device, clientType })
-      if (!ok) return this.noticeOnly(e, uid, game)
+      const ok = await solveByLocalService({ cookie, autoVerifyAddr: autoAddr, device, clientType, game })
+      if (!ok) return this.noticeOnly(e, uid)
 
       log.mark(`[xhh-TL][撞码] uid=${uid} 过码成功，自动重试原请求`)
       // 过码是生效的，但米游社那边放行有延迟：实测过码完 0.3 秒就重打仍是 1034，
@@ -141,15 +141,15 @@ export class captchaNotice extends plugin {
       return this.blockedOnly(e, uid)
     } catch (err) {
       log.error(`[xhh-TL][撞码] 自动过码异常: ${err?.message}`)
-      return this.noticeOnly(e, uid, game)
+      return this.noticeOnly(e, uid)
     }
   }
 
-  /** 兜底：只提醒用户发 #过码（过码服务没配/没成功时） */
-  async noticeOnly(e, uid, game) {
+  /** 兜底：只提醒用户稍后再试（过码服务没配/没成功时） */
+  async noticeOnly(e, uid) {
     if (!e?.reply) return
     try {
-      await e.reply(`${uid ? `UID:${uid} ` : ''}${captchaTip(game)}`, quoteEnabled())
+      await e.reply(`${uid ? `UID:${uid} ` : ''}${captchaTip()}`, quoteEnabled())
     } catch (err) {
       log.error(`[xhh-TL][撞码提醒] 发送失败: ${err?.message}`)
     }

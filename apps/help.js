@@ -342,12 +342,6 @@ export function buildHelpGroups() {
           desc: '开启每日自动签；加「关闭 / 关 / 取消 / 停止」停用',
         },
         {
-          icon: 'gs-丽莎.webp',
-          module: 'auto_sign',
-          title: '#过码 #米游社验证 #手动过码',
-          desc: '清掉米游社验证（默认全自动）；可带游戏名（#星铁过码 / #绝区零过码），默认原神',
-        },
-        {
           icon: 'gs-七七.webp',
           module: 'auto_sign',
           title: '#签到列表',
@@ -535,7 +529,7 @@ export class help extends plugin {
       const version = readVersion()
       const offModules = disabledModuleLabels()
       const note =
-        '<b>提示</b>：指令大多可省略 #（过码相关须带 #）；星铁相关请带 <b>*</b> 或「星铁」前缀。' +
+        '<b>提示</b>：指令大多可省略 #（过码部署类须带 #）；星铁相关请带 <b>*</b> 或「星铁」前缀。' +
         '版本指令支持 <b>列表 / 上期 / 第N期</b>；个人成绩类需先绑定账号。' +
         '鸣潮体力需主人先启用并登录鸣潮。' +
         '支持 @他人查询（对方需已绑定）。' +

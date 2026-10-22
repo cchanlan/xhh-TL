@@ -24,7 +24,7 @@ import md5 from 'md5'
 import YAML from 'yaml'
 import fetch from 'node-fetch'
 import LiteMysApi from './mysClient.js'
-import { runBbsVerify } from './mysVerify.js'
+import { solveByLocalService } from './mysVerify.js'
 import { cookiePart } from './auth.js'
 import { createUser, getAliveMysIds, hasRuntimeBinding } from './userBind.js'
 import { getDeletedMap, fingerprintStoken, removeDeleted } from './deletedCk.js'
@@ -373,8 +373,7 @@ async function expiredMsg(stuid, cookies) {
  * @param {object} account { stuid, cookie }
  * @param {object} [opts]
  * @param {string[]} [opts.games] 版块，默认 ['gs','sr','zzz']
- * @param {object} [opts.e] 实时事件；有它 + verifyAddr 才能撞码当场过码
- * @param {string} [opts.verifyAddr] 外部打码服务地址
+ * @param {object} [opts.e] 实时事件（撞码时用于日志上下文，不再发手动链接）
  * @returns {Promise<object>} { code, msg, stuid, before, after, gained, pending, rows }
  *   code: 'ok' 已执行 | 'done' 今日已完成 | 'expired' stoken 失效 | 'fail' 异常
  *   gained: **今日已获得**的米游币（不是「本次新增」）。见下方复查段的注释——
@@ -382,7 +381,7 @@ async function expiredMsg(stuid, cookies) {
  *   pending: 签到接口认了但收益还没入账，图上要据此改口径，别报成「没赚到」
  */
 export async function runCoinTask(account, opts = {}) {
-  const { games = Object.keys(FORUMS), e = null, verifyAddr = '' } = opts
+  const { games = Object.keys(FORUMS), e = null } = opts
   const { stuid } = account
   const base = { stuid, before: 0, after: 0, gained: 0, pending: false, rows: [] }
 
@@ -440,25 +439,21 @@ export async function runCoinTask(account, opts = {}) {
   {
     try {
       // 2.1 版块签到（撞风控则过码 + 梯度重签）
-      // ⚠️ 判据不能只看 e：定时任务（runAll）给 runAccounts 传的是 null，
-      //    e 为空 → 整条过码分支短路，全自动过码服务配了也用不上。
-      //    改成「有自动服务」或「能发手动链接（e + verifyAddr）」二选一即可。
+      // 过码只走全自动服务：没配服务就只报「需要验证」，不再发手动链接
       const autoVerifyAddr = config().auto_verify_addr || ''
       let signRes = await signForum(cookie, device, deviceFp, forum.gids)
       if (isCaptcha(signRes)) {
         log.mark(
           `[xhh-TL][米游币] ${stuid} ${forum.name} 撞风控 retcode=${signRes?.retcode}，尝试过码…`,
         )
-        if (autoVerifyAddr || (e && verifyAddr)) {
+        if (autoVerifyAddr) {
           const vc = { challenge: '' }
-          const passed = await runBbsVerify(e, {
-            uid: stuid,
+          const passed = await solveByLocalService({
             cookie,
-            game,
+            autoVerifyAddr,
             device,
             deviceFp,
-            verifyAddr,
-            autoVerifyAddr,
+            game,
             // 签到是 App 端接口（client_type=2），过码也必须按 App 端形态走，
             // 否则米游社回执里的 challenge 换到签到上不认（实测：网页端形态走完照样 1034）
             clientType: '2',

@@ -17,7 +17,7 @@
 import md5 from 'md5'
 import fetch from 'node-fetch'
 import LiteMysApi, { getServer } from './mysClient.js'
-import { runBbsVerify } from './mysVerify.js'
+import { solveByLocalService } from './mysVerify.js'
 import { captchaTip } from './captchaTip.js'
 import { config } from './pluginConfig.js'
 
@@ -92,15 +92,13 @@ function isCaptcha(res) {
  * @param {string} cookie 完整 cookie（需含 cookie_token/account_id；resolveAuth 提供）
  * @param {'gs'|'sr'|'zzz'} game
  * @param {object} [opts]
- * @param {object} [opts.e] 实时事件；只有「发手动链接」那条路需要它，全自动过码不需要
- * @param {string} [opts.verifyAddr] 手动打码服务地址；为空则不发手动链接
  * @param {string} [opts.autoVerifyAddr] 全自动过码服务地址（本机或远程）；配了则撞码自动过（定时任务也走这条）
  * @returns {Promise<{ code, msg, game, uid }>}
  *   code: 'ok' 签到成功 | 'already' 今日已签 | 'captcha' 触发验证码（未过/过码失败）|
  *         'expired' 登录失效 | 'first_bind' 需先手动签 | 'fail' 其他失败
  */
 export async function signOne(uid, cookie, game = 'gs', opts = {}) {
-  const { e = null, verifyAddr = '', autoVerifyAddr = '' } = opts
+  const { autoVerifyAddr = '' } = opts
   const label = GAME_LABEL[game] || game
   const actId = SIGN_ACT_ID[game]
   if (!actId) return { code: 'fail', msg: `不支持的游戏: ${game}`, game, uid }
@@ -165,13 +163,12 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
   try {
     let { rc, res: signRes } = await doSign()
 
-    // 撞码：配了全自动过码服务就直接过（定时任务没有 e 也能走）；
-    // 只有走手动链接那条路才需要 e —— runBbsVerify 里没 e.reply 会自动跳过手划
+    // 撞码：配了全自动过码服务就直接过；没配就只提示稍后再试
     const auto = autoVerifyAddr || config().auto_verify_addr || ''
     let verified = false
-    if (isCaptcha(signRes) && (auto || (e && verifyAddr))) {
+    if (isCaptcha(signRes) && auto) {
       log.mark(`[xhh-TL][sign] uid=${uid} 撞验证码，尝试过码…`)
-      const ok = await runBbsVerify(e, { uid, cookie, game, device, deviceFp, verifyAddr, autoVerifyAddr: auto })
+      const ok = await solveByLocalService({ cookie, autoVerifyAddr: auto, device, deviceFp, game })
       if (ok) {
         verified = true
         ({ rc, res: signRes } = await doSign())
@@ -183,11 +180,10 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
       return { code: 'already', msg: `${label} 已经签到过了，请勿重复签到`, game, uid }
     }
     if (isCaptcha(signRes)) {
-      // 已经过码过了：别再让用户去发 #过码 手划（那件事刚做完），
-      // 米游社放行有延迟，重发一次本条就能签上。
+      // 已经过码过了：米游社放行有延迟，重发一次本条就能签上。
       return {
         code: 'captcha',
-        msg: verified ? '已过码，重发本条即可' : captchaTip(game),
+        msg: verified ? '已过码，重发本条即可' : captchaTip(),
         game,
         uid,
       }

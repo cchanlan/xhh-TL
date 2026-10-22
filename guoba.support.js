@@ -545,20 +545,10 @@ export function supportGuoba() {
           field: 'auto_verify_addr',
           label: '全自动过码地址',
           bottomHelpMessage:
-            '默认用插件自带的公共过码服务 https://geetest.lyln114514.com/solve，装了就能自动过码，不用部署。发 #过码部署 会在本机装一套并把这里改成 http://127.0.0.1:8766/solve（不依赖公共服务）；也可以填别人部署的远程服务。⚠️ 过码会把 ck 发给该地址的服务。填上后 #过码 与撞码签到会自动解滑块，失败才回退到下面的手动链接。留空则只用手动过码',
+            '默认用插件自带的公共过码服务 https://geetest.lyln114514.com/solve，装了就能自动过码，不用部署。发 #过码部署 会在本机装一套并把这里改成 http://127.0.0.1:8766/solve（不依赖公共服务）；也可以填别人部署的远程服务。⚠️ 过码会把 ck 发给该地址的服务。撞码时自动解滑块并重试，全程不用手动操作；连不上则只提示稍后再试',
           component: 'Input',
           componentProps: {
             placeholder: 'https://geetest.lyln114514.com/solve'
-          }
-        },
-        {
-          field: 'auto_sign_verify_addr',
-          label: '手动过码服务地址',
-          bottomHelpMessage:
-            '兜底用的外部打码服务（等价 GT-Manual 的 verifyAddr）：上面那个自动服务连不上或没过成功时，才会用它——把 uid+gt+challenge（不含 cookie）发给它，它返回链接让用户手划。注意内置的默认地址已失效，需要自己找一个能用的；留空则回退成只提示「发 #过码」',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'https://GT.928100.xyz/GTest/register?key=...'
           }
         },
         {
@@ -572,7 +562,7 @@ export function supportGuoba() {
           field: 'captcha_notice_enable',
           label: '启用撞码自动处理',
           bottomHelpMessage:
-            '查询撞米游社风控码（1034/10035/10041）时自动过码并重试原请求，用户无感。关掉后退回只提醒「发 #过码」，不自动解滑块、不自动重试',
+            '查询撞米游社风控码（1034/10035/10041）时自动过码并重试原请求，用户无感。关掉后不再自动解滑块、不会自动重试，撞码只提示稍后再试',
           component: 'Switch'
         },
         {

@@ -139,6 +139,22 @@ export function mergeMissingDefaults() {
     changed = true
   }
 
+  // 过码地址迁移：老版本默认留空，升级后统一补成现在的默认公共过码服务。
+  // 只处理「缺失 / 空串 / null」——用户自己填的远程地址不碰；显式留空想关闭的老用户
+  // 也会被补上，这是有意为之：装了插件就该开箱即用，想关请到锅巴里关「撞码自动处理」。
+  if (!String(user.auto_verify_addr ?? '').trim()) {
+    const fallback = String(defaults.auto_verify_addr ?? '').trim()
+    if (fallback) {
+      user.auto_verify_addr = fallback
+      changed = true
+    }
+  }
+  // 手动过码已整体移除，旧配置项留着只会让人误会
+  if ('auto_sign_verify_addr' in user) {
+    delete user.auto_sign_verify_addr
+    changed = true
+  }
+
   for (const [k, v] of Object.entries(defaults)) {
     if (!(k in user)) {
       user[k] = v
