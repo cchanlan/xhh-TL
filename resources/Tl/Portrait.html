@@ -13,7 +13,7 @@
 <body>
   <div class="pt-row">
     {{each ds d}}
-    <div class="pt-card pt-{{d.game}} {{d.palette ? 'pt-adaptive' : ''}}"{{if d.palette}} style="--pt-top:{{d.palette.top}};--pt-bottom:{{d.palette.bottom}};--pt-top-93:{{d.palette.top}}ee;--pt-top-60:{{d.palette.top}}99;--pt-top-15:{{d.palette.top}}26;--pt-bottom-85:{{d.palette.bottom}}d9;--pt-bottom-20:{{d.palette.bottom}}33;--pt-bottom-92:{{d.palette.bottom}}eb"{{/if}}>
+    <div class="pt-card pt-{{d.game}} {{d.palette ? 'pt-adaptive' : ''}} {{d.palette && d.palette.wide ? 'pt-wide' : ''}}"{{if d.palette}} style="--pt-top:{{d.palette.top}};--pt-bottom:{{d.palette.bottom}};--pt-top-strong:{{d.palette.top}}80;--pt-top-mid:{{d.palette.top}}45;--pt-top-soft:{{d.palette.top}}12;--pt-bottom-strong:{{d.palette.bottom}}9e;--pt-bottom-soft:{{d.palette.bottom}}14"{{/if}}>
     <!-- 右侧清晰立绘 -->
     {{if d.portrait}}
     <div class="pt-portrait" style="background-image: url({{d.portrait}})"></div>

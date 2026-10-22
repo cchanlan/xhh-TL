@@ -35,18 +35,23 @@ body {
   background: linear-gradient(135deg, #1b2426 0%, #101617 55%, #080c0d 100%);
 }
 
-/* 右侧清晰立绘：只扩大画面，不压缩左侧信息区 */
+/* 竖图：放大到 125% 撑满右侧，只裁上下各 12% 的边角，人物不至于缩成一条 */
 .pt-portrait {
   position: absolute;
   top: 0;
   right: 0;
   width: 70%;
   height: 100%;
-  background-size: cover;
-  background-position: top center;
+  background-size: auto 125%;
+  background-position: right center;
   background-repeat: no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 26%);
-  mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 26%);
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 26%, rgba(0,0,0,1) 52%);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 26%, rgba(0,0,0,1) 52%);
+}
+/* 横图：沿用原来的右侧 cover 构图，不重新裁人物 */
+.pt-wide .pt-portrait {
+  background-size: cover;
+  background-position: center bottom;
 }
 
 /* 遮罩：左侧压暗保证文字可读，右侧留出立绘，底部加深给信息条 */
@@ -54,8 +59,8 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(9,12,20,0.92) 26%, rgba(9,12,20,0.55) 44%, rgba(9,12,20,0.12) 60%, rgba(9,12,20,0) 76%),
-    linear-gradient(180deg, rgba(9,12,20,0.25) 0%, rgba(9,12,20,0) 40%, rgba(9,12,20,0.2) 72%, rgba(9,12,20,0.88) 100%);
+    linear-gradient(90deg, rgba(9,12,20,0.72) 0%, rgba(9,12,20,0.46) 28%, rgba(9,12,20,0.2) 46%, rgba(9,12,20,0.06) 64%, rgba(9,12,20,0) 78%),
+    linear-gradient(180deg, rgba(9,12,20,0.18) 0%, rgba(9,12,20,0) 38%, rgba(9,12,20,0.12) 70%, rgba(9,12,20,0.66) 100%);
 }
 
 /* 顶部状态 */
@@ -143,11 +148,16 @@ body {
   font-size: 18rem;
   font-weight: 600;
   color: #e7edf6;
+  text-shadow: 0 2rem 8rem rgba(0,0,0,0.75);
 }
 .pt-bar-val {
   font-size: 20rem;
   font-weight: 700;
   color: #fff;
+  text-shadow: 0 2rem 8rem rgba(0,0,0,0.8);
+  background: rgba(8,11,18,0.32);
+  border-radius: 6rem;
+  padding: 1rem 7rem;
 }
 .pt-bar-val i {
   font-style: normal;
@@ -159,7 +169,8 @@ body {
 .pt-bar-track {
   height: 8rem;
   border-radius: 5rem;
-  background: rgba(255,255,255,0.12);
+  background: rgba(10,13,20,0.45);
+  box-shadow: inset 0 0 0 1rem rgba(255,255,255,0.07);
   overflow: hidden;
 }
 .pt-bar-fill {
@@ -182,8 +193,7 @@ body {
   align-items: center;
   gap: 24rem;
   padding: 18rem 34rem;
-  background: linear-gradient(180deg, rgba(14,20,32,0.2), rgba(8,11,18,0.92));
-  backdrop-filter: blur(2rem);
+  background: linear-gradient(180deg, rgba(8,11,18,0) 0%, rgba(8,11,18,0.55) 48%, rgba(8,11,18,0.9) 100%);
 }
 .pt-user {
   display: flex;
@@ -243,17 +253,19 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* 从立绘取色；不覆盖各游戏原有的进度条颜色，取色失败沿用上方兜底。 */
+/* 从立绘取色；不覆盖各游戏原有的进度条颜色，取色失败沿用上方兜底。
+   取色只当薄薄一层氛围：主压暗用中性深色，避免整片高饱和色把立绘和文字糊住。 */
 .pt-adaptive {
   background: linear-gradient(155deg, var(--pt-top) 0%, var(--pt-bottom) 100%);
 }
 .pt-adaptive .pt-shade {
   background:
-    linear-gradient(90deg, var(--pt-top) 0%, var(--pt-top-93) 24%, var(--pt-top-60) 40%, var(--pt-top-15) 58%, transparent 76%),
-    linear-gradient(0deg, var(--pt-bottom-85) 0%, var(--pt-bottom-20) 20%, transparent 48%);
+    linear-gradient(90deg, rgba(9,12,20,0.46) 0%, rgba(9,12,20,0.3) 26%, rgba(9,12,20,0.1) 46%, transparent 66%),
+    linear-gradient(90deg, var(--pt-top-strong) 0%, var(--pt-top-mid) 24%, var(--pt-top-soft) 44%, transparent 64%),
+    linear-gradient(0deg, var(--pt-bottom-strong) 0%, var(--pt-bottom-soft) 18%, transparent 42%);
 }
 .pt-adaptive .pt-footer {
-  background: linear-gradient(180deg, var(--pt-bottom-20), var(--pt-bottom-92));
+  background: linear-gradient(180deg, transparent 0%, var(--pt-bottom-strong) 55%, var(--pt-bottom-strong) 100%);
 }
 .pt-adaptive .pt-status-item.no { color: #f3e4e1; }
 .pt-adaptive .pt-bar-val i,

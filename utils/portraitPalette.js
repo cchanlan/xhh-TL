@@ -84,7 +84,7 @@ async function readPalette(abs) {
       // 不让透明抠图的隐藏 RGB / 黑色填充值参与取色。
       if (data[i + 3] >= 128) pixels.push([data[i], data[i + 1], data[i + 2]])
     }
-    return pixels.length ? makePalette(dominantColor(pixels)) : null
+    return pixels.length ? { ...makePalette(dominantColor(pixels)), wide: info.width / info.height > 1.25 } : null
   } catch (error) {
     if (typeof logger !== 'undefined') logger.debug?.(`[xhh-TL] 立绘取色失败，沿用默认配色: ${error.message}`)
     return null
@@ -92,7 +92,7 @@ async function readPalette(abs) {
 }
 
 /**
- * 本地路径 / file URL → { top, bottom, accent }；不支持的输入或失败返回 null。
+ * 本地路径 / file URL → { top, bottom, accent, wide }；wide 表示横图（宽高比 > 1.25）。
  * 64 条 LRU 缓存以路径、修改时间及大小区分版本；并发请求共享取色 Promise。
  * Linux 已实测；路径解析和可选 sharp 加载复用跨平台接口，Windows 尚未实跑。
  */
