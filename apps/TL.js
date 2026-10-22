@@ -1779,7 +1779,13 @@ export class TL extends plugin {
 
     if ([-10001, 10001, -100].includes(res?.retcode)) {
       if (!san) {
-        e.reply('登录验证过期，请【#刷新ck】，仍不行则【#扫码登录】');
+        // zzz 的 widget 只认 stoken，纯 cookie 账号固定 -100「请先登录后参与活动」。
+        // 这不是 CK 过期，提示「刷新ck」会把人带偏，直接让他扫码拿 stoken。
+        e.reply(
+          game === 'zzz'
+            ? '绝区零体力需要扫码登录的 stoken，普通 Cookie 查不了，请发【#扫码登录】~'
+            : '登录验证过期，请【#刷新ck】，仍不行则【#扫码登录】',
+        );
       }
       return '过期';
     }
