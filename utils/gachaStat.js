@@ -129,6 +129,9 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
   // 「最新一条就是四星」时 noFourNum 该是 0，用 flag 判首次而不是判 noFourNum===0，
   // 否则会被下一段间隔顶掉（genshin 原版就是这个写法，这里按正确的算）
   let fourSeen = false
+  // 最新一条四星之前的区间里夹着占位记录，说明这段的逐抽（三星/四星）本地没拉到，
+  // 占位是按接口抽数造的假三星，拿它数出来会得到「90 抽未出四星」这种不可能的值
+  let noFourGap = false
   let wai = 0
   let weaponNum = 0
   let weaponFourNum = 0
@@ -136,6 +139,7 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
   let allNum = all.length
 
   for (const row of all) {
+    if (!fourSeen && row.xhh_ph) noFourGap = true
     const rank = String(row.rank_type)
     if (rank === '4') {
       fourNum++
@@ -231,6 +235,8 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
     allNum,
     noFiveNum,
     noFourNum,
+    // false = 最新那段逐抽记录是占位补的，noFourNum 不能当真
+    noFourReliable: !noFourGap,
     fiveNum,
     fourNum,
     fiveAvg,
@@ -259,6 +265,8 @@ export function buildLine(data, type) {
   // 显示成「未出四星 0 抽」会让人以为刚出过四星。这种情况一律显示占位符
   const hasFour = data.fourNum > 0
   const four = (num, unit = '') => (hasFour ? { num, unit } : { num: '—', unit: '' })
+  // 「未出四星」要这段逐抽记录连续才算得准，缺的那段是占位三星补的抽数，直接不显示
+  const noFourItem = data.noFourReliable === false ? { num: '—', unit: '' } : four(data.noFourNum, '抽')
 
   // 角色池（含联动角色）：关心歪不歪
   if (['11', '21'].includes(t)) {
@@ -271,7 +279,7 @@ export function buildLine(data, type) {
         { lable: '最非', num: maxValue, unit: '抽' },
       ],
       [
-        { lable: '未出四星', ...four(data.noFourNum, '抽') },
+        { lable: '未出四星', ...noFourItem },
         { lable: '五星常驻', num: data.wai, unit: '个' },
         { lable: 'UP平均', num: data.isvalidNum, unit: '抽' },
         { lable: 'UP花费星琼', num: data.upYs, unit: '' },
@@ -293,7 +301,7 @@ export function buildLine(data, type) {
       { lable: '最非', num: maxValue, unit: '抽' },
     ],
     [
-      { lable: '未出四星', ...four(data.noFourNum, '抽') },
+      { lable: '未出四星', ...noFourItem },
       { lable: '四星', ...four(data.fourNum, '个') },
       { lable: '四星平均', ...four(data.fourAvg, '抽') },
       { lable: '四星最多', ...(hasFour ? { num: data.maxFour.num, unit: data.maxFour.name.slice(0, 4) } : { num: '—', unit: '' }) },
