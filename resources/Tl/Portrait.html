@@ -13,10 +13,10 @@
 <body>
   <div class="pt-row">
     {{each ds d}}
-    <div class="pt-card pt-{{d.game}} {{d.palette ? 'pt-adaptive' : ''}} {{d.palette && d.palette.wide ? 'pt-wide' : ''}}"{{if d.palette}} style="--pt-top:{{d.palette.top}};--pt-bottom:{{d.palette.bottom}};--pt-top-strong:{{d.palette.top}}80;--pt-top-mid:{{d.palette.top}}45;--pt-top-soft:{{d.palette.top}}12;--pt-bottom-strong:{{d.palette.bottom}}9e;--pt-bottom-soft:{{d.palette.bottom}}14"{{/if}}>
-    <!-- 右侧清晰立绘 -->
+    <div class="pt-card pt-{{d.game}} {{d.palette ? 'pt-adaptive' : ''}} {{d.palette && d.palette.wide ? 'pt-wide' : ''}} {{d.palette && d.palette.alpha ? 'pt-alpha' : ''}}"{{if d.palette}} style="--pt-top:{{d.palette.top}};--pt-bottom:{{d.palette.bottom}};--pt-top-strong:{{d.palette.top}}80;--pt-top-mid:{{d.palette.top}}45;--pt-top-soft:{{d.palette.top}}12;--pt-bottom-strong:{{d.palette.bottom}}9e;--pt-bottom-soft:{{d.palette.bottom}}14"{{/if}}>
+    <!-- 右侧清晰立绘：用 img 承载，遮罩才能贴着图片自身左缘淡入 -->
     {{if d.portrait}}
-    <div class="pt-portrait" style="background-image: url({{d.portrait}})"></div>
+    <div class="pt-portrait"><img src="{{d.portrait}}" alt="" /></div>
     {{/if}}
     <div class="pt-shade"></div>
 

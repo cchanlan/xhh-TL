@@ -35,23 +35,47 @@ body {
   background: linear-gradient(135deg, #1b2426 0%, #101617 55%, #080c0d 100%);
 }
 
-/* 竖图：放大到 125% 撑满右侧，只裁上下各 12% 的边角，人物不至于缩成一条 */
+/* 立绘用 img 承载：立绘多是带不透明背景的整张插画，
+   遮罩必须贴着图片自身左缘淡入，否则会在图片边界上留一条硬竖线。 */
 .pt-portrait {
   position: absolute;
   top: 0;
   right: 0;
   width: 70%;
   height: 100%;
-  background-size: auto 125%;
-  background-position: right center;
-  background-repeat: no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 26%, rgba(0,0,0,1) 52%);
-  mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 26%, rgba(0,0,0,1) 52%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
 }
-/* 横图：沿用原来的右侧 cover 构图，不重新裁人物 */
-.pt-wide .pt-portrait {
-  background-size: cover;
-  background-position: center bottom;
+/* 竖图：放大到 125% 撑满右侧，只裁上下各 12% 的边角，人物不至于缩成一条 */
+.pt-portrait img {
+  display: block;
+  height: 125%;
+  width: auto;
+  /* 近似方图按 125% 会宽过卡片，按右缘裁掉左侧，别铺到文字底下 */
+  max-width: 100%;
+  object-fit: cover;
+  object-position: right center;
+  /* 淡出长度用固定 rem：按图片宽度算百分比的话，窄图会被糊掉半个身子 */
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0.12) 24rem, rgba(0,0,0,0.34) 54rem, rgba(0,0,0,0.62) 84rem, rgba(0,0,0,0.86) 114rem, rgba(0,0,0,0.97) 134rem, rgba(0,0,0,1) 150rem);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0.12) 24rem, rgba(0,0,0,0.34) 54rem, rgba(0,0,0,0.62) 84rem, rgba(0,0,0,0.86) 114rem, rgba(0,0,0,0.97) 134rem, rgba(0,0,0,1) 150rem);
+}
+/* 横图：沿用原来的右侧 cover 构图，不重新裁人物；
+   左右被裁过边，淡出带拉长一些，裁切线才看不出来 */
+.pt-wide .pt-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0.12) 40rem, rgba(0,0,0,0.34) 90rem, rgba(0,0,0,0.62) 140rem, rgba(0,0,0,0.86) 190rem, rgba(0,0,0,0.97) 224rem, rgba(0,0,0,1) 250rem);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0.12) 40rem, rgba(0,0,0,0.34) 90rem, rgba(0,0,0,0.62) 140rem, rgba(0,0,0,0.86) 190rem, rgba(0,0,0,0.97) 224rem, rgba(0,0,0,1) 250rem);
+}
+/* 抠好底的窄立绘：左缘是角色自己的轮廓，只轻轻柔化；
+   套不透明图那条长淡出带会把角色或武器的边啃掉 */
+.pt-alpha .pt-portrait img {
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,1) 12%);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,1) 12%);
 }
 
 /* 遮罩：左侧压暗保证文字可读，右侧留出立绘，底部加深给信息条 */

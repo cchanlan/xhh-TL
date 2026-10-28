@@ -80,11 +80,18 @@ async function readPalette(abs) {
       .resize(80, 80, { fit: 'inside', withoutEnlargement: true, kernel: 'cubic', fastShrinkOnLoad: false })
       .toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true })
     const pixels = []
+    let transparent = 0
     for (let i = 0; i < data.length; i += info.channels) {
       // 不让透明抠图的隐藏 RGB / 黑色填充值参与取色。
       if (data[i + 3] >= 128) pixels.push([data[i], data[i + 1], data[i + 2]])
+      else transparent++
     }
-    return pixels.length ? { ...makePalette(dominantColor(pixels)), wide: info.width / info.height > 1.25 } : null
+    if (!pixels.length) return null
+    const total = pixels.length + transparent
+    const ratio = info.width / info.height
+    // alpha：抠好底、而且窄到 125% 高度下不会被卡片右框裁到边的透明立绘。
+    // 这类图左缘是角色自己的轮廓，只能轻轻柔化；被裁过边的图仍要走长淡出带，否则裁切边会露硬线。
+    return { ...makePalette(dominantColor(pixels)), wide: ratio > 1.25, alpha: transparent / total > 0.05 && ratio < 0.85 }
   } catch (error) {
     if (typeof logger !== 'undefined') logger.debug?.(`[xhh-TL] 立绘取色失败，沿用默认配色: ${error.message}`)
     return null
@@ -92,7 +99,8 @@ async function readPalette(abs) {
 }
 
 /**
- * 本地路径 / file URL → { top, bottom, accent, wide }；wide 表示横图（宽高比 > 1.25）。
+ * 本地路径 / file URL → { top, bottom, accent, wide, alpha }；wide 表示横图（宽高比 > 1.25），
+ * alpha 表示抠好底、且不会被右框裁边的透明立绘（透明像素 > 5% 且宽高比 < 0.85）。
  * 64 条 LRU 缓存以路径、修改时间及大小区分版本；并发请求共享取色 Promise。
  * Linux 已实测；路径解析和可选 sharp 加载复用跨平台接口，Windows 尚未实跑。
  */
