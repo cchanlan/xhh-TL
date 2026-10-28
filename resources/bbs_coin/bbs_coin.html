@@ -86,6 +86,12 @@ body {
 }
 .bc-sub .gain { color: #ffc46b; font-weight: 800; font-size: 16rem; }
 .bc-sub .warn { color: #ff8f6b; font-weight: 700; }
+/* 收益是账号当日合计，单号 50×签到数对不上是正常的，标出账号数让人自己就能对上 */
+.bc-scope {
+  margin-top: 4rem;
+  font-size: 13rem; color: #8791a8;
+}
+.bc-scope b { color: #b9c2d6; font-weight: 700; }
 /* 一件事都没做时的说明（今日已拿满 / 全部失败），避免三行全 0 被当成故障 */
 .bc-note {
   margin-top: 6rem;
@@ -190,6 +196,7 @@ body {
             今日获得 <span class="gain">+{{gained}}</span> 米游币，当前共 {{totalCoin}}
             ，耗时 {{totalCost}}{{if failed}}，<span class="warn">失败 {{failed}}</span>{{/if}}
           </div>
+          {{if accountTotal > 1}}<div class="bc-scope">共 <b>{{accountTotal}}</b> 个米游社账号今日合计：本次签到 <b>{{signedAcc}}</b> 个{{if alreadyAcc}}，今日已签 <b>{{alreadyAcc}}</b> 个{{/if}}</div>{{/if}}
           {{if note}}<div class="bc-note">ℹ️ {{note}}</div>{{/if}}
         </div>
       </div>

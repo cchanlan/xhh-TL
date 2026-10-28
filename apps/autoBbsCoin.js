@@ -344,6 +344,10 @@ export class autoBbsCoin extends plugin {
         failed: 0,
         // 签到成功但米游社还没结账的账号数；全员如此时图上要换口径，别说成「一分没赚」
         pending: 0,
+        // 收益是「账号当日已获得」的合计（含今日早就签满的号），图上报签到数必须
+        // 按账号口径拆开，否则「签到 4 / +250」看着就像算错了（单号 50，50×4≠250）
+        signedAcc: 0,
+        alreadyAcc: 0,
         rows: {},
       }
       for (const g of games) {
@@ -365,6 +369,10 @@ export class autoBbsCoin extends plugin {
               agg.gained += r.gained || 0
               agg.totalCoin += r.after || 0
               if (r.pending) agg.pending++
+              // done = 今日已签满，本次一条签到请求都没发；签到返回 -5003 的同理
+              if (r.code === 'done') agg.alreadyAcc++
+              else if ((r.rows || []).some((x) => x.signed && !x.already)) agg.signedAcc++
+              else if ((r.rows || []).some((x) => x.already)) agg.alreadyAcc++
             } else {
               agg.failed++
               logger?.mark?.(`[xhh-TL][米游币] ${r.stuid} 失败(${r.code})：${r.msg || '未知'}`)
@@ -455,6 +463,8 @@ export class autoBbsCoin extends plugin {
       note,
       totalCost,
       headerIcons,
+      signedAcc: agg.signedAcc,
+      alreadyAcc: agg.alreadyAcc,
     })
     if (!image) return
     try {
@@ -467,7 +477,9 @@ export class autoBbsCoin extends plugin {
   }
 
   /** 组装 renderData 并出图；定时场景借 Runtime 拿 render 能力 */
-  async renderSummary({ rows, gained, totalCoin, failed, note, totalCost, headerIcons }) {
+  async renderSummary({
+    rows, gained, totalCoin, failed, note, totalCost, headerIcons, signedAcc = 0, alreadyAcc = 0,
+  }) {
     const cfg = config()
     // 主题优先级：米游币 → 自动签到 → 角色持有率 → 全部深渊 → 浅色
     const themeRaw = String(
@@ -481,6 +493,10 @@ export class autoBbsCoin extends plugin {
 
     const renderData = {
       theme,
+      // 图上「+250」是账号当日合计，得同时给出账号总数才自洽
+      accountTotal: signedAcc + alreadyAcc,
+      signedAcc,
+      alreadyAcc,
       bgImage,
       coinIcon,
       headerIcons,
