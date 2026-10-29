@@ -38,12 +38,15 @@ function makeAppDs(query = '') {
 }
 
 /**
- * 从 stoken 条目刷新 cookie_token / ltoken，得到可用 cookie
+ * 从 stoken 条目刷新 cookie_token / ltoken，得到可用 cookie。
+ * 同时报告 stoken 是否已被米游社判死：只有明确回「登录状态失效」才算，
+ * 网络错误不升级成 dead，免得一次抖动就清掉用户凭证。
  */
-export async function stokenToCookie(entry) {
-  if (!entry) return ''
-  if (entry.ck && /cookie_token/.test(entry.ck)) return entry.ck
-  if (entry.cookie && /cookie_token/.test(entry.cookie)) return entry.cookie
+export async function stokenToCookieDetailed(entry) {
+  const alive = (ck) => ({ ck, stokenDead: false })
+  if (!entry) return alive('')
+  if (entry.ck && /cookie_token/.test(entry.ck)) return alive(entry.ck)
+  if (entry.cookie && /cookie_token/.test(entry.cookie)) return alive(entry.cookie)
 
   const stuid =
     entry.stuid ||
@@ -53,15 +56,16 @@ export async function stokenToCookie(entry) {
   const mid = entry.mid || cookiePart(entry.ck_stoken || '', 'mid')
   if (!stuid || !stoken) {
     if (entry.ltoken && entry.cookie_token) {
-      return `ltoken=${entry.ltoken};ltuid=${stuid || ''};cookie_token=${entry.cookie_token};account_id=${stuid || ''};`
+      return alive(`ltoken=${entry.ltoken};ltuid=${stuid || ''};cookie_token=${entry.cookie_token};account_id=${stuid || ''};`)
     }
-    return entry.ck || entry.ck_stoken || ''
+    return alive(entry.ck || entry.ck_stoken || '')
   }
 
   const baseCk = mid
     ? `stuid=${stuid};stoken=${stoken};mid=${mid};`
     : `stuid=${stuid};stoken=${stoken};`
 
+  let stokenDead = false
   try {
     const headers = {
       Cookie: baseCk,
@@ -90,11 +94,12 @@ export async function stokenToCookie(entry) {
 
     const cookieToken = cookieRes?.data?.cookie_token
     const ltoken = ltokenRes?.data?.ltoken || entry.ltoken
+    stokenDead = isStokenDead(cookieRes) || isStokenDead(ltokenRes)
     if (cookieToken && ltoken) {
-      return `ltoken=${ltoken};ltuid=${stuid};cookie_token=${cookieToken};account_id=${stuid};`
+      return alive(`ltoken=${ltoken};ltuid=${stuid};cookie_token=${cookieToken};account_id=${stuid};`)
     }
     if (cookieToken) {
-      return `stuid=${stuid};stoken=${stoken};cookie_token=${cookieToken};account_id=${stuid};`
+      return alive(`stuid=${stuid};stoken=${stoken};cookie_token=${cookieToken};account_id=${stuid};`)
     }
     if (typeof logger !== 'undefined') {
       logger.debug?.(
@@ -108,12 +113,22 @@ export async function stokenToCookie(entry) {
   }
 
   if (entry.ltoken && entry.cookie_token) {
-    return `ltoken=${entry.ltoken};ltuid=${stuid};cookie_token=${entry.cookie_token};account_id=${stuid};`
+    return { ck: `ltoken=${entry.ltoken};ltuid=${stuid};cookie_token=${entry.cookie_token};account_id=${stuid};`, stokenDead }
   }
   if (entry.ltoken) {
-    return `ltoken=${entry.ltoken};ltuid=${stuid};account_id=${stuid};`
+    return { ck: `ltoken=${entry.ltoken};ltuid=${stuid};account_id=${stuid};`, stokenDead }
   }
-  return entry.ck || entry.ck_stoken || baseCk
+  return { ck: entry.ck || entry.ck_stoken || baseCk, stokenDead }
+}
+
+/** 米游社明确说 stoken 作废。 */
+function isStokenDead(res) {
+  if (!res) return false
+  return Number(res.retcode) === -100 || /登录状态失效|重新登录/.test(res.message || '')
+}
+
+export async function stokenToCookie(entry) {
+  return (await stokenToCookieDetailed(entry)).ck
 }
 
 function withStoredStoken(ltuid, mys) {
@@ -330,20 +345,32 @@ export function findStokenEntry(qq, uid) {
 }
 
 /**
- * 用 stoken 内部换一串新的完整 ck（供 ck 失效自愈复用）。
- * 复用 findStokenEntry + stokenToCookie；只认真带 cookie_token 的结果，
- * 换不出（无 stoken / stoken 也死 / 只拿到 stoken-only 兜底串）统一返回 ''。
- * @returns {Promise<string>} 形如 ltoken=..;ltuid=..;cookie_token=..;account_id=..; 或 ''
+ * 用 stoken 内部换一串新的完整 ck（供 ck 失效自愈复用），并带上 stoken 的死活。
+ * 只认真带 cookie_token 的结果；换不出时 stokenDead 表示米游社是否已明确判死，
+ * 供上层决定「清凭证让用户重新扫码」还是「只是临时失败、保留凭证」。
  */
-export async function refreshCk(qq, uid) {
+export async function refreshCkDetailed(qq, uid) {
   try {
     const entry = findStokenEntry(qq, uid)
-    if (!entry) return ''
-    const ck = await stokenToCookie(entry)
-    return ck && /cookie_token=/.test(ck) ? ck : ''
+    if (!entry) return { ck: '', stokenDead: false }
+    const { ck, stokenDead } = await stokenToCookieDetailed(entry)
+    const usable = ck && /cookie_token=/.test(ck)
+    return { ck: usable ? ck : '', stokenDead: usable ? false : !!stokenDead }
   } catch (_) {
-    return ''
+    return { ck: '', stokenDead: false }
   }
 }
 
-export default { cookiePart, getstoken, stokenToCookie, findStokenEntry, refreshCk }
+export async function refreshCk(qq, uid) {
+  return (await refreshCkDetailed(qq, uid)).ck
+}
+
+export default {
+  cookiePart,
+  getstoken,
+  stokenToCookie,
+  stokenToCookieDetailed,
+  findStokenEntry,
+  refreshCk,
+  refreshCkDetailed,
+}
