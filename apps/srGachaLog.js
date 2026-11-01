@@ -29,6 +29,8 @@ import { ensureRuntime } from '../utils/runtimePatch.js'
 import { pluginDir, loadStokenYaml } from '../utils/pluginConfig.js'
 import { renderTpl } from '../utils/render.js'
 import { parseImportFile } from '../utils/gachaImport.js'
+import { fetchWorkshop } from '../utils/srGachaSources.js'
+import { rebuildGachaData } from '../utils/srGachaRebuild.js'
 import { analyse, buildLine, getIcon, poolMax } from '../utils/gachaStat.js'
 import { guardModule } from '../utils/modules.js'
 
@@ -102,20 +104,23 @@ function saveUidFix(qq, uid, real) {
 /** 卡池期次统计的落盘缓存：更新时顺手存下来，出图时不必再请求接口 */
 const POOL_CACHE = path.join(pluginDir, 'data', 'sr_gacha_pools.json')
 
-function readPoolCache() {
+function readPoolCache({ strict = false } = {}) {
   try {
     if (fs.existsSync(POOL_CACHE)) return JSON.parse(fs.readFileSync(POOL_CACHE, 'utf8')) || {}
-  } catch (_) {}
+  } catch (err) {
+    if (strict) throw err
+  }
   return {}
 }
 
-function savePoolCache(uid, type, cards, pity) {
+function savePoolCache(uid, type, cards, pity, { source = 'mini', recordAt = '' } = {}) {
   const all = readPoolCache()
   const key = String(uid)
   all[key] = all[key] || {}
   const prev = all[key][String(type)] || {}
   all[key][String(type)] = {
     at: Date.now(),
+    source, recordAt,
     // ⚠️ 不能写 `cards || prev.cards`：空数组是 truthy，接口失败时传进来的 `[]`
     // 会盖掉上次成功拿到的卡池卡，出图里「跃迁次数统计」整块消失且不会自愈。
     cards: Array.isArray(cards) && cards.length ? cards : (prev.cards || []),
@@ -159,6 +164,20 @@ function upMapFromCache() {
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
+const recordWrites = new Map()
+
+/** 同一 QQ / UID 的更新、导入和强制重建串行写入。 */
+async function withRecordWrite(userId, uid, task) {
+  const key = `${userId}:${uid}`
+  const previous = recordWrites.get(key) || Promise.resolve()
+  const current = previous.catch(() => {}).then(task)
+  recordWrites.set(key, current)
+  try {
+    return await current
+  } finally {
+    if (recordWrites.get(key) === current) recordWrites.delete(key)
+  }
+}
 
 /** id 前 10 位是秒级时间戳（是卡池批次时间，不是精确抽卡时刻，误差在小时级） */
 function idToTime(id) {
@@ -246,17 +265,19 @@ async function fetchFiveStars(cookie, poolKey) {
       throw new Error(`拉取五星列表失败：${json?.message || '接口无响应'}（${json?.retcode}）`)
     }
     const d = json.data || {}
-    for (const node of d.list || []) {
+    if (!Array.isArray(d.list)) throw new Error('五星列表格式异常')
+    for (const node of d.list) {
       // 首条 item=null 的是「当前垫抽」，不是一条抽卡记录
       if (node.item) list.push(node)
       else if (pity === null) pity = Number(node.gacha_count) || 0
     }
-    if (!d.has_more || !d.next_max_id || d.next_max_id === '0') break
+    if (!d.has_more) return { list, pity: pity || 0 }
+    if (!d.next_max_id || d.next_max_id === '0' || !d.version_id) throw new Error('五星分页信息缺失')
     versionId = d.version_id
     maxId = d.next_max_id
     await sleep(300)
   }
-  return { list, pity: pity || 0 }
+  throw new Error('五星列表超过分页上限，本次未拉取完整')
 }
 
 /**
@@ -397,6 +418,9 @@ function dedupeMini(list) {
               String(x.id).slice(0, 10) === batch,
           )
           const total = batchTotal.get(batch) || 0
+          if (fiveInBatch.length === 1 && typeof r.is_up === 'boolean' && fiveInBatch[0].is_up === undefined) {
+            fiveInBatch[0].is_up = r.is_up
+          }
           if (fiveInBatch.length === 1 && total > 0 && Number(fiveInBatch[0].xhh_pity || 0) < total) {
             fiveInBatch[0].xhh_pity = String(total)
           }
@@ -430,21 +454,24 @@ function writeLocal(userId, uid, type, list) {
   fs.renameSync(tmp, file)
 }
 
-function toRecord(uid, type, node, gachaId) {
+function toRecord(uid, type, node, gachaId, source = 'mini') {
   const item = node.item
   return {
     uid: String(uid),
-    gacha_id: gachaId || '',
+    gacha_id: node.gacha_id || gachaId || '',
     gacha_type: String(type),
     item_id: String(item.item_id),
     count: '1',
-    time: idToTime(node.id),
+    time: node.time || idToTime(node.id),
     name: item.name,
     lang: 'zh-cn',
     item_type: ITEM_TYPE[item.item_type] || '角色',
     rank_type: String(item.rarity || 5),
     id: String(node.id),
+    // 工坊与小程序都只有五星，沿用 mini 占位规则，真实逐抽导入时可顶替。
     xhh_src: 'mini',
+    ...(source === 'workshop' ? { xhh_origin: 'workshop' } : {}),
+    ...(typeof node.is_up === 'boolean' ? { is_up: node.is_up } : {}),
     // 接口直接给的「这一发花了多少抽」，出图时优先用它，不靠数占位
     xhh_pity: String(node.gacha_count || ''),
   }
@@ -533,8 +560,8 @@ function gachaOf(type, poolStat, itemId) {
  * 把接口拿到的五星 + 垫抽并进本地某个池的记录。
  * 真实记录只增不删；占位每次重建，所以重复执行不会累加。
  */
-function mergePool(userId, uid, type, remote, poolStat) {
-  const raw = readLocal(userId, uid, type)
+function mergePool(userId, uid, type, remote, poolStat, { replace = false, persist = true, source = 'mini' } = {}) {
+  const raw = replace ? [] : readLocal(userId, uid, type)
   /**
    * ⚠️⚠️ 冗余 mini 必须在**这里**就清掉，不能只靠出图侧兜底。
    * 本地已有同批次真实记录的 mini 是纯冗余，它留在数据里会连锁出错：
@@ -655,14 +682,28 @@ function mergePool(userId, uid, type, remote, poolStat) {
       //   authkey（getGachaLog）：逐抽全，但只给最近 6 个月，跨在截断边界上的五星间隔会偏小
       // 取大的一方等价于「保留更全的那份」，偏小的那份一定是被截断的
       const localNum = Number(localGap.get(String(hit.id))) || 0
-      finalCount[i] = Math.max(Number(s.gacha_count) || 0, localNum)
+      if (source === 'mini' && hit.xhh_origin === 'workshop') {
+        // 后到的官方数据校准工坊估算，不能让工坊补出的占位反过来顶高官方抽数。
+        finalCount[i] = Number(s.gacha_count) || localNum
+        delete hit.xhh_origin
+        patched++
+      } else {
+        finalCount[i] = source === 'workshop' && Number(hit.xhh_pity) > 0
+          ? Number(hit.xhh_pity)
+          : Math.max(Number(s.gacha_count) || 0, localNum)
+      }
+      // 工坊只补 UP 标记，不用其估算抽数盖掉已经保存的官方抽数。
+      if (source === 'workshop' && typeof s.is_up === 'boolean' && hit.is_up !== s.is_up) {
+        hit.is_up = s.is_up
+        patched++
+      }
       const fuller = String(finalCount[i])
       if (String(hit.xhh_pity || '') !== fuller) {
         hit.xhh_pity = fuller
         patched++
       }
     } else {
-      added.push(toRecord(uid, type, s, gachaId))
+      added.push(toRecord(uid, type, s, gachaId, source))
       usedIds.add(String(s.id))
       added5++
     }
@@ -689,7 +730,7 @@ function mergePool(userId, uid, type, remote, poolStat) {
       name: s.item.name,
       count: finalCount[i],
       anchorId: anchors[i].anchorId,
-      gachaId: gachaOf(type, poolStat, s.item.item_id),
+      gachaId: s.gacha_id || gachaOf(type, poolStat, s.item.item_id),
       time: idToTime(s.id),
     })),
     ...legacy,
@@ -724,17 +765,17 @@ function mergePool(userId, uid, type, remote, poolStat) {
   // 清掉冗余 mini（raw → local）本身就是变更，必须落盘，否则每次更新都白清一遍、
   // 数据里那两条永远躺着。出图侧虽然也兜了一道，但写盘才是根治
   const changed =
-    added.length > 0 || patched > 0 || local.length !== real.length || raw.length !== local.length
+    replace || added.length > 0 || patched > 0 || local.length !== real.length || raw.length !== local.length
   if (changed) {
     const merged = [...added, ...real].sort((a, b) => {
       const x = big(a.id)
       const y = big(b.id)
       return y > x ? 1 : y < x ? -1 : 0
     })
-    writeLocal(userId, uid, type, merged)
-    return { added5, addedPh, skipped, patched, notes, changed, total: merged.length }
+    if (persist) writeLocal(userId, uid, type, merged)
+    return { added5, addedPh, skipped, patched, notes, changed, total: merged.length, records: merged }
   }
-  return { added5, addedPh, skipped, patched, notes, changed, total: local.length }
+  return { added5, addedPh, skipped, patched, notes, changed, total: local.length, records: local }
 }
 
 /** 星铁 UID：绑定库 → redis → 已有记录目录。前两条要过一遍纠正表，绑的号可能压根不是星铁号 */
@@ -1204,6 +1245,7 @@ function mergeImport(userId, uid, records) {
         coverCount.set(useKey, coverCount.get(useKey) - 1)
         const heir = addFive.get(useKey)
         if (heir && r.xhh_pity && !heir.xhh_pity) heir.xhh_pity = String(r.xhh_pity)
+        if (heir && typeof r.is_up === 'boolean' && heir.is_up === undefined) heir.is_up = r.is_up
         dropMini++
         return false
       }
@@ -1629,11 +1671,15 @@ export class srGachaLog extends plugin {
       rule: [
         // 抽卡链接：只吃星铁的（含 hkrpg），原神的交回 genshin
         { reg: 'authkey=', fnc: 'logUrl' },
-        { reg: '^\\s*#?星铁(?:[xX][hH][hH]|小火花)?(?:强制)?(?:更新|获取)抽卡记录\\s*$', fnc: 'updateLog' },
+        { reg: '^\\s*#?星铁(?:[xX][hH][hH]|小火花)?(?:强制(?:更新|获取)(?:抽卡)?|(?:更新|获取)抽卡)记录\\s*$', fnc: 'updateLog' },
         {
           // 允许「*导入记录」后面直接跟文件直链，也支持只发指令+附件
-          reg: '^\\s*#?星铁(?:强制)?导入(?:抽卡)?记录(?:json|excel|xlsx)?(?:\\s+\\S+)?\\s*$',
+          reg: '^\\s*#?星铁(?:强制)?导入(?:小助手)?(?:抽卡)?记录(?:json|excel|xlsx)?(?:\\s+\\S+)?\\s*$',
           fnc: 'importLog',
+        },
+        {
+          reg: '^\\s*#?星铁(?:导入|更新)(?:星穹)?工坊(?:抽卡)?记录\\s*$',
+          fnc: 'importWorkshop',
         },
         // 单个卡池走小程序风格出图；「全部记录」是同一套 UI 的总览版
         { reg: '^\\s*#?星铁全部(?:抽卡)?记录\\s*$', fnc: 'viewAll' },
@@ -1723,7 +1769,7 @@ export class srGachaLog extends plugin {
       }
 
       assignIds(records)
-      const stat = mergeImport(this.e.user_id, uid, records)
+      const stat = await withRecordWrite(this.e.user_id, uid, () => mergeImport(this.e.user_id, uid, records))
       // 细节只进日志
       logger?.info?.(
         `[xhh-TL][抽卡记录] ${uid} 抽卡链接更新：新增 ${stat.added} 条` +
@@ -1742,7 +1788,7 @@ export class srGachaLog extends plugin {
       if (part.length) {
         try {
           assignIds(part)
-          saved = mergeImport(this.e.user_id, linkUid, part).added
+          saved = (await withRecordWrite(this.e.user_id, linkUid, () => mergeImport(this.e.user_id, linkUid, part))).added
           logger?.info?.(`[xhh-TL][抽卡记录] ${linkUid} 中断前已保存 ${saved} 条`)
         } catch (e2) {
           logger?.error?.(`[xhh-TL][抽卡记录] 部分记录保存失败：${e2.stack || e2.message}`)
@@ -1824,30 +1870,33 @@ export class srGachaLog extends plugin {
     return true
   }
 
-  /** *更新抽卡记录 */
+  /** *更新抽卡记录 / *强制更新记录 */
   async updateLog() {
     this.e.isSr = true
+    const force = /强制/.test(this.e.msg || '')
+    let rebuilt = false
     const { uid, user } = await resolveSrUid(this.e)
     if (!uid) {
       await this.reply('没找到你的星铁 UID，先绑定账号再更新哦', false, { at: true })
       return true
     }
-    await this.reply('崩铁抽卡记录更新中，请稍等...', false, { at: true })
+    await this.reply(force ? '崩铁抽卡记录重建中，请稍等...' : '崩铁抽卡记录更新中，请稍等...', false, { at: true })
     try {
       // 绑的 UID 可能跟米游社对不上，这里拿到的才是真正要用的号
       const { cookie, region, uid: realUid } = await prepareCookie(this.e, uid, user, { allowFix: true })
       const gachaCookie = await badgeLogin(cookie, realUid, region)
       // 更新完先回一条只列变动池的文字，再出总览图（每个池一块，一眼看完）
-      const { log, pools } = await this.runUpdate(realUid, gachaCookie)
+      const { log, pools, failed } = await withRecordWrite(this.e.user_id, realUid, () => this.runUpdate(realUid, gachaCookie, { force }))
+      rebuilt = force
       logger?.info?.(`[xhh-TL][抽卡记录] ${realUid} ${log}`)
       const changed = pools.filter(p => p.changed)
       // 一个池都没变动就不发文字，只出图
       if (changed.length) {
         await this.reply(
           [
-            '崩铁抽卡记录更新完成',
+            force ? '崩铁抽卡记录重建完成' : '崩铁抽卡记录更新完成',
             `UID：${realUid}`,
-            `合计新增五星 ${pools.reduce((n, p) => n + p.added5, 0)} 条`,
+            `合计${force ? '重建' : '新增'}五星 ${pools.reduce((n, p) => n + p.added5, 0)} 条`,
             ...changed.map(
               p => `${p.name}：新增五星 ${p.added5} 条，本地共 ${p.total} 条，当前垫抽 ${p.pity} 抽`,
             ),
@@ -1856,15 +1905,67 @@ export class srGachaLog extends plugin {
           { at: true },
         )
       }
+      if (failed) await this.reply('部分卡池未更新，请稍后再发 *更新抽卡记录', false, { at: true })
       await this.renderAll(realUid)
     } catch (err) {
       logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 更新失败：${err.stack || err.message}`)
-      await this.reply(`崩铁抽卡记录更新失败，请稍后重试`, false, { at: true })
+      await this.reply(force
+        ? (rebuilt ? '记录已重建，请发 *全部记录 查看' : '强制更新失败，旧记录已保留，请稍后再发 *强制更新记录')
+        : '崩铁抽卡记录更新失败，请稍后重试', false, { at: true })
     }
     return true
   }
 
-  /** *导入记录 —— 支持 SRGF v1.0 / UIGF v2.x / UIGF v4.x / Excel(xlsx) */
+  /** *导入星穹工坊记录 / *更新工坊记录：只查询自己的已绑定 UID。 */
+  async importWorkshop() {
+    this.e.isSr = true
+    const bound = await boundSrUids(this.e)
+    if (!bound.length) {
+      await this.reply('先发 #星铁绑定uid+你的UID，再发 *导入工坊记录', false, { at: true })
+      return true
+    }
+    const uid = bound[0]
+    await this.reply('星穹工坊记录导入中，请稍等...', false, { at: true })
+    try {
+      const stat = await withRecordWrite(this.e.user_id, uid, async () => {
+        const pools = await fetchWorkshop(uid)
+        const rows = pools.flatMap(p => p.remote.list.map(s => toRecord(uid, p.type, s, s.gacha_id, 'workshop')))
+        await fillMeta(rows)
+        if (rows.some(r => !r.name)) throw new Error('工坊记录物品名称未能补齐')
+        let pos = 0
+        for (const pool of pools) for (const node of pool.remote.list) node.item.name = rows[pos++].name
+        const result = { added5: 0, patched: 0 }
+        for (const pool of pools) {
+          const local = readLocal(this.e.user_id, uid, pool.type)
+          const prev = readPoolCache()[uid]?.[pool.type]
+          const localAt = local.filter(r => !r.xhh_ph).reduce((n, r) => Math.max(n, Date.parse(String(r.time || '').replace(/-/g, '/')) || 0), 0)
+          const cloudAt = Date.parse(String(pool.at || '').replace(/-/g, '/')) || 0
+          const cacheAt = prev?.source === 'workshop'
+            ? Date.parse(String(prev.recordAt || '').replace(/-/g, '/')) || 0
+            : Number(prev?.at) || 0
+          // 工坊云端可能多年没同步，不能拿旧垫抽覆盖刚更新的官方进度。
+          const keepPity = local.length && (!cloudAt || cloudAt <= Math.max(localAt, cacheAt))
+          if (keepPity) pool.remote.pity = prev ? Number(prev.pity) || 0 : analyse(local, pool.type).noFiveNum
+          const merged = mergePool(this.e.user_id, uid, pool.type, pool.remote, pool.poolStat, { source: 'workshop' })
+          savePoolCache(uid, pool.type, [], pool.remote.pity, keepPity
+            ? { source: prev?.source || 'mini', recordAt: prev?.recordAt || '' }
+            : { source: 'workshop', recordAt: pool.at })
+          result.added5 += merged.added5
+          result.patched += merged.patched
+        }
+        return result
+      })
+      logger?.info?.(`[xhh-TL][抽卡记录] ${uid} 工坊导入：新增五星 ${stat.added5} 条，补齐标记 ${stat.patched} 条`)
+      await this.reply(`星穹工坊导入完成，新增五星 ${stat.added5} 条`, false, { at: true })
+      await this.renderAll(uid)
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][抽卡记录] ${uid} 工坊导入失败：${err.stack || err.message}`)
+      await this.reply('工坊导入未完成，请先在「星穹工坊」小程序同步云端记录，再发 *导入工坊记录', false, { at: true })
+    }
+    return true
+  }
+
+  /** *导入记录 / *导入小助手记录 —— SRGF / UIGF / 小助手 JSON / Excel */
   async importLog() {
     this.e.isSr = true
     if (this.e.isGroup && !/强制/.test(this.e.msg)) {
@@ -1883,7 +1984,9 @@ export class srGachaLog extends plugin {
     // QQ 的文件是单独一条消息，指令里带不上，所以挂个上下文等下一条。
     // 本插件 priority 最低，上下文会抢在 genshin 的「请发送Json文件」之前
     this.setContext('importFile', false, 180, '导入超时已取消，重新发一次 *导入记录 就行')
-    await this.reply('把文件发过来（json / Excel，三分钟内有效）', false, { at: true })
+    await this.reply(/小助手/.test(this.e.msg || '')
+      ? '在「星铁小助手」小程序点「同步云端」→「导出 JSON」，把文件发过来（三分钟内有效）'
+      : '把文件发过来（json / Excel，三分钟内有效）', false, { at: true })
     return true
   }
 
@@ -1967,7 +2070,7 @@ export class srGachaLog extends plugin {
       const faked = assignIds(records)
       // 第一次导入（本地一条记录都没有）出总览图，之后照旧出单池图
       const first = !hasLocalRecords(this.e.user_id, uid)
-      const stat = mergeImport(this.e.user_id, uid, records)
+      const stat = await withRecordWrite(this.e.user_id, uid, () => mergeImport(this.e.user_id, uid, records))
 
       // 细节只进日志，群里只回一句
       logger?.info?.(
@@ -1996,7 +2099,7 @@ export class srGachaLog extends plugin {
   }
 
   /** 逐池拉取 → 合并 → 汇总。返回值里 log 进日志，pools 供更新完的文字汇报用 */
-  async runUpdate(uid, gachaCookie) {
+  async runUpdate(uid, gachaCookie, { force = false } = {}) {
     const userId = this.e.user_id
     const lines = []
     const pityParts = []
@@ -2008,6 +2111,7 @@ export class srGachaLog extends plugin {
     let patchedTotal = 0
     let remoteTotal = 0
     let failed = 0
+    const pending = []
 
     for (const pool of POOLS) {
       // ⚠️ 单池失败不能拖垮整轮：这套接口会限流（实测短时间连打十来个请求就回 -100），
@@ -2019,8 +2123,9 @@ export class srGachaLog extends plugin {
         const poolStat = await fetchPoolStat(gachaCookie, pool.key)
         // 垫抽有没有变，要在写缓存**之前**取旧值比
         const prevPity = cachedPity(uid, pool.type)
-        savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
-        const res = mergePool(userId, uid, pool.type, remote, poolStat)
+        if (!force) savePoolCache(uid, pool.type, poolStat.cards, remote.pity)
+        const res = mergePool(userId, uid, pool.type, remote, poolStat, { replace: force, persist: !force })
+        if (force) pending.push({ type: pool.type, records: res.records, cards: poolStat.cards, pity: remote.pity })
 
         added5 += res.added5
         addedPh += res.addedPh
@@ -2038,7 +2143,7 @@ export class srGachaLog extends plugin {
           // 「有变动」的判据不能直接用 res.changed —— 占位每轮全清重建，
           // 那个标志几乎恒为 true，六个池会全被列出来，等于没过滤。
           // 只认出图里看得见的变化：新增五星 / 补齐接口抽数 / 垫抽数变了
-          changed: res.added5 > 0 || (res.patched || 0) > 0 || remote.pity !== prevPity,
+          changed: force || res.added5 > 0 || (res.patched || 0) > 0 || remote.pity !== prevPity,
         })
       } catch (err) {
         failed++
@@ -2051,6 +2156,16 @@ export class srGachaLog extends plugin {
     // 一个池都没成，说明凭证或接口整体不通，交给上层报错（别再出一张空图）
     if (failed === POOLS.length) {
       throw new Error(`所有卡池都拉取失败：${notes.filter(n => n.endsWith('拉取失败')).join('、')}`)
+    }
+
+    if (force) {
+      // 强更不能接受半轮成功：连分页完整性也必须确认，再一次性替换当前 UID。
+      if (failed) throw new Error(`强制更新未拉齐六池：${notes.join('；')}`)
+      const cache = readPoolCache({ strict: true })
+      cache[String(uid)] = Object.fromEntries(pending.map(p => [p.type, {
+        at: Date.now(), source: 'mini', recordAt: '', cards: p.cards, pity: p.pity,
+      }]))
+      rebuildGachaData(path.join(SR_JSON_DIR, String(userId), String(uid)), pending, POOL_CACHE, cache)
     }
 
     // 明细只进日志，方便回查合并细节；pools 交给上层拼「更新完成」那条文字
@@ -2071,7 +2186,7 @@ export class srGachaLog extends plugin {
 // 关掉 sr_gacha_enable 后，*更新抽卡记录 / *抽卡记录 / *导入记录 都不再响应。
 // logUrl 也一并守卫：守卫返回 false 与「这不是星铁链接」同义，
 // 抽卡链接会照常交给 genshin 等其它插件处理，不会把事件吞掉
-guardModule(srGachaLog, 'sr_gacha', ['logUrl', 'updateLog', 'importLog', 'viewAll', 'viewLog'])
+guardModule(srGachaLog, 'sr_gacha', ['logUrl', 'updateLog', 'importLog', 'importWorkshop', 'viewAll', 'viewLog'])
 
 
 

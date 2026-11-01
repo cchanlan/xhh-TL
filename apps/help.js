@@ -300,14 +300,14 @@ export function buildHelpGroups() {
     },
     {
       group: '星铁 · 抽卡记录',
-      desc: '小程序同源接口 · 只有五星与垫抽',
+      desc: '五星与垫抽 · 小助手文件 / 工坊云端',
       color: 'purple',
       list: [
         {
           icon: 'sr-卡芙卡.webp',
           module: 'sr_gacha',
           title: '*更新抽卡记录',
-          desc: '免抽卡链接，直接拉五星记录与垫抽，合并进本地记录不丢旧数据；更新完回一条变动池明细并出总览图；也可发 *xhh更新抽卡记录',
+          desc: '更新五星与垫抽并出总览；别名 *获取抽卡记录；可加 xhh / 小火花前缀点名本插件',
         },
         {
           icon: 'sr-希儿.webp',
@@ -318,8 +318,20 @@ export function buildHelpGroups() {
         {
           icon: 'sr-灵砂.webp',
           module: 'sr_gacha',
-          title: '*导入记录',
-          desc: '发完指令再丢文件：SRGF v1.0 / UIGF v4.x / UIGF v2.x 的 json，或导出的 Excel',
+          title: '*导入记录 *导入小助手记录',
+          desc: '发送 JSON / Excel / csv；小助手先点「同步云端」→「导出 JSON」；别名 *导入抽卡记录 / *导入小助手抽卡记录；可加 json / excel / xlsx 或文件链接，群内加「强制」',
+        },
+        {
+          icon: 'sr-飞霄.webp',
+          module: 'sr_gacha',
+          title: '*强制更新记录 *强制更新抽卡记录',
+          desc: '清空当前 UID 旧记录，以官方五星与垫抽重建；「更新」可换「获取」，可加 xhh / 小火花前缀；失败保留旧记录',
+        },
+        {
+          icon: 'sr-知更鸟.webp',
+          module: 'sr_gacha',
+          title: '*导入星穹工坊记录 *导入工坊记录',
+          desc: '导入工坊云端历史五星与 UP 标记；别名 *更新星穹工坊记录 / *更新工坊记录；四条均可在「记录」前加「抽卡」',
         },
       ],
     },

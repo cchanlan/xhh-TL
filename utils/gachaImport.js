@@ -5,6 +5,8 @@
  *   2. UIGF v4.x        {info:{version:'v4.x'}, hkrpg:[{uid, lang, timezone, list:[...]}]}
  *   3. UIGF v2.x / v3.0 {info:{uid, uigf_version:'v2.3'}, list:[...]}（老版单游戏结构）
  *   4. Excel (.xlsx)    一个卡池一个 sheet，按表头文字认列，不依赖列顺序
+ *   5. 星铁小助手 JSON {roleList, weaponList, normalList, newbieList}，合并所有卡池
+ *      格式参考 YUYUYUYU2147/HoYoGet-Plugin，感谢原作者：https://github.com/YUYUYUYU2147/HoYoGet-Plugin
  *
  * 另外也接受裸的记录数组，方便手改文件。
  * Excel 没有记录 id，导入时用「卡池 + 时间 + 名称」判重，见 srGachaLog.js。
@@ -95,6 +97,7 @@ function normalize(list, ctx = {}) {
       item_type: String(r.item_type || '').trim(),
       rank_type: toRank(r.rank_type),
       id: String(r.id || '').trim(),
+      ...(typeof r.is_up === 'boolean' ? { is_up: r.is_up } : {}),
     })
   }
   return out
@@ -141,7 +144,27 @@ function parseJson(text) {
   if (Array.isArray(json)) {
     return { format: '记录数组', uid: '', records: normalize(json) }
   }
+  if (!json || typeof json !== 'object') throw new Error('文件里没有抽卡记录')
   const info = json.info || {}
+
+  // 小助手导出是四个数组，递归兜底只能找到第一池，必须先整体识别。
+  let helper = json
+  if (json.gachaData !== undefined) {
+    helper = typeof json.gachaData === 'string' ? JSON.parse(json.gachaData) : json.gachaData
+  } else if (json.data && typeof json.data === 'object') {
+    helper = json.data
+  }
+  const helperTypes = { roleList: '11', weaponList: '12', normalList: '1', newbieList: '2' }
+  if (helper && Object.keys(helperTypes).some(k => Array.isArray(helper[k]))) {
+    const uid = String(helper.uid || json.uid || info.uid || '')
+    const records = []
+    for (const [key, type] of Object.entries(helperTypes)) {
+      if (helper[key] !== undefined && !Array.isArray(helper[key])) throw new Error(`小助手 ${key} 格式异常`)
+      const rows = (helper[key] || []).filter(r => r && typeof r === 'object').map(r => ({ ...r, gacha_type: r?.gacha_type || r?.uigf_gacha_type || type }))
+      records.push(...normalize(rows, { uid, lang: info.lang }))
+    }
+    return { format: '星铁小助手 JSON', uid, records }
+  }
 
   // UIGF v4.x：多游戏结构，星铁在 hkrpg 下，可能有多个 uid
   if (Array.isArray(json.hkrpg)) {

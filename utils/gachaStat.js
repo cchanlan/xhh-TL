@@ -54,6 +54,7 @@ const ts = s => Date.parse(String(s).replace(/-/g, '/'))
 function isUpRole(row, upByGachaId) {
   const ups = upByGachaId?.get?.(String(row.gacha_id || ''))
   if (ups?.length) return ups.includes(row.name)
+  if (typeof row.is_up === 'boolean') return row.is_up
   if (STANDARD_5.includes(row.name)) return false
   const periods = UP_PERIODS[row.name]
   if (!periods) return true
@@ -169,6 +170,7 @@ export function analyse(list, type, apiPity = 0, upByGachaId = null) {
         // 拿不到映射时保持不标，不猜；wai 只统计角色池的歪，光锥不计入
         const ups = upByGachaId?.get?.(String(row.gacha_id || ''))
         if (ups?.length) isUp = ups.includes(row.name)
+        else if (typeof row.is_up === 'boolean') isUp = row.is_up
       }
       fiveLog.push({
         name: row.name,

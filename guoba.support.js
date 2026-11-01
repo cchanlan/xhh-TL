@@ -506,7 +506,7 @@ export function supportGuoba() {
           field: 'sr_gacha_enable',
           label: '启用星铁抽卡记录',
           bottomHelpMessage:
-            '是否启用 *更新抽卡记录 / *抽卡记录 / *武器记录 / *常驻记录 / *导入记录。关掉后这些指令不再响应，帮助图里该板块一并隐藏；发来的抽卡链接也不再被本插件接管，会交给 genshin 等其它插件处理',
+            '启用抽卡查询、更新、强制重建、小助手文件导入和星穹工坊云端导入。关闭后隐藏帮助板块，抽卡链接交给其它插件处理',
           component: 'Switch'
         },
         {
