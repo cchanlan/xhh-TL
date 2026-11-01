@@ -27,10 +27,13 @@ export function supportGuoba() {
       iconPath: path.join(__dirname, 'resources', 'icon.png')
     },
     configInfo: {
+      // 使用锅巴原生分组，共用表单模型，切换页签不会丢失未保存的值。
+      // 手机端沿用锅巴的横滑页签和竖排表单，不修改公共前端。
+      // 这里只在 Linux / JiuLi 上实测，Yunzai 生态沿用同一 schema 协议。
       schemas: [
         {
-          component: 'Divider',
-          label: '通用'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '基础设置'
         },
         {
           field: 'reply_quote',
@@ -63,7 +66,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
+          component: 'SOFT_GROUP_BEGIN',
           label: '体力查询'
         },
         {
@@ -206,7 +209,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
+          component: 'SOFT_GROUP_BEGIN',
           label: '鸣潮体力'
         },
         {
@@ -240,14 +243,14 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
-          label: '体力阈值推送'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '推送提醒'
         },
         {
           field: 'resin_push_enable',
           label: '启用体力阈值推送',
           bottomHelpMessage:
-            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需打开上方「启用鸣潮体力」）',
+            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需在「鸣潮体力」页打开「启用鸣潮体力」）',
           component: 'Switch'
         },
         {
@@ -272,8 +275,8 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'Divider',
-          label: '原神 · 成绩汇总'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '原神查询'
         },
         {
           field: 'gs_all_abyss',
@@ -462,8 +465,8 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'Divider',
-          label: '星铁 · 全部深渊'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '星铁查询'
         },
         {
           field: 'all_abyss',
@@ -507,7 +510,7 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'Divider',
+          component: 'SOFT_GROUP_BEGIN',
           label: '米游社签到'
         },
         {
@@ -566,14 +569,14 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'Divider',
+          component: 'SOFT_GROUP_BEGIN',
           label: '米游币任务'
         },
         {
           field: 'bbs_coin_enable',
           label: '启用米游币任务',
           bottomHelpMessage:
-            '与上面「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区任务（版块签到即拿满）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
+            '与「米游社签到」页的「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区任务（版块签到即拿满）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
           component: 'Switch'
         },
         {
@@ -623,8 +626,8 @@ export function supportGuoba() {
           },
         },
         {
-          component: 'Divider',
-          label: '版本配置（Alioth）'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '版本配置'
         },
         {
           field: 'nanoka_abyss_enable',
@@ -634,8 +637,8 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'Divider',
-          label: '管理 · 其它'
+          component: 'SOFT_GROUP_BEGIN',
+          label: '管理设置'
         },
         {
           field: 'help_bg',
