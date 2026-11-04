@@ -89,13 +89,13 @@ function isCaptcha(res) {
 /**
  * 对单个 uid 执行签到。
  * @param {string} uid 游戏 uid
- * @param {string} cookie 完整 cookie（需含 cookie_token/account_id；resolveAuth 提供）
+ * @param {string} cookie 完整 cookie（角色属主的 cookie_token / cookie_token_v2）
  * @param {'gs'|'sr'|'zzz'} game
  * @param {object} [opts]
  * @param {string} [opts.autoVerifyAddr] 全自动过码服务地址（本机或远程）；配了则撞码自动过（定时任务也走这条）
  * @returns {Promise<{ code, msg, game, uid }>}
  *   code: 'ok' 签到成功 | 'already' 今日已签 | 'captcha' 触发验证码（未过/过码失败）|
- *         'expired' 登录失效 | 'first_bind' 需先手动签 | 'fail' 其他失败
+ *         'expired' 登录失效 | 'first_bind' 需先手动签 | 'no_role' 接口未找到角色 | 'fail' 其他失败
  */
 export async function signOne(uid, cookie, game = 'gs', opts = {}) {
   const { autoVerifyAddr = '' } = opts
@@ -133,6 +133,11 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
       signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
 
+    log.debug(`[xhh-TL][sign] game=${game} uid=${uid} region=${server} phase=info retcode=${infoRes?.retcode}`)
+    if (Number(infoRes?.retcode) === -10002) {
+      log.mark(`[xhh-TL][sign] game=${game} uid=${uid} region=${server} phase=info retcode=-10002`)
+      return { code: 'no_role', msg: `${label} 签到失败，请【#刷新ck】后重试`, game, uid }
+    }
     if ([-100, -101, 10001, -10001].includes(Number(infoRes?.retcode))) {
       return { code: 'expired', msg: `${label} 登录已失效，请【#刷新ck】，仍不行则【#扫码登录】`, game, uid }
     }
@@ -156,6 +161,7 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
       body,
       signal: AbortSignal.timeout(12000),
     }).then((r) => r.json())
+    log.debug(`[xhh-TL][sign] game=${game} uid=${uid} region=${server} phase=sign retcode=${res?.retcode}`)
     return { rc: Number(res?.retcode), res }
   }
 
@@ -191,9 +197,10 @@ export async function signOne(uid, cookie, game = 'gs', opts = {}) {
     if ([-100, -101, 10001, -10001].includes(rc)) {
       return { code: 'expired', msg: `${label} 登录已失效，请【#刷新ck】，仍不行则【#扫码登录】`, game, uid }
     }
-    // -10002 未查询到游戏角色：此 cookie 名下没有该 UID（跨账号），上层会过滤掉
+    // -10002 是本次接口未查到角色，不等于用户未绑定；上层保留失败结果。
     if (rc === -10002) {
-      return { code: 'no_role', msg: `${label} 该账号无此角色`, game, uid }
+      log.mark(`[xhh-TL][sign] game=${game} uid=${uid} region=${server} phase=sign retcode=-10002`)
+      return { code: 'no_role', msg: `${label} 签到失败，请【#刷新ck】后重试`, game, uid }
     }
     if (rc === 0) {
       return { code: 'ok', msg: `${label} 签到成功`, game, uid }

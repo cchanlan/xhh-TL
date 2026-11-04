@@ -20,8 +20,9 @@ import path from 'path'
 import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
 import Runtime from '../../../lib/plugins/runtime.js'
-import { createUser } from '../utils/userBind.js'
-import { resolveAuth } from '../utils/runtimePatch.js'
+import { createUser, hasRuntimeBinding } from '../utils/userBind.js'
+import { getSignAccounts } from '../utils/signAccounts.js'
+import { findStokenEntry, stokenToCookie } from '../utils/auth.js'
 import { signOne, GAME_LABEL } from '../utils/signClient.js'
 import { config, pluginDir, pickHelpBgImage, toFileUrl, toDataUrl } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
@@ -151,7 +152,14 @@ export class autoSign extends plugin {
     if (this._groupOnly(e)) return true
     if (this._disabled(e)) return true
     const label = GAME_LABEL[game]
-    const results = await this.signUserGame(e, e.user_id, game, e)
+    let results
+    try {
+      results = await this.signUserGame(e, e.user_id, game, e)
+    } catch (err) {
+      logger?.error?.(`[xhh-TL][自动签到] 读取账号失败 ${e.user_id}/${game}: ${err.message}`)
+      e.reply('读取账号失败，请稍后重试~', quoteEnabled())
+      return true
+    }
     if (!results.length) {
       e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社~`, quoteEnabled())
       return true
@@ -176,17 +184,15 @@ export class autoSign extends plugin {
     if (this._disabled(e)) return true
     const label = GAME_LABEL[game]
 
-    // 校验：必须有「带 ck 属主(ltuid)」的 UID —— 与 signUserGame 的过滤完全一致，
-    // 否则会出现「订阅成功但 cron 全被过滤、永远不签、也不进汇总图」的静默失效
-    let uidList = []
+    // 与手动 / 定时签到共用同一份角色归属，不能只凭 UID 或任意 CK 判断。
+    let uidList
     try {
       const user = await createUser(e.user_id, e)
-      uidList = (user.getUidList(game) || [])
-        .filter((x) => x && typeof x === 'object' && x.ltuid)
-        .map((x) => String(x.uid))
-        .filter(Boolean)
+      uidList = getSignAccounts(user, game).map((account) => account.uid)
     } catch (err) {
-      logger?.error?.(`[xhh-TL][自动签到] 枚举 UID 失败 ${e.user_id}: ${err.message}`)
+      logger?.error?.(`[xhh-TL][自动签到] 枚举 UID 失败 ${e.user_id}/${game}: ${err.message}`)
+      e.reply('读取账号失败，请稍后重试~', quoteEnabled())
+      return true
     }
     if (!uidList.length) {
       e.reply(`你还没有绑定${label}账号，请先【#扫码登录】米游社后再开启自动签到~`, quoteEnabled())
@@ -248,32 +254,24 @@ export class autoSign extends plugin {
    */
   async signUserGame(e, qq, game, realE = null) {
     const results = []
-    let user
-    try {
-      user = await createUser(qq, realE || e)
-    } catch (err) {
-      logger?.error?.(`[xhh-TL][自动签到] createUser 失败 ${qq}: ${err.message}`)
-      return results
-    }
-    // 只对「有 ck 的 UID」签到：ck 属主(ltuid)绑定的 UID 才带 ltuid；
-    // 注册/redis 来源的 UID 没有 ck，签到必然 -10002，直接过滤掉不进结果
-    const uidList = (user.getUidList(game) || [])
-      .filter((x) => x && typeof x === 'object' && x.ltuid)
-      .map((x) => String(x.uid))
-      .filter(Boolean)
-    if (!uidList.length) return results
+    const event = realE || e
+    const user = await createUser(qq, event)
+    const accounts = getSignAccounts(user, game)
+    logger?.debug?.(`[xhh-TL][自动签到] ${qq}/${game} 可签角色=${accounts.map(({ uid, ltuid }) => `${uid}@${ltuid}`).join(',') || '无'}`)
+    if (!accounts.length) return results
 
-    for (const uid of uidList) {
+    for (const { uid, ltuid, ck: boundCk } of accounts) {
       try {
-        // 为每个 uid 构造带该 uid 的 e，让 resolveAuth 精确取该账号完整 cookie
-        const baseE = realE || e || {}
-        const authE = Object.assign(
-          Object.create(Object.getPrototypeOf(baseE) || Object.prototype),
-          baseE,
-          { user_id: qq, self_id: baseE.self_id, message: baseE.message || [], msg: String(uid), uid },
-        )
-        const auth = await resolveAuth(authE, { needCookie: true, game })
-        if (!auth?.ck || !/cookie_token|account_id=/.test(auth.ck)) {
+        let ck = boundCk
+        // 无宿主的旧版 stoken 用户仍可换完整 CK，但只能换本角色属主的凭证。
+        if (!hasRuntimeBinding(event) && !/cookie_token(?:_v2)?=/.test(ck)) {
+          const entry = findStokenEntry(user.qq || qq, uid)
+          if (entry && String(entry.stuid || entry.ltuid || '') === ltuid) {
+            ck = (await stokenToCookie(entry)) || ck
+          }
+        }
+        if (!/cookie_token(?:_v2)?=/.test(ck)) {
+          logger?.warn?.(`[xhh-TL][自动签到] ${qq}/${game} uid=${uid} ltuid=${ltuid} 缺少签到凭证`)
           results.push({ uid, code: 'expired', msg: `${GAME_LABEL[game]} 无有效登录，请【#刷新ck】，仍不行则【#扫码登录】`, game })
           continue
         }
@@ -281,7 +279,8 @@ export class autoSign extends plugin {
         const opts = {
           autoVerifyAddr: config().auto_verify_addr || '',
         }
-        const r = await signOne(auth.uid || uid, auth.ck, game, opts)
+        const r = await signOne(uid, ck, game, opts)
+        logger?.debug?.(`[xhh-TL][自动签到] ${qq}/${game} uid=${uid} ltuid=${ltuid} 结果=${r.code}`)
         results.push(r)
       } catch (err) {
         logger?.error?.(`[xhh-TL][自动签到] ${qq}/${uid} 签到异常: ${err.message}`)
@@ -290,8 +289,8 @@ export class autoSign extends plugin {
       // 账号间轻微间隔，降低风控
       await new Promise((r) => setTimeout(r, 800 + Math.floor(Math.random() * 700)))
     }
-    // 兜底：resolved ck 若仍不属主(-10002)，同样过滤掉不进结果
-    return results.filter((r) => r.code !== 'no_role')
+    // 接口失败也必须回报；空列表只表示没有找到绑定，不能吞掉失败后冒充未绑定。
+    return results
   }
 
   // ============ 定时全量签到 ============
@@ -448,7 +447,7 @@ export class autoSign extends plugin {
     })) || null
   }
 
-  /** 构造假 e，供定时场景 resolveAuth/createUser/render 复用 */
+  /** 构造假 e，供定时场景 createUser/render 复用 */
   makeFakeE(qq, groupId) {
     const bot = Bot
     let group = null
