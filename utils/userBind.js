@@ -389,9 +389,17 @@ function mergeBindData(...parts) {
 
   for (const part of parts) {
     if (!part) continue
-    // yaml 补凭证时不能覆盖 SQLite 已确认的 UID 归属。
+    // SQLite 是绑定来源；原版 xiaoyao YAML 常只有 ltoken/stoken，
+    // 只能补资料，不能把数据库中的完整登录 CK 覆盖成残缺 CK。
     for (const [sid, mys] of Object.entries(part.mysUsers || {})) {
-      out.mysUsers[sid] = { ...out.mysUsers[sid], ...mys }
+      const current = out.mysUsers[sid]
+      const merged = { ...current, ...mys }
+      const hasCookieToken = (ck) => /(?:^|;)[ 	]*cookie_token(?:_v2)?=[^;\s]+/.test(ck || '')
+      if (current?.ck && (hasCookieToken(current.ck) || !hasCookieToken(mys.ck))) {
+        merged.ck = current.ck
+      }
+      if (current?.uids) merged.uids = current.uids
+      out.mysUsers[sid] = merged
     }
     for (const g of GAMES) {
       if (part.games?.[g]?.uid && !out.games[g]?.uid) {
