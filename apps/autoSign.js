@@ -37,7 +37,7 @@ const DEFAULT_CRON = '23 0 * * *'
 const GAMES = ['gs', 'sr', 'zzz']
 
 const GAME_ALIAS = {
-  gs: '(?:原神|ys)',
+  gs: '(?:原神|yuanshen|ys)',
   sr: '(?:星铁|崩铁|星穹铁道|xt)',
   zzz: '(?:绝区零|zzz)',
 }

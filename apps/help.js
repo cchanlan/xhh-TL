@@ -345,19 +345,19 @@ export function buildHelpGroups() {
           module: 'auto_sign',
           // 标题列全三游戏（与「#开启/关闭 …体力」那条同一写法）；星铁别名多，desc 里补上
           title: '#原神/星铁/绝区零签到',
-          desc: '立即签到；星铁也可写 #崩铁签到 / #星穹铁道签到 / #xt签到',
+          desc: '立即签到；原神可写 yuanshen / ys，星铁可写 崩铁 / 星穹铁道 / xt，绝区零可写 zzz',
         },
         {
           icon: 'gs-温迪.webp',
           module: 'auto_sign',
           title: '#原神/星铁/绝区零自动签到',
-          desc: '开启每日自动签；加「关闭 / 关 / 取消 / 停止」停用',
+          desc: '游戏别名同签到；可加「开启 / 开 / 打开」启用，「关闭 / 关 / 取消 / 停止」停用',
         },
         {
           icon: 'gs-七七.webp',
           module: 'auto_sign',
           title: '#签到列表',
-          desc: '查看自己已开启的自动签到订阅',
+          desc: '#签到列表 / #签到状态 / #签到查询；也可写 #自动签到列表 / #自动签到状态 / #自动签到查询',
         },
         {
           icon: 'sr-花火.webp',
