@@ -514,6 +514,12 @@ export function supportGuoba() {
           label: '米游社签到'
         },
         {
+          field: 'redeem_enable',
+          label: '启用三游戏兑换码',
+          bottomHelpMessage: '#使用兑换码 / *使用兑换码 / %使用兑换码。自动兑换需用户发送对应前缀的自动兑换码开启，每10分钟检查；可加关闭或状态。',
+          component: 'Switch'
+        },
+        {
           field: 'auto_sign_enable',
           label: '启用自动签到',
           bottomHelpMessage:

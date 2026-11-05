@@ -10,6 +10,7 @@ import { nanokaAbyss } from './apps/nanokaAbyss.js'
 import { help } from './apps/help.js'
 import { resinPush } from './apps/resinPush.js'
 import { autoSign } from './apps/autoSign.js'
+import { redeemCodes } from './apps/redeemCodes.js'
 import { autoBbsCoin } from './apps/autoBbsCoin.js'
 import { TLDelCkHook } from './apps/delCkHook.js'
 import { solverDeploy } from './apps/solverDeploy.js'
@@ -56,6 +57,6 @@ if (hasMiaoPlugin) {
 
 export {
   TL, Abyss, teamDamage, role_combat, miniRoleCombat, gsAllAbyss, abyssTeam, hardTeam, holdRate,
-  TmpCleaner, nanokaAbyss, help, resinPush, autoSign, autoBbsCoin,
+  TmpCleaner, nanokaAbyss, help, resinPush, autoSign, autoBbsCoin, redeemCodes,
   TLDelCkHook, srGachaLog, solverDeploy, captchaNotice,
 }

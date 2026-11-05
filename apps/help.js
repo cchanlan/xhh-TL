@@ -336,6 +336,19 @@ export function buildHelpGroups() {
       ],
     },
     {
+      group: '兑换码 · 国服三游戏',
+      desc: '# 原神 · * 星铁 · % 绝区零 · 仅本人绑定账号',
+      color: 'orange',
+      list: [
+        { icon: 'gs-丽莎.webp', module: 'redeem', title: '#使用兑换码 / *使用兑换码 / %使用兑换码',
+          desc: '不带码：兑换近期收录码；带码：使用指定码，多个码用空格隔开，最多20个' },
+        { icon: 'zzz-03.webp', module: 'redeem', title: '#兑换码使用 / *兑换码使用 / %兑换码使用',
+          desc: '同「使用兑换码」；也可写 #原神使用兑换码 / #星铁使用兑换码 / #绝区零使用兑换码，游戏名优先' },
+        { icon: 'zzz-02.webp', module: 'redeem', title: '#自动兑换码 / *自动兑换码 / %自动兑换码',
+          desc: '不加后缀或加「开启」订阅；加「关闭」取消、加「状态」查看；每10分钟检查，支持前缀后加游戏名' },
+      ],
+    },
+    {
       group: '米游社签到',
       desc: '原神 / 星铁 / 绝区零 · 需绑定',
       color: 'orange',

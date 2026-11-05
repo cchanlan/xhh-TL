@@ -27,6 +27,7 @@ export const MODULES = {
   resin_push: { key: 'resin_push_enable', label: '体力阈值推送' },
   resin_timer: { key: 'resin_timer_enable', label: '质变仪 / 洞天宝钱到期提醒' },
   auto_sign: { key: 'auto_sign_enable', label: '米游社自动签到' },
+  redeem: { key: 'redeem_enable', label: '三游戏兑换码' },
   solver: { key: 'solver_deploy_enable', label: '过码服务部署' },
   captcha: { key: 'captcha_notice_enable', label: '撞码自动处理' },
   bbs_coin: { key: 'bbs_coin_enable', label: '米游币社区任务' },

@@ -160,6 +160,8 @@ resin_timer_enable: true
 # 签到走稳定 device_id + 真 device_fp，触发验证码概率低；撞到会自动过码并重试
 # 手动：#原神签到 / #星铁签到 / #绝区零签到 立即签一次
 auto_sign_enable: true
+# 三游戏国服手动兑换与自动兑换（用户主动订阅，每10分钟检查）
+redeem_enable: true
 # 每日签到时间（cron）。默认 00:23，避开整点风控高峰；建议 0-6 点随机分钟
 auto_sign_cron: "23 0 * * *"
 # 签到完成汇总图毛玻璃主题：留空跟随「全部深渊主题」/ light 浅色 / dark 深色
