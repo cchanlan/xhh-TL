@@ -6,7 +6,7 @@ import { getSignAccounts } from '../utils/signAccounts.js'
 import { findStokenEntry, stokenToCookie, cookiePart } from '../utils/auth.js'
 import { isModuleEnabled } from '../utils/modules.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
-import { GAMES, SEEN_TTL, TERMINAL, MESSAGES, COMMAND_REG, parseCommand, getCodes, getRoles, redeemCode } from '../utils/redeemClient.js'
+import { GAMES, SEEN_TTL, TERMINAL, MESSAGES, COMMAND_REG, parseCommand, getCodes, getAutoCodes, getRoles, redeemCode } from '../utils/redeemClient.js'
 
 const SUBS = 'Yunzai:ycdk:auto:subs'
 const SEEN = 'Yunzai:ycdk:auto:seen'
@@ -55,7 +55,7 @@ export class redeemCodes extends plugin {
       if (cmd.action === 'on') {
         const sub = { qq: String(e.user_id), bot: String(e.self_id || e.bot?.uin || ''), group: e.isGroup ? String(e.group_id) : '', game: cmd.game }
         await redis.hSet(SUBS, key, JSON.stringify(sub))
-        await reply(`已开启${GAMES[cmd.game].name}自动兑换码，每10分钟检查一次；结果发到${sub.group ? '本群' : '私聊'}`)
+        await reply(`已开启${GAMES[cmd.game].name}自动兑换码，仅兑换官方前瞻直播码，每10分钟检查一次；结果发到${sub.group ? '本群' : '私聊'}`)
         return true
       }
       if (inflight.has(key)) { await reply('兑换进行中，请稍后再试'); return true }
@@ -160,7 +160,7 @@ export class redeemCodes extends plugin {
           const sub = JSON.parse(raw)
           if (!GAMES[sub.game] || !sub.qq) continue
           if (await redis.hGet(SUBS, key) !== raw) continue
-          const codes = (await getCodes(sub.game)).map(x => x.code)
+          const codes = (await getAutoCodes(sub.game)).map(x => x.code)
           if (!codes.length) continue
           const root = globalThis.Bot
           // 优先使用订阅时的机器人，不能随便挑另一个账号发送。

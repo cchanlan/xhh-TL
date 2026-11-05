@@ -101,6 +101,10 @@ async function official(game) {
   if (!Array.isArray(data?.code_list)) throw new Error('官方码表结构异常')
   return normalizeCodes(data.code_list.map(x => ({ code: x.code, added_at: Number(x.to_get_time) || created })), now)
 }
+/** 自动兑换只允许官方前瞻源；独立缓存，不回退社区或手动取码结果。 */
+export async function getAutoCodes(game) {
+  return cached('auto-live:' + game, () => official(game))
+}
 export async function getCodes(game) {
   return cached(`codes:${game}`, async () => {
     const rows = []
