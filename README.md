@@ -26,7 +26,7 @@
 - 模块开关只作用于已安装功能，不会触发下载；启动时关闭的模块重新开启后需要重启。
 - 绝区零角色立绘、鸣潮内置角色立绘、背景图库是可选资源包；未安装时使用可用的角色图片或默认背景。额外自备的鸣潮图库不上传、不删除。
 - 空核心不需要 miao-plugin；依赖 miao 的功能安装后仍需自行安装 miao-plugin。业务模块沿用 Yunzai 宿主依赖，缺失时按日志所列依赖安装后重启。
-- 模块源码：[xhh-TL-modules](https://github.com/cchanlan/xhh-TL-modules)。模块目录和下载包仅从官方仓库读取；本页不接受自定义代码 URL。
+- 模块源码：[Gitee](https://gitee.com/longhengmu/xhh-TL-modules) / [GitCode](https://gitcode.com/ccxhan/xhh-TL-modules) / [GitHub](https://github.com/cchanlan/xhh-TL-modules)。**模块下载跟随核心仓库来源：Gitee → Gitee、GitCode → GitCode、GitHub → GitHub**，无需另选模块源；目录和包均只从对应官方仓库读取。
 - 新安装命令使用浅克隆、单分支。旧仓库的 Git 历史不重写，完整克隆仍可能下载历史素材。
 
 ### 可安装项目
@@ -564,7 +564,11 @@ JPEG 装不下透明通道，硬裁会让四角变黑。
 
 模块重载会取消旧 cron job，并阻止旧代回调继续发送。当前任务未退出时新代相同任务不并行执行；重启生效的安装/卸载语义不变。
 
-### 下载代理
+### 下载来源与代理
+
+小火花核心从哪个平台克隆，功能模块和素材就从同一个平台下载，不自动跨平台回退。优先识别 `origin`；没有可识别的 `origin` 时使用当前分支上游或唯一的平台远端。压缩包安装或无法读取 Git 信息时默认 GitHub。
+
+Gitee 大包自动分片下载并校验合并，不需要登录 Gitee 或填写平台令牌。GitCode 使用同平台公开文件 API 和内容下载地址；GitHub 使用官方 Raw 地址。
 
 | 配置项 | 用途 | 默认 |
 | --- | --- | --- |

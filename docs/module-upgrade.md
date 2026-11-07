@@ -6,11 +6,11 @@
 
 ## 旧版预下载
 
-在机器人根目录执行；先备份 `plugins/xhh-TL/config/config.yaml` 和 `plugins/xhh-TL/data/`，备份放到插件目录以外。命令需使用已经发布模块版的分支。
+以下命令适用于 Linux 或 Windows Git Bash。在机器人根目录执行；先备份 `plugins/xhh-TL/config/config.yaml` 和 `plugins/xhh-TL/data/`，备份放到插件目录以外。命令需使用已经发布模块版的分支。
 
 ```sh
 git -C plugins/xhh-TL rev-parse HEAD
-git clone --depth 1 --single-branch https://github.com/cchanlan/xhh-TL.git temp/xhh-module-upgrade
+git clone --depth 1 --single-branch "$(git -C plugins/xhh-TL remote get-url origin)" temp/xhh-module-upgrade
 node temp/xhh-module-upgrade/scripts/prepare-modules.mjs --prepare-for plugins/xhh-TL
 git -C plugins/xhh-TL pull --ff-only
 ```
@@ -18,6 +18,14 @@ git -C plugins/xhh-TL pull --ff-only
 记下第一条命令输出的旧版提交号。第三条失败就不要执行最后一条；准备成功后再更新、重启。预下载目录必须是新的空目录；迁移完成后可删除 `temp/xhh-module-upgrade`，不要删除正式插件的 `data/module-manager/`。整个过程不复制或上传用户凭据。
 
 旧用户直接更新也支持启动时自动准备；下载失败不会标记迁移完成。锅巴 → 扩展页面 → 小火花模块中心 → 迁移旧版功能 → 重启。
+
+## 下载来源
+
+预下载副本、模块目录、功能包与素材包均跟随核心的仓库平台：Gitee对应Gitee、GitCode对应GitCode、GitHub对应GitHub，不额外配置来源、不自动跨平台兜底。标准克隆使用origin；无origin的自用多远端仓库使用当前分支上游，仍无法判断时默认GitHub。无origin时请把预下载命令中的地址替换为README里对应平台的完整仓库地址。
+
+Gitee公开Raw大文件实测HTTP403并要求登录；发布源为所有大于512 KiB的当前及历史包生成固定连续分片。下载器共享10分钟总限时逐片读入、检查每片精确长度，拼回原整包后检查原SHA-256与逐文件内容。旧整包/目录/版本保留，旧缓存目录不需要补字段。
+
+GitCode分支Raw地址不能用于此类文件；以同平台公开contents API取得blob SHA，再从raw.gitcode.com下载。API可能内嵌base64文件内容，响应预算包含该展开量。三平台跳转仅接受对应HTTPS官方域名、最多5次，不传递Git凭据和游戏凭据。
 
 ## 主机重启
 

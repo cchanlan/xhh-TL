@@ -2,7 +2,7 @@ import {beginTaskGeneration,wrapModuleClass} from './taskLifecycle.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download } from './moduleStore.js'
+import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download, downloadPackage } from './moduleStore.js'
 const key = Symbol.for('xhh-TL.module-manager.v1')
 const runtimes = globalThis[key] || (globalThis[key] = new Map())
 const runtime = runtimes.get(root) || { booted:false, running:{}, errors:{}, busy:false }
@@ -87,7 +87,7 @@ async function exclusive(action){
 async function cachePackage(m){
   const file=packageFile(m)
   if(fs.existsSync(file)){decodePackage(fs.readFileSync(file),m);return}
-  const bytes=await download(m.package,m.bytes)
+  const bytes=await downloadPackage(m)
   decodePackage(bytes,m);atomicWrite(file,bytes)
 }
 export async function refreshCatalog(){return exclusive(async()=>{
