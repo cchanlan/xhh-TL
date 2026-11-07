@@ -14,7 +14,7 @@ export const storeDir = path.join(root, 'data', 'module-manager')
 export const stateFile = path.join(storeDir, 'state.json')
 export const sha256 = data => crypto.createHash('sha256').update(data).digest('hex')
 export const CORE_API = 2
-export const CORE_VERSION = '2.1.1'
+export const CORE_VERSION = '2.1.2'
 const RESERVED = new Set(['__proto__','constructor','prototype','tostring','valueof','hasownproperty','__definegetter__','__definesetter__'])
 const validId = id => typeof id==='string' && /^[a-z][a-z0-9_]{0,63}$/.test(id) && !RESERVED.has(id.toLowerCase())
 function atLeast(actual,required){
@@ -27,6 +27,9 @@ export const MAX_CONTENT = 96 * 1024 * 1024
 // 分片格式固定为 512 KiB，与模块仓 scripts/build.mjs 保持一致；旧目录也能下载。
 export const PACKAGE_PART_SIZE = 512 * 1024
 const DOWNLOAD_TIME = 600_000
+const DOWNLOAD_ATTEMPTS = 3
+const RETRY_HTTP = new Set([408, 418, 429, 500, 502, 503, 504])
+const RETRY_NETWORK = new Set(['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE'])
 const SOURCES = Object.freeze({
   github: { label: 'GitHub', gitHosts: ['github.com', 'ssh.github.com'], hosts: ['raw.githubusercontent.com'], base: 'https://raw.githubusercontent.com/cchanlan/xhh-TL-modules/master/' },
   gitee: { label: 'Gitee', gitHosts: ['gitee.com', 'ssh.gitee.com'], hosts: ['gitee.com', 'raw.giteeusercontent.com'], base: 'https://gitee.com/longhengmu/xhh-TL-modules/raw/master/' },
@@ -200,52 +203,88 @@ function allowedDownloadURL(value, source) {
   if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443') || !SOURCES[source].hosts.includes(url.hostname)) throw new Error('模块下载跳转地址不允许')
   return url
 }
-/** 同平台 HTTPS 跳转上限 5 次；全程不携带 Git 或业务凭据。 */
+/** Retry-After 是等待下限；不缩短平台要求的等待，也不重置整包限时。 */
+function retryDelay(headers, attempt) {
+  const value = headers?.['retry-after']
+  const numeric = typeof value === 'string' && /^\d+$/.test(value)
+  const date = typeof value === 'string' && !numeric ? Date.parse(value) : NaN
+  const requested = numeric ? Number(value) * 1000 : Number.isFinite(date) ? date - Date.now() : 0
+  return Math.max(1000 * (2 ** (attempt - 1)), requested)
+}
+function logDownloadFailure(url, context, error, attempt, headers, delay) {
+  const stage = url.hostname === 'api.gitcode.com' ? '文件信息' : '文件内容'
+  // 不记录查询参数、Cookie、认证头或响应正文，避免跳转链接携带的凭据进入日志。
+  const address = url.origin + url.pathname
+  const details = ['server', 'content-type', 'retry-after', 'x-request-id', 'x-gitcode-request-id']
+    .filter(key => typeof headers?.[key] === 'string')
+    .map(key => key + '=' + headers[key].replace(/[\x00-\x1f\x7f]/g, '').slice(0, 160)).join(' ')
+  const status = error.statusCode || (RETRY_NETWORK.has(error.code) ? error.code : error.message)
+  globalThis.logger?.warn?.(`[xhh-TL][模块下载] 来源=${SOURCES[context.source].label} 阶段=${stage} 地址=${address} 状态=${status} 尝试=${attempt}/${DOWNLOAD_ATTEMPTS} ${delay === null ? '停止下载' : `${delay}ms 后重试`} ${details}`)
+}
+/** 同平台 HTTPS 跳转上限 5 次；GET 临时失败最多三次，保持匿名访问与原有代理。 */
 function requestBuffer(initial, limit, context) {
   return new Promise((resolve, reject) => {
-    let settled = false, current, timer
+    let settled = false, current, timer, retryTimer
     const done = (error, bytes) => {
       if (settled) return
-      settled = true; clearTimeout(timer)
+      settled = true; clearTimeout(timer); clearTimeout(retryTimer)
       if (error) current?.destroy()
       error ? reject(error) : resolve(bytes)
     }
-    const visit = (value, redirects = 0) => {
+    const visit = (value, redirects = 0, attempt = 1) => {
+      if (settled) return
       let url
       try { url = allowedDownloadURL(value, context.source) } catch (error) { done(error); return }
-      let redirected = false, hasResponse = false, request
+      let retired = false, hasResponse = false, request
+      const fail = (error, headers = {}) => {
+        if (settled || retired) return
+        const retryable = RETRY_HTTP.has(error.statusCode) || RETRY_NETWORK.has(error.code)
+        const delay = retryable && attempt < DOWNLOAD_ATTEMPTS ? retryDelay(headers, attempt) : null
+        const remaining = context.deadline - Date.now()
+        const canRetry = delay !== null && delay < remaining
+        logDownloadFailure(url, context, error, attempt, headers, canRetry ? delay : null)
+        if (!canRetry) { done(error); return }
+        // 旧请求的 close/error/timeout 不能提前结束下一次重试或安排第二个定时器。
+        retired = true; request?.destroy()
+        retryTimer = setTimeout(() => visit(url.href, redirects, attempt + 1), delay)
+      }
+      const connectionFailure = message => Object.assign(new Error(message), { code: 'ECONNRESET' })
       try {
         request = https.get(url, { agent: context.agent, headers: { 'User-Agent': 'xhh-TL-module-manager/2' } }, response => {
           hasResponse = true
           let ended = false
-          response.on('close', () => { if (!redirected && !ended && !response.complete) done(new Error('下载连接提前关闭')) })
-          response.on('aborted', () => { if (!redirected) done(new Error('下载连接中断')) })
-          response.on('error', error => { if (!redirected) done(error) })
+          response.on('close', () => { if (!ended && !response.complete) fail(connectionFailure('下载连接提前关闭')) })
+          response.on('aborted', () => fail(connectionFailure('下载连接中断')))
+          response.on('error', error => fail(error))
           if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
             let next
             try {
               if (redirects >= 5 || !response.headers.location) throw new Error('模块下载跳转过多或缺少地址')
               next = allowedDownloadURL(new URL(response.headers.location, url), context.source)
             } catch (error) { response.resume(); done(error); return }
-            redirected = true; response.resume(); request.destroy(); visit(next, redirects + 1); return
+            retired = true; response.resume(); request.destroy(); visit(next, redirects + 1, attempt); return
           }
-          if (response.statusCode !== 200) { response.resume(); done(new Error('模块源返回 HTTP ' + response.statusCode)); return }
+          if (response.statusCode !== 200) {
+            const error = Object.assign(new Error('模块源返回 HTTP ' + response.statusCode), { statusCode: response.statusCode })
+            fail(error, response.headers); response.resume(); return
+          }
           const declared = Number(response.headers['content-length'])
           if (Number.isFinite(declared) && declared > limit) { done(new Error('下载超过大小限制')); return }
           let received = 0
           const chunks = []
           response.on('data', chunk => {
+            if (settled || retired) return
             received += chunk.length
             if (received > limit) { done(new Error('下载超过大小限制')); return }
             chunks.push(chunk)
           })
-          response.on('end', () => { ended = true; done(null, Buffer.concat(chunks)) })
+          response.on('end', () => { ended = true; if (!retired) done(null, Buffer.concat(chunks)) })
         })
         current = request
-        request.setTimeout(30_000, () => { if (!redirected) done(new Error('下载连接长时间无数据')) })
-        request.on('error', error => { if (!redirected) done(error) })
-        request.on('close', () => { if (!settled && !redirected && !hasResponse && current === request) done(new Error('下载连接提前关闭')) })
-      } catch (error) { done(error) }
+        request.setTimeout(30_000, () => fail(Object.assign(new Error('下载连接长时间无数据'), { code: 'ETIMEDOUT' })))
+        request.on('error', error => fail(error))
+        request.on('close', () => { if (!hasResponse && current === request) fail(connectionFailure('下载连接提前关闭')) })
+      } catch (error) { fail(error) }
     }
     const remaining = context.deadline - Date.now()
     if (remaining <= 0) { done(new Error('下载超时，请配置下载代理后重试')); return }
