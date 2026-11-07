@@ -3,7 +3,14 @@
 const $=id=>document.getElementById(id)
 const labels={installed:'已安装',disabled:'已关闭',available:'未安装',failed:'加载失败','pending-install':'待重启安装','pending-uninstall':'待重启卸载','pending-update':'待重启更新'}
 const verbs={install:'安装',uninstall:'卸载',update:'更新',refresh:'刷新目录',cancel:'取消待重启变更',migrate:'迁移旧版功能'}
-const icons={tl:'体',waves:'鸣',resin_push:'推',resin_timer:'时',auto_sign:'签',redeem:'兑',bbs_coin:'币',solver:'码',captcha:'验',del_ck:'账',tmp_clean:'净',sr_gacha:'抽',role_combat:'诗',nanoka:'历',assets_bg:'景',assets_zzz:'绘',assets_waves:'绘'}
+let moduleImages={},iconsReady=false,nextIconAttempt=0
+function imageIcon(id){
+ const wrap=node('span','✦','module-icon'),src=moduleImages[id]
+ if(src&&/^data:image\/(webp|png);base64,/.test(src)){
+  const img=document.createElement('img');img.src=src;img.alt='';img.decoding='async';img.onerror=()=>{wrap.textContent='✦'};wrap.replaceChildren(img)
+ }
+ return wrap
+}
 let snapshot=null,filter='all',timer=null,reading=false,requesting=false,authFailed=false,actionError=false,dialogAction=null,returnFocus=null,lastRender='',epoch=0
 const cfg=window.__GUOBA__||{}
 let base
@@ -45,7 +52,7 @@ function render(){
   const card=node('article',undefined,'card');card.dataset.id=m.id
   const top=node('div',undefined,'card-top'),heading=node('div',undefined,'card-heading')
   heading.append(node('h3',m.label),node('span',m.category==='assets'?'素材图库':'功能模块','kind'))
-  top.append(node('span',icons[m.id]||'✦','module-icon'),heading,node('span',labels[m.status]||m.status,'badge '+m.status))
+  top.append(imageIcon(m.id),heading,node('span',labels[m.status]||m.status,'badge '+m.status))
   card.append(top,node('p',m.description,'description'))
   const details=node('dl',undefined,'details')
   for(const [label,text] of [['当前版本',m.version||'尚未安装'],['可用版本',m.latestVersion],['依赖',m.dependencies.join('、')||'无额外模块']])details.append(node('dt',label),node('dd',text))
@@ -73,7 +80,7 @@ function schedule(){clearTimeout(timer);if(!authFailed&&!document.hidden)timer=s
 async function load(){
  if(reading||requesting||authFailed){schedule();return}
  reading=true;const readEpoch=epoch
- try{const data=await api('/modules');if(readEpoch!==epoch)return;snapshot=data;if(!actionError)$('error').hidden=true;const signature=JSON.stringify(data);if(signature!==lastRender){lastRender=signature;render()}}
+ try{const iconsChanged=await loadIcons();if(authFailed)return;const data=await api('/modules');if(readEpoch!==epoch)return;snapshot=data;if(!actionError)$('error').hidden=true;const signature=JSON.stringify(data);if(iconsChanged||signature!==lastRender){lastRender=signature;render()}}
  catch(e){error(e)}finally{reading=false;schedule()}
 }
 
@@ -119,5 +126,20 @@ $('search').oninput=render;$('category').onchange=render
 $('refresh').onclick=()=>preview('refresh');$('migrate').onclick=()=>preview('migrate');$('cancel-pending').onclick=()=>preview('cancel');$('retry').onclick=()=>{actionError=false;load()}
 document.addEventListener('visibilitychange',()=>{clearTimeout(timer);if(!document.hidden)load()})
 window.addEventListener('pagehide',()=>clearTimeout(timer))
-load()
+async function loadIcons(){
+ if(iconsReady||Date.now()<nextIconAttempt)return false
+ nextIconAttempt=Date.now()+30000
+ try{
+  const data=await api('/icons')
+  moduleImages=data.images||{}
+  iconsReady=Object.keys(moduleImages).length>0
+  if(/^data:image\/png;base64,/.test(data.brand||'')){
+   const img=$('brand-icon');img.src=data.brand;img.hidden=false;img.onerror=()=>{img.hidden=true}
+  }
+  return iconsReady
+ }catch(e){if(authFailed)throw e;return false}
+}
+async function start(){await load()}
+
+start()
 })()
