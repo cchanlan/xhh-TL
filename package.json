@@ -1,17 +1,23 @@
 {
   "name": "xhh-TL",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "author": "cchanlan",
   "license": "MIT",
-  "description": "小火花体力小组件 - 原神/星铁/绝区零体力查询 + 全部深渊与幻想剧诗",
+  "description": "小火花模块管理核心：在锅巴按需安装功能",
   "type": "module",
   "main": "index.js",
   "dependencies": {
+    "moment": "^2.30.1",
+    "yaml": "^2.8.1",
     "lodash": "^4.17.21",
     "md5": "^2.3.0",
-    "moment": "^2.30.1",
     "node-fetch": "^3.3.2",
-    "sharp": "^0.34.5",
-    "yaml": "^2.8.1"
+    "https-proxy-agent": "^7.0.6"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.34.5"
   }
 }

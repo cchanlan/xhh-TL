@@ -204,3 +204,6 @@ bbs_coin_theme: ""
 # 留空则自动探测 /opt/gsuid_core/data/GsData.db 与 /root/gsuid_core/data/GsData.db
 # 多个路径用换行或逗号分隔；只读打开，不会写入或锁库
 bbs_coin_gsuid_db: ""
+
+# 模块公开文件下载代理；留空沿用 HTTPS_PROXY 环境变量或直连。
+download_proxy: ""

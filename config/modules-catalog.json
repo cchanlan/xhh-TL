@@ -1,0 +1,3548 @@
+{
+  "schema": 1,
+  "coreApi": 2,
+  "minCoreVersion": "2.1.0",
+  "minNodeVersion": "18.17.0",
+  "modules": [
+    {
+      "id": "shared_account",
+      "label": "米游社账号接口",
+      "description": "米游社账号接口",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-5282f040854d",
+      "package": "packages/shared_account/2.1.0-5282f040854d.xhmp",
+      "sha256": "ef6303b47d2f732670224245f8332d001c25e3567b0a63807a1b695c0c0530a0",
+      "bytes": 40505,
+      "files": [
+        {
+          "path": "utils/auth.js",
+          "size": 14647,
+          "sha256": "7d080b85f4ec4baf0532dda326bbc21003f764768151e31e94e0cce4637ab091"
+        },
+        {
+          "path": "utils/captchaTip.js",
+          "size": 652,
+          "sha256": "b9d14d93237bed59c0d163df9091edacb2aa485d7809c47a053939b2b1b243e2"
+        },
+        {
+          "path": "utils/ckAutoRefresh.js",
+          "size": 8598,
+          "sha256": "a239e80865a46dc0bc260e39a002c169bf1f9b5b22dea4db0d800a836745c3bf"
+        },
+        {
+          "path": "utils/deletedCk.js",
+          "size": 5168,
+          "sha256": "cc2815e91ee82c559aec15edfdadef7d63b641c867ce150d8f23a52437615911"
+        },
+        {
+          "path": "utils/mysClient.js",
+          "size": 11521,
+          "sha256": "9b402bb5db458dfa8a43ecdcc5853fb5a15be9f942a65af0ad0df127cae55a10"
+        },
+        {
+          "path": "utils/mysVerify.js",
+          "size": 4416,
+          "sha256": "348ad66c289d76cfc86e5b1e99fca3d023577d42ad696dee03a22a9f2efb685a"
+        },
+        {
+          "path": "utils/runtimePatch.js",
+          "size": 10732,
+          "sha256": "820d13ed1ea2394d8e6d98a3f8588b564b0ee0397127e1536d43cd212733c532"
+        },
+        {
+          "path": "utils/signAccounts.js",
+          "size": 1368,
+          "sha256": "943874a7def08a032e3bbee7b4964451675829ac87b8773a148420a31b4c717f"
+        },
+        {
+          "path": "utils/userBind.js",
+          "size": 24877,
+          "sha256": "94097c5f3127b6e857ac7b5181d7318cf930b9deebffd6a79561228870012e17"
+        }
+      ]
+    },
+    {
+      "id": "shared_gs",
+      "label": "原神成绩与统计接口",
+      "description": "原神成绩与统计接口",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account"
+      ],
+      "entries": [],
+      "internal": true,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d"
+      },
+      "version": "2.1.0-71b276a31d73",
+      "package": "packages/shared_gs/2.1.0-71b276a31d73.xhmp",
+      "sha256": "1c582d0842a5e53fe16439aed7e2d6dfa10cd0cfd292a430caf31ad97da899c8",
+      "bytes": 5451,
+      "files": [
+        {
+          "path": "utils/gsHelper.js",
+          "size": 4423,
+          "sha256": "5c9026f9f17914fd20c837086ed85d02598544f66da01dc2b4b558fad9b40dfb"
+        },
+        {
+          "path": "utils/yshelperApi.js",
+          "size": 3556,
+          "sha256": "4e22467e4b476e82474dd4cdb9c5e1d5cea0ab5b843f55ff920c4a4648368b90"
+        }
+      ]
+    },
+    {
+      "id": "shared_fonts",
+      "label": "公共字体",
+      "description": "公共字体",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-0e53a82b3dea",
+      "package": "packages/shared_fonts/2.1.0-0e53a82b3dea.xhmp",
+      "sha256": "7401ec4427f134c70c6e8b92913b63c30760b66a71fe765b9db9ddf39bcd60d2",
+      "bytes": 24254661,
+      "files": [
+        {
+          "path": "resources/font/NotoSansCJKsc-Regular.ttf",
+          "size": 16427580,
+          "sha256": "79f4fef6158f8f430e63e5df91a03e1b8d8eec6c304bdea12b599f7e87914e07"
+        },
+        {
+          "path": "resources/font/unifont.otf",
+          "size": 5105304,
+          "sha256": "2498b80f9664fef91e6988d7e082146a2082a7e7bb4a2deb2fbf9a365aa2970c"
+        },
+        {
+          "path": "resources/font/yuan.ttf",
+          "size": 11357352,
+          "sha256": "4727ec90773b829d76f44b42d415e8aac60f7f63b72a0704ae2278aad68079f5"
+        }
+      ]
+    },
+    {
+      "id": "abyss_team",
+      "label": "深渊配队",
+      "description": "查看深境螺旋配队与常用队伍，辅助挑选阵容。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/abyssTeam.js",
+          "export": "abyssTeam"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-3577e182a4a4",
+      "package": "packages/abyss_team/2.1.0-3577e182a4a4.xhmp",
+      "sha256": "f3ceb1cf60d76ab9475affe44fcd857f47f6e4ac5313e5a9e7483ab8e0709b4c",
+      "bytes": 11291,
+      "files": [
+        {
+          "path": "apps/abyssTeam.js",
+          "size": 9530,
+          "sha256": "67e623b73091d41a1ac0fa394155c507015e538fbd3e3a1ac075ec01c54a114e"
+        },
+        {
+          "path": "resources/abyss_team/abyss_team.css",
+          "size": 8177,
+          "sha256": "751ea0dc7709630a55bda875a004e84dff8286d1c2507396e4705d7ecd8dc31e"
+        },
+        {
+          "path": "resources/abyss_team/abyss_team.html",
+          "size": 4657,
+          "sha256": "3267278bcfe75fe0a185a687461635462838591815c9e9dd038db3cb096790ef"
+        }
+      ]
+    },
+    {
+      "id": "assets_bg_1",
+      "label": "背景图库资源分包",
+      "description": "背景图库资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-14c6fd063e71",
+      "package": "packages/assets_bg_1/2.1.0-14c6fd063e71.xhmp",
+      "sha256": "8185d9e02f3bc0efed3f2877eca470d6892db44538ab2e1bf0181e4e907e8d0b",
+      "bytes": 25242012,
+      "files": [
+        {
+          "path": "resources/bg/bg1.png",
+          "size": 362834,
+          "sha256": "7ff4bc5b4a8947c4ebd9fe12f09ea73d94531f2bfb83010cc88eb99bd9802a90"
+        },
+        {
+          "path": "resources/bg/bg2.png",
+          "size": 129199,
+          "sha256": "47dcf1f130eee0a02c9d5d41fbff686ccfb0960dd100fef9c891946c0eb2da2b"
+        },
+        {
+          "path": "resources/bg/「枫丹热泉」-505128.png",
+          "size": 1633602,
+          "sha256": "4c2bed72a93bf2dc6bae6670765761da0b67986d177db59227925ec3b33c45a7"
+        },
+        {
+          "path": "resources/bg/「谕示裁定枢机」-505140.png",
+          "size": 1024058,
+          "sha256": "8aa5958dcb53486402c1b7710e37653714dc5a0edb7e7949e44959d0a63344ac"
+        },
+        {
+          "path": "resources/bg/不再受垢的渊谷-505068.png",
+          "size": 1503704,
+          "sha256": "bcd256582a3bee2a603388c9d7504c71c8865dc13bc299b518701ad118e1f937"
+        },
+        {
+          "path": "resources/bg/乐园最后的宝藏-507808.png",
+          "size": 1161976,
+          "sha256": "f08ca0b3ccde86a473c51b24365745f91921fbe6000bc061557e0f55f6fc3d64"
+        },
+        {
+          "path": "resources/bg/五百由旬一极微-508430.png",
+          "size": 709996,
+          "sha256": "46a3cb4eb6c427bbebae8fd6686e245617bf6ade4901fdb686864bd402b6bbcd"
+        },
+        {
+          "path": "resources/bg/众龙的审判所-505072.png",
+          "size": 1288141,
+          "sha256": "66dea36026485d16e5e892a1f009c673554439c73509a32eec99e1e24ddec28e"
+        },
+        {
+          "path": "resources/bg/千柱之殿-508427.png",
+          "size": 971051,
+          "sha256": "e3ba95c01f3d9be830c18c53aca2f4604bbb06a503ff5cf0da88a526085e5d9d"
+        },
+        {
+          "path": "resources/bg/千风交汇之港-508397.png",
+          "size": 1021271,
+          "sha256": "1b30bad74cb7ca46282bc988360e4d5efabab7b003543f330dc551d4f1f7d279"
+        },
+        {
+          "path": "resources/bg/圣显厅-505002.png",
+          "size": 1173055,
+          "sha256": "3b93f958974f0b4dfd3a1b9a16590640a0c5480bbd833cb0dd56438b2621cd52"
+        },
+        {
+          "path": "resources/bg/地下水泽-504982.png",
+          "size": 1078818,
+          "sha256": "56a18796b5537fdbe137616494895e861d21195be14e3b347faae1801f0499de"
+        },
+        {
+          "path": "resources/bg/墨染轻岚间-508426.png",
+          "size": 1023332,
+          "sha256": "bc0f2bfd227eb776fdaec3ac1ead6fd69be2c54d9295d517d4838c086ecfe35f"
+        },
+        {
+          "path": "resources/bg/夜壑的黎明-507809.png",
+          "size": 1270467,
+          "sha256": "a3bb9b80f7cea6772cdb4ddf18208020dcc1886afb16b80cded238734b97cc14"
+        },
+        {
+          "path": "resources/bg/天火浮岩之冠-505076.png",
+          "size": 1114677,
+          "sha256": "fc1a1f71d1243f2f6db8f8c86710425eb73b25673100dde5e7cbf2dfb8b2d439"
+        },
+        {
+          "path": "resources/bg/威权尽葬之殿-504992.png",
+          "size": 946136,
+          "sha256": "2215300249b6cda4b2d3e91f3a63df51aa8bf3da3303d4e16568174c647fd2be"
+        },
+        {
+          "path": "resources/bg/守护神像的湖泽-504967.png",
+          "size": 1921967,
+          "sha256": "f9eb364908bb62f5282a5cf413ad95dd2de6c5266fa7f7238da7d959f3776bfd"
+        },
+        {
+          "path": "resources/bg/巨柱岩宫-504978.png",
+          "size": 988297,
+          "sha256": "ebec957eb79687c5b3bf9eb62c5f020287bd5728ed9d2fd90691c667107f8184"
+        },
+        {
+          "path": "resources/bg/并无活力的活力之家-504998.png",
+          "size": 1204651,
+          "sha256": "cb2804ac0e65881b4b7ad64cf2d596b19eff057165e8ce0d3c3996f8650dd6d8"
+        },
+        {
+          "path": "resources/bg/惬意之街-505815.png",
+          "size": 1644668,
+          "sha256": "2b3da314fe8153446fd5ad479644ac6c20133754a105bb935e6f426de56a153e"
+        },
+        {
+          "path": "resources/bg/愚人们的卫城-509632.png",
+          "size": 820784,
+          "sha256": "535b29bd05fc3cc353c2511e047bef773841a8013f340511704801cec09adf1c"
+        },
+        {
+          "path": "resources/bg/指动字成-508429.png",
+          "size": 912881,
+          "sha256": "735924ce18e4ccd78ccb5e9b26421917bee932429da7b242805d3ddff757a80b"
+        },
+        {
+          "path": "resources/bg/无底的大厅-505001.png",
+          "size": 1241751,
+          "sha256": "7f9a1b9386cb30c071eb20137ef659c52f72d9bad244128eb944fc53b08b969b"
+        }
+      ]
+    },
+    {
+      "id": "assets_bg_2",
+      "label": "背景图库资源分包",
+      "description": "背景图库资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-238faefa94c6",
+      "package": "packages/assets_bg_2/2.1.0-238faefa94c6.xhmp",
+      "sha256": "304d3657d5640fd89f801646346e5e8b3cbb71cdea4a4aa5bed6ff97f55d6153",
+      "bytes": 24145557,
+      "files": [
+        {
+          "path": "resources/bg/曙光初照的庄园-504964.png",
+          "size": 1879819,
+          "sha256": "7ac16f3102404d95c8563a4ca9638852cc8ee28437e2d88229960da8e9002ae0"
+        },
+        {
+          "path": "resources/bg/曙光重新升起之处-509624.png",
+          "size": 1159664,
+          "sha256": "932c73511f0056b0054dfd6dfa75e485d4ddfe601c42db9516c1c03239cd0015"
+        },
+        {
+          "path": "resources/bg/月亮的心-509075.png",
+          "size": 979682,
+          "sha256": "fdaf654a142921803a767bc802b6dab04ac6a1487414d9e0cc4e5f30906f9dd4"
+        },
+        {
+          "path": "resources/bg/未名的剑冢-504960.png",
+          "size": 1602098,
+          "sha256": "07c13d76b52f8690ed1769a962941da673d2c84e0af3f79ed68a671c51d5f52d"
+        },
+        {
+          "path": "resources/bg/未完工的灰烬之城-505088.png",
+          "size": 1375356,
+          "sha256": "f492d95cf8606f1e5ff70404c29a7ec3f6b6f73ecb13b929e63a3a60cf1686e0"
+        },
+        {
+          "path": "resources/bg/来源.json",
+          "size": 24384,
+          "sha256": "8a64a8753ce19dfbcf665639cda78f23fb9c7e0312fc2b0ba581c7e32321776b"
+        },
+        {
+          "path": "resources/bg/极星的冰雪之宫-509634.png",
+          "size": 1057733,
+          "sha256": "4e5caba5fc8632414d71ee89531d307b84879c9d6f94c24db216fc14b8c31d95"
+        },
+        {
+          "path": "resources/bg/格式塔-505116.png",
+          "size": 1273141,
+          "sha256": "e1e66660b6b0aa5774b702553d45c8cc795659cfaee064f64d382c13b1557e4a"
+        },
+        {
+          "path": "resources/bg/永恒燃烧的炉心-509633.png",
+          "size": 1071119,
+          "sha256": "ebd73080462ad07d41d1113bf3af75b11f050f7052ffd910f9aacc83bb779bab"
+        },
+        {
+          "path": "resources/bg/沐浴月光之树-504949.png",
+          "size": 1693255,
+          "sha256": "99c7bc8092596fbf0de50bcbc8a2cf44127d9f6b698feb56640080e8188ee57b"
+        },
+        {
+          "path": "resources/bg/沙暴不息的达马山-504996.png",
+          "size": 994716,
+          "sha256": "89f44ddf8828899779e99528959c524f687d2f3182845292281cc2c9a373365f"
+        },
+        {
+          "path": "resources/bg/海渊民的村落-505028.png",
+          "size": 1899709,
+          "sha256": "63f31fb18fb0c9093d38d324bcc97f2995e45074b78ca593cda7cace1e1c4577"
+        },
+        {
+          "path": "resources/bg/瀚海孤云-504946.png",
+          "size": 1010237,
+          "sha256": "189275501010e1476fc38292ae10721087a5269f63646625aeec0dab1a05c534"
+        },
+        {
+          "path": "resources/bg/炽沙与骄阳的高阁-508428.png",
+          "size": 1027143,
+          "sha256": "663bacb8edec9b198271ad42de2ba0cd247eedbacd61500c10c0ec5c039fad6f"
+        },
+        {
+          "path": "resources/bg/玉京台-504955.png",
+          "size": 2031001,
+          "sha256": "fe6b4162e74f99d5fc81be2c2df4eccd1bbdac3c39aab4c981bf2c2731c9b4fa"
+        },
+        {
+          "path": "resources/bg/硕果累累的母树-505097.png",
+          "size": 1834339,
+          "sha256": "5af6046829358f3b3bd16cc5b06c3bd567d11ba815e5c31644ce1281c574ef11"
+        },
+        {
+          "path": "resources/bg/神无冢·阵前-505037.png",
+          "size": 1557598,
+          "sha256": "f577f00eb950fa2e453558510e454c516107ad1e05b039fcae26e6c10acc0bf8"
+        },
+        {
+          "path": "resources/bg/稻妻城·城郊-505041.png",
+          "size": 1597634,
+          "sha256": "78d877b04fdcdeb79867e84dfa16493d592232828475ca17807161d9e655739a"
+        }
+      ]
+    },
+    {
+      "id": "assets_bg_3",
+      "label": "背景图库资源分包",
+      "description": "背景图库资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-d6c3f5921c37",
+      "package": "packages/assets_bg_3/2.1.0-d6c3f5921c37.xhmp",
+      "sha256": "e61f3f544c8faa8c8b927a7ea50bf57748624d387ebaa5e51be41b385b0659a9",
+      "bytes": 15911121,
+      "files": [
+        {
+          "path": "resources/bg/终北的遗响-506643.png",
+          "size": 1100776,
+          "sha256": "9b4144f506549b09f1f323fc5e1b71de301e1d3893ea8eaac4e0fa5d497b481a"
+        },
+        {
+          "path": "resources/bg/绚彩的湖泊-509074.png",
+          "size": 1281365,
+          "sha256": "a2c57f1269f4dd280dc4fbb2875e3f486bb27b7147c72cecc3aaae6fb5684e06"
+        },
+        {
+          "path": "resources/bg/花景芳馥-508396.png",
+          "size": 1199056,
+          "sha256": "826262990e3ba6031246a37f7a66d9b42a61783ddf3bb44cbcd437288e2f7a52"
+        },
+        {
+          "path": "resources/bg/西风骑士团·图书馆-504962.png",
+          "size": 1405718,
+          "sha256": "4301037e428dfeaea05c5c162648f45cdbe8ef7835678d9d20c18e6acf1c6128"
+        },
+        {
+          "path": "resources/bg/轻策山间-504951.png",
+          "size": 1729696,
+          "sha256": "39ece01c31815410d0b3ee5ecc3a2ba1c3d5b97987fa54dcac724b5c41291ff5"
+        },
+        {
+          "path": "resources/bg/载醉之舟-505118.png",
+          "size": 1231398,
+          "sha256": "289a5f9e7368ca3251ee9ab6742010b13e399bc530263c401da7399ec8186542"
+        },
+        {
+          "path": "resources/bg/遗世的仙庭-507811.png",
+          "size": 1560966,
+          "sha256": "0e999655f4e8c603bc406d4835c2b1e4399412ac176ce2782fbf85597247ee02"
+        },
+        {
+          "path": "resources/bg/铸铜的要塞-505121.png",
+          "size": 1322053,
+          "sha256": "d3e935be14bf835a530ed0d2db2f59c570d7d9ed8ebe750b8d37a8cf735c8b91"
+        },
+        {
+          "path": "resources/bg/雪葬王冕之地-509636.png",
+          "size": 998000,
+          "sha256": "e944ab9fc4b942363775329607ecb6e93e099d5f7def3d41bb8a5dcd91b9aa0b"
+        },
+        {
+          "path": "resources/bg/雷云旋聚之处-505030.png",
+          "size": 1041177,
+          "sha256": "ed8fd2f54b94b19802e3956062920c8d8ca1ce8078f37544eb1a85e94a7b981a"
+        },
+        {
+          "path": "resources/bg/飘浮在云间的卫星-505082.png",
+          "size": 1163717,
+          "sha256": "2da4ca5f1ded07ca1572873ee00518d965eb68ccd67ea7c48f392c322038fab5"
+        },
+        {
+          "path": "resources/bg/高眺之蛇首-505034.png",
+          "size": 1817006,
+          "sha256": "ef6cb79cf14bf445cf92959069deca85b8e3461083ddb9cfae043cf7d404b645"
+        }
+      ]
+    },
+    {
+      "id": "assets_bg",
+      "label": "背景图库",
+      "description": "为查询与帮助卡片提供背景图库，可单独移除。",
+      "coreApi": 2,
+      "dependencies": [
+        "assets_bg_1",
+        "assets_bg_2",
+        "assets_bg_3"
+      ],
+      "entries": [],
+      "internal": false,
+      "legacyResource": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "assets_bg_1": "2.1.0-14c6fd063e71",
+        "assets_bg_2": "2.1.0-238faefa94c6",
+        "assets_bg_3": "2.1.0-d6c3f5921c37"
+      },
+      "version": "2.1.0-4be902a96eaf",
+      "package": "packages/assets_bg/2.1.0-4be902a96eaf.xhmp",
+      "sha256": "f293a4fae6eb66517eae2dd57c70b5199dd436cf69197f9fa1e3077066baec31",
+      "bytes": 90,
+      "files": []
+    },
+    {
+      "id": "assets_waves_1",
+      "label": "鸣潮内置角色立绘资源分包",
+      "description": "鸣潮内置角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-e3fb9b5ba612",
+      "package": "packages/assets_waves_1/2.1.0-e3fb9b5ba612.xhmp",
+      "sha256": "2e42cee99233156ac38ab485084132c5dce070f85c7ede9aaf1f2298f11fc9f9",
+      "bytes": 25183990,
+      "files": [
+        {
+          "path": "resources/ww_role_pile/1102/builtin_1.webp",
+          "size": 247020,
+          "sha256": "c5e65b8707078328b2d72e1087b14a54d11422d1885391be254c8113ecbf5c09"
+        },
+        {
+          "path": "resources/ww_role_pile/1102/builtin_2.webp",
+          "size": 100828,
+          "sha256": "9f8c26fee6964f8460681f1790f20db62407feaed2cc0ffaec548f655c11cd91"
+        },
+        {
+          "path": "resources/ww_role_pile/1102/builtin_3.webp",
+          "size": 188428,
+          "sha256": "be656526eb0613389eb53e2024f6adedf9c0d0f155d8d1dd74b1f6cb01982cbf"
+        },
+        {
+          "path": "resources/ww_role_pile/1102/builtin_4.webp",
+          "size": 154386,
+          "sha256": "dfe93015721a6cc91afe454167deb32cd13728f15fdce652dcd8df15e70fd0a7"
+        },
+        {
+          "path": "resources/ww_role_pile/1102/builtin_5.webp",
+          "size": 423258,
+          "sha256": "41bd562dbe69982088b11671c9d4a4f1e9b6e0cc7e9667d828fdad708b944da6"
+        },
+        {
+          "path": "resources/ww_role_pile/1103/builtin_1.webp",
+          "size": 212946,
+          "sha256": "6ee7098c98deb50e46be29d6363641283d405dd3e09152d029a961edaee82794"
+        },
+        {
+          "path": "resources/ww_role_pile/1103/builtin_2.webp",
+          "size": 192678,
+          "sha256": "188bda557938b822ee84554f18cd6268a7f69d03271f551ecfeb0e67590e1bf4"
+        },
+        {
+          "path": "resources/ww_role_pile/1103/builtin_3.webp",
+          "size": 105978,
+          "sha256": "44276b8435eb1aa3dddef2cbd3748047323e9cff51db34dafb787dadde673c32"
+        },
+        {
+          "path": "resources/ww_role_pile/1103/builtin_4.webp",
+          "size": 197322,
+          "sha256": "5ac0f45f5fbd36879ad2e434e9a5dd8509e9801fc4e1f2f68972315e87c0a966"
+        },
+        {
+          "path": "resources/ww_role_pile/1103/builtin_5.webp",
+          "size": 127702,
+          "sha256": "637e4bb6002269554e2b4b5ec08e5d8852acc371520b8ae705f8aa8975be907d"
+        },
+        {
+          "path": "resources/ww_role_pile/1104/builtin_1.webp",
+          "size": 234998,
+          "sha256": "e785c9f76710f8e07b5960a76b34797dedb8e62ddbb4e4446979e825f69edd0b"
+        },
+        {
+          "path": "resources/ww_role_pile/1104/builtin_2.webp",
+          "size": 387972,
+          "sha256": "bcb3aa56cc28b81833c6e88cca65259036cbc16111161e12b6491ea792af53fc"
+        },
+        {
+          "path": "resources/ww_role_pile/1104/builtin_3.webp",
+          "size": 101518,
+          "sha256": "1d75abdfacf2956651bdacb61f445fd77c8f2600f53b2a8f942ffc67572b8aa9"
+        },
+        {
+          "path": "resources/ww_role_pile/1104/builtin_4.webp",
+          "size": 94882,
+          "sha256": "3fef5c360f11187e8964375a643737bbc528911c4fa876de1200e4d3efe2c152"
+        },
+        {
+          "path": "resources/ww_role_pile/1104/builtin_5.webp",
+          "size": 82780,
+          "sha256": "8e8293374859466c459fd6b8cbbfd310b77818ad355313803bc093e305ebaf83"
+        },
+        {
+          "path": "resources/ww_role_pile/1105/builtin_1.webp",
+          "size": 136070,
+          "sha256": "d1842dab32bba00b959013ce784c3497bc36395116eda665399e968f4c4a298c"
+        },
+        {
+          "path": "resources/ww_role_pile/1105/builtin_2.webp",
+          "size": 123124,
+          "sha256": "49ec5189bbb175c281df0d72ef2b6a7434c48daa2e6e88ebb4a9cf6ab489ce6a"
+        },
+        {
+          "path": "resources/ww_role_pile/1105/builtin_3.webp",
+          "size": 147268,
+          "sha256": "0d484174a770bd91c60e64b61506275656deabdfc4712bdff72200e5d15a6fcb"
+        },
+        {
+          "path": "resources/ww_role_pile/1105/builtin_4.webp",
+          "size": 161108,
+          "sha256": "24e8976c1e66d2842a86ed0fdb18c0e827c48889c28b139fae458fc0e3d1f94b"
+        },
+        {
+          "path": "resources/ww_role_pile/1105/builtin_5.webp",
+          "size": 127584,
+          "sha256": "95b0d404a3657c0e041e87ad7f06a54cf9370c9933efdb69af1db76b45bc0b96"
+        },
+        {
+          "path": "resources/ww_role_pile/1106/builtin_1.webp",
+          "size": 127608,
+          "sha256": "5a381a18fd022c0f7fcc4184abc1031794c6416a10f6e28a55fbe5cde6d61b4a"
+        },
+        {
+          "path": "resources/ww_role_pile/1106/builtin_2.webp",
+          "size": 121174,
+          "sha256": "51ddd2d266bbaa21289216b24cee3559c25e6de1e24655ffa36722935c806e6f"
+        },
+        {
+          "path": "resources/ww_role_pile/1106/builtin_3.webp",
+          "size": 81676,
+          "sha256": "d421614f296905ad50ece931ce7b98ba94ec74260194cc453e6f2287c4a0c9fd"
+        },
+        {
+          "path": "resources/ww_role_pile/1106/builtin_4.webp",
+          "size": 70006,
+          "sha256": "d8682e8f33279907c115f2b60f0d646823f1352255b2eb3c62017074c3f5de63"
+        },
+        {
+          "path": "resources/ww_role_pile/1106/builtin_5.webp",
+          "size": 92846,
+          "sha256": "f5bec5af260f5ea1872977c89178cddc0760a6fba37c9f9b45ec8a3903b2dd70"
+        },
+        {
+          "path": "resources/ww_role_pile/1107/builtin_1.webp",
+          "size": 158220,
+          "sha256": "10de01adf8c8d73786011ab38d0bbd30cb695d20b151e064dbe6aea64b432156"
+        },
+        {
+          "path": "resources/ww_role_pile/1107/builtin_2.webp",
+          "size": 166392,
+          "sha256": "82e7af1864c8e95953f794da149533731e392b2bd80fed835839fc9ab5ee170f"
+        },
+        {
+          "path": "resources/ww_role_pile/1107/builtin_3.webp",
+          "size": 119288,
+          "sha256": "c24444e85b07a8266ed9193ee9aa17a188a07605c7f28141f7549a7d144f9b76"
+        },
+        {
+          "path": "resources/ww_role_pile/1107/builtin_4.webp",
+          "size": 193562,
+          "sha256": "cbca3a44e42a1047173c8727817692c1c9b7b7a3b4213cddc49366b79ab9b40c"
+        },
+        {
+          "path": "resources/ww_role_pile/1107/builtin_5.webp",
+          "size": 163284,
+          "sha256": "ba08f112a0a6c1e30cb45b516ee20fe3e2d7a0e565da3bce8ef3e11a2ba45bd3"
+        },
+        {
+          "path": "resources/ww_role_pile/1108/builtin_1.webp",
+          "size": 170844,
+          "sha256": "37c4b63183dac9adf39746431089c2a90db6d8f787d9a7560c0de54790d49387"
+        },
+        {
+          "path": "resources/ww_role_pile/1108/builtin_2.webp",
+          "size": 132366,
+          "sha256": "ccd20727a766e84234a1e41515ed8bd4f2fe870b98eeb6b5deee1e1648899762"
+        },
+        {
+          "path": "resources/ww_role_pile/1108/builtin_3.webp",
+          "size": 140494,
+          "sha256": "637af40b72c7afb796f4df1dd3d246df83455659dac16d8467743971dcda78e6"
+        },
+        {
+          "path": "resources/ww_role_pile/1108/builtin_4.webp",
+          "size": 228332,
+          "sha256": "ecfee8998e11b5c7f980aead63cf5217b74302f830e05a3375519565a26d3882"
+        },
+        {
+          "path": "resources/ww_role_pile/1108/builtin_5.webp",
+          "size": 174184,
+          "sha256": "36c9349c535b1fcfff4acb054696e26ef3335b85ca9bf9cdbeb9855501debe81"
+        },
+        {
+          "path": "resources/ww_role_pile/1109/builtin_1.webp",
+          "size": 210418,
+          "sha256": "b9a0d424170f471667a1025331a45e83baa340ba29f1766b40d737d8a8663c31"
+        },
+        {
+          "path": "resources/ww_role_pile/1109/builtin_2.webp",
+          "size": 84556,
+          "sha256": "60a81eb5b9cf190ebddba68d155c6336805b5b21ca5cc122b5463e52290ea883"
+        },
+        {
+          "path": "resources/ww_role_pile/1109/builtin_3.webp",
+          "size": 133024,
+          "sha256": "99ad95a2a920502530e31783298f417281960d35416197e994e4cb6f8e812dc7"
+        },
+        {
+          "path": "resources/ww_role_pile/1109/builtin_4.webp",
+          "size": 330178,
+          "sha256": "662a3ae1b994107d7dbd7cafe4c3373a43b29203cc1704fc8ea669267149130b"
+        },
+        {
+          "path": "resources/ww_role_pile/1109/builtin_5.webp",
+          "size": 224040,
+          "sha256": "2378f8d45ac7592e544447d83503353be297f99e7b49059335e7683506308981"
+        },
+        {
+          "path": "resources/ww_role_pile/1110/builtin_1.webp",
+          "size": 367750,
+          "sha256": "4c88d1155e9408b88276f1765f343f349dc50936e02538560a42ece598452358"
+        },
+        {
+          "path": "resources/ww_role_pile/1110/builtin_2.webp",
+          "size": 323566,
+          "sha256": "d5bb52ff20b71d334138b39f856bacf93f031e11a30edb67ceb7444efad0cd42"
+        },
+        {
+          "path": "resources/ww_role_pile/1110/builtin_3.webp",
+          "size": 364420,
+          "sha256": "b4d8d2cb10e5b967b49f3470dd367e702b543a733a550613bd17fd43a3f06a28"
+        },
+        {
+          "path": "resources/ww_role_pile/1110/builtin_4.webp",
+          "size": 340844,
+          "sha256": "cf44efc7a226b54fa1bfa004aa182bea7be620630ed1f22fc0e37bc69cc066e6"
+        },
+        {
+          "path": "resources/ww_role_pile/1110/builtin_5.webp",
+          "size": 451096,
+          "sha256": "90e41a581771d08c5d31b6fa83fd53dc74c114e797be62dfb01cf956fe853e66"
+        },
+        {
+          "path": "resources/ww_role_pile/1202/builtin_1.webp",
+          "size": 120304,
+          "sha256": "54da5771bdf731bcbc69a8321a9ea3063e24d5355c73d05b9bb1721f4e9f973e"
+        },
+        {
+          "path": "resources/ww_role_pile/1202/builtin_2.webp",
+          "size": 147880,
+          "sha256": "3b7b8d29a7ca6381d2bb96025c8e4b8733351195aeb21eff7b6887e059e13ec5"
+        },
+        {
+          "path": "resources/ww_role_pile/1202/builtin_3.webp",
+          "size": 178104,
+          "sha256": "64ead2c15a915ecfaf47d8f9b86c1199006cf7c90872b3f33a857fb9802fa614"
+        },
+        {
+          "path": "resources/ww_role_pile/1202/builtin_4.webp",
+          "size": 142212,
+          "sha256": "c75ea063099beae61915e8a660fc8f32050c437d6a913c18e7ee55156107d19f"
+        },
+        {
+          "path": "resources/ww_role_pile/1202/builtin_5.webp",
+          "size": 50416,
+          "sha256": "0a42a41b7d9610d57e8d08ebb8a9cf71160a2b5861e7b1d4d38143d1cd29bb15"
+        },
+        {
+          "path": "resources/ww_role_pile/1203/builtin_1.webp",
+          "size": 143024,
+          "sha256": "e2942575309b0f614a4bcc78aebda602600c7ef228d8ae46d9c74b16355923e7"
+        },
+        {
+          "path": "resources/ww_role_pile/1203/builtin_2.webp",
+          "size": 94852,
+          "sha256": "5ff2631c48e79a860bae9fc480722860de6cb3c98d4d6c135c5348d90af43e81"
+        },
+        {
+          "path": "resources/ww_role_pile/1203/builtin_3.webp",
+          "size": 122682,
+          "sha256": "5f0705b8a6ad7e1e24ea74dd74b7226f40d34a4951c259b09ab57cc67c51234b"
+        },
+        {
+          "path": "resources/ww_role_pile/1203/builtin_4.webp",
+          "size": 114976,
+          "sha256": "41e007c69689754f56a093acf5a4c53ca99581e2fe1fe468addd8f24fa4a1bd9"
+        },
+        {
+          "path": "resources/ww_role_pile/1203/builtin_5.webp",
+          "size": 122988,
+          "sha256": "2872429655f291689f51d2dd647bd126b7561d9baae1ddb130e08de74b6ce500"
+        },
+        {
+          "path": "resources/ww_role_pile/1204/builtin_1.webp",
+          "size": 130166,
+          "sha256": "41c08bce146479d900f9e111168900a5f01e9410462af70effaf15a79d38b20c"
+        },
+        {
+          "path": "resources/ww_role_pile/1204/builtin_2.webp",
+          "size": 104464,
+          "sha256": "325abdb2152eac3a1dc9c9583ade8610589d406e373a607dc3e5b3104c674610"
+        },
+        {
+          "path": "resources/ww_role_pile/1204/builtin_3.webp",
+          "size": 254678,
+          "sha256": "fcd0124adf80f51f63188bface36ab99408f8e05ee94738c0c2acabc440b1f7c"
+        },
+        {
+          "path": "resources/ww_role_pile/1204/builtin_4.webp",
+          "size": 194030,
+          "sha256": "345fc5e10dc5954392433c3af1ff2d7129cf5e32d556987ea90a4f8e6ef8a553"
+        },
+        {
+          "path": "resources/ww_role_pile/1204/builtin_5.webp",
+          "size": 137218,
+          "sha256": "1cdd3b3afc4f60da2976f872532071b93915ac3f7d912140fe594d65c96e3175"
+        },
+        {
+          "path": "resources/ww_role_pile/1205/builtin_1.webp",
+          "size": 74496,
+          "sha256": "415bc845aa2ee25d32659f4deecd5b57631bc1c6a5d6498e264df79ba095b33b"
+        },
+        {
+          "path": "resources/ww_role_pile/1205/builtin_2.webp",
+          "size": 200486,
+          "sha256": "6119c0a42305d3394b8efb4be97a0ce0cd515e8c2bf1be09da300853a311c04a"
+        },
+        {
+          "path": "resources/ww_role_pile/1205/builtin_3.webp",
+          "size": 183278,
+          "sha256": "a4ba35d7f8fb9f199be626263599fe37b5d190202473c0c30b371c09a1db6601"
+        },
+        {
+          "path": "resources/ww_role_pile/1205/builtin_4.webp",
+          "size": 98242,
+          "sha256": "8e14cd9f9172235d30409a7db3fa159024515a58b749ddeef0ece44c4529cec6"
+        },
+        {
+          "path": "resources/ww_role_pile/1205/builtin_5.webp",
+          "size": 258658,
+          "sha256": "3713bb206f4f081a018f729458697e2b83fde6d0627b8cc7c410c211993fb3c6"
+        },
+        {
+          "path": "resources/ww_role_pile/1206/builtin_1.webp",
+          "size": 192958,
+          "sha256": "f450009afd52518396a61708c6fcc14ad50c5e8393c8ed4531f7526b67972b62"
+        },
+        {
+          "path": "resources/ww_role_pile/1206/builtin_2.webp",
+          "size": 236426,
+          "sha256": "f7ebd3478f78e086f5bb69d1fd27f3bfff84b2e27415433246e16b8c4806dd28"
+        },
+        {
+          "path": "resources/ww_role_pile/1206/builtin_3.webp",
+          "size": 155816,
+          "sha256": "6088ea5b9662e97ecc9215e43a6c13cb525dc35d9518eb0445cde3640e99cf72"
+        },
+        {
+          "path": "resources/ww_role_pile/1206/builtin_4.webp",
+          "size": 95030,
+          "sha256": "23fc568c2fdf9e0fd6c4b632baa833824008c2b217613391a40616f6680977df"
+        },
+        {
+          "path": "resources/ww_role_pile/1206/builtin_5.webp",
+          "size": 76046,
+          "sha256": "c0a49071ff04747269a744addd02382781ac52401235931b8964b818e611fb0a"
+        },
+        {
+          "path": "resources/ww_role_pile/1207/builtin_1.webp",
+          "size": 83104,
+          "sha256": "6599501d15a878222c26b6a49ae4174cf716e0b499b88d0b0da61bbecf4b0c52"
+        },
+        {
+          "path": "resources/ww_role_pile/1207/builtin_2.webp",
+          "size": 155534,
+          "sha256": "7ba3472abe6edaded327d9416c00dbe294858f098d4e14a702682e33379b6e73"
+        },
+        {
+          "path": "resources/ww_role_pile/1207/builtin_3.webp",
+          "size": 189938,
+          "sha256": "5b867ed319c66b6e413b89010624cb0feec9d71cec88fd13655048412e286002"
+        },
+        {
+          "path": "resources/ww_role_pile/1207/builtin_4.webp",
+          "size": 364914,
+          "sha256": "e821615e94d8f8663f12ebe6157462cd5c8cedde9f904b4c4b0138f6e8699e8b"
+        },
+        {
+          "path": "resources/ww_role_pile/1207/builtin_5.webp",
+          "size": 136126,
+          "sha256": "08347e7e143cf4e5eb4f8b44b91f9922aebf5d433c5d8889a4039f3941c682d2"
+        },
+        {
+          "path": "resources/ww_role_pile/1208/builtin_1.webp",
+          "size": 441914,
+          "sha256": "2f2b4e766d685a8ac6e4a6143940481f5415768cbca46a61ce76a7d52d1d14df"
+        },
+        {
+          "path": "resources/ww_role_pile/1208/builtin_2.webp",
+          "size": 223670,
+          "sha256": "08b6d50bb735f77003df1c854307709172492b2294f1eb87bc297decde17d0f0"
+        },
+        {
+          "path": "resources/ww_role_pile/1208/builtin_3.webp",
+          "size": 148344,
+          "sha256": "db1725306f2fb6afe9ce3f6e7ccfaf3ad021ae1737e76995aa333d16cf52eff7"
+        },
+        {
+          "path": "resources/ww_role_pile/1208/builtin_4.webp",
+          "size": 106936,
+          "sha256": "2fbead68002824377985c8c520120d5572e09efaa94a154f84dec702dc13ec99"
+        },
+        {
+          "path": "resources/ww_role_pile/1208/builtin_5.webp",
+          "size": 159892,
+          "sha256": "1f15e09ac38956365cd95c526a3d1a2525ddbdc007e778630067a4301f2f7519"
+        },
+        {
+          "path": "resources/ww_role_pile/1209/builtin_1.webp",
+          "size": 245828,
+          "sha256": "3fc9018d19d06cba1bf33d1ebf548d53fcafe0ba22f1f8f6c66915b375c7b545"
+        },
+        {
+          "path": "resources/ww_role_pile/1209/builtin_2.webp",
+          "size": 99412,
+          "sha256": "8ac96f3a647899da137764cdb49b3545212bf2529d271b25f9da4e7e52a36833"
+        },
+        {
+          "path": "resources/ww_role_pile/1209/builtin_3.webp",
+          "size": 93776,
+          "sha256": "2568c45a395c2aa9520a002b3c80244fd6f37c4ada9e9d512925d9ee58e3a199"
+        },
+        {
+          "path": "resources/ww_role_pile/1209/builtin_4.webp",
+          "size": 213538,
+          "sha256": "4b5be23ff981ca39e1c54b5e15ac8a901d39c1a427babcf435ff5b970544c34a"
+        },
+        {
+          "path": "resources/ww_role_pile/1209/builtin_5.webp",
+          "size": 251898,
+          "sha256": "b7825c22303e6d6837208e209d566c7ab653836a62bf96a9a97294f6d9809e69"
+        },
+        {
+          "path": "resources/ww_role_pile/1210/builtin_1.webp",
+          "size": 649190,
+          "sha256": "6dd8ed658b91b4ec36c71a41a5576aab2d8d0e09360bd0307e52726c2bb5c93f"
+        },
+        {
+          "path": "resources/ww_role_pile/1210/builtin_2.webp",
+          "size": 269792,
+          "sha256": "bdb31bbf05bfca316610d14ee2abe1d4fb370d32f91073ca4e328de8f6944d00"
+        },
+        {
+          "path": "resources/ww_role_pile/1210/builtin_3.webp",
+          "size": 264636,
+          "sha256": "511c2b16de570f1685ccbb4d0931995890ef45a9c32a4c485f72bb28464161a9"
+        },
+        {
+          "path": "resources/ww_role_pile/1210/builtin_4.webp",
+          "size": 173752,
+          "sha256": "f841eac3a7bba971f3197885b3193b6331668ba442cadc92ba4db7d7436fec13"
+        },
+        {
+          "path": "resources/ww_role_pile/1210/builtin_5.webp",
+          "size": 254562,
+          "sha256": "c1f1d7c83a690e84a9749a571cd19750203af1aab0d49342cb2543dcc2238a0f"
+        },
+        {
+          "path": "resources/ww_role_pile/1211/builtin_1.webp",
+          "size": 183506,
+          "sha256": "fa366cc50180d702030faa2f3aa776aa9b5593ba95090dcbd915ee1471a2f0a5"
+        },
+        {
+          "path": "resources/ww_role_pile/1211/builtin_2.webp",
+          "size": 223532,
+          "sha256": "e5ebe4f5eefbd6d33df6a59e6929cf0d081ad7e90ef0086c784dda99fb0436e6"
+        },
+        {
+          "path": "resources/ww_role_pile/1211/builtin_3.webp",
+          "size": 187588,
+          "sha256": "d2fd67058ebe4d8a8141c82a4cbed064bf49533006c8e2b1873144e7f20a91c4"
+        },
+        {
+          "path": "resources/ww_role_pile/1211/builtin_4.webp",
+          "size": 223496,
+          "sha256": "589dab0b1d4f4ac22af61f7a566c7e2638bda9351b3f953b8fd0d2fb1122c6cb"
+        },
+        {
+          "path": "resources/ww_role_pile/1211/builtin_5.webp",
+          "size": 133282,
+          "sha256": "4cd4412cb1d00519603d12f82a46fb82ac532a857998e60da90b912fb582d594"
+        },
+        {
+          "path": "resources/ww_role_pile/1301/builtin_1.webp",
+          "size": 148756,
+          "sha256": "91adf87e1c1f236c7fba09475bb2884d535b9afa8fc20d740d5478e4ac0490ab"
+        },
+        {
+          "path": "resources/ww_role_pile/1301/builtin_2.webp",
+          "size": 90170,
+          "sha256": "4cfd51e4df17c6e0acd78633660d5fdf0817ebbf0580790abe6711e5262e702a"
+        },
+        {
+          "path": "resources/ww_role_pile/1301/builtin_3.webp",
+          "size": 117078,
+          "sha256": "01d556d130bd077c9433af73661aa6ef9969d97953318fc1e5b3d2e0f165f79d"
+        },
+        {
+          "path": "resources/ww_role_pile/1301/builtin_4.webp",
+          "size": 175184,
+          "sha256": "0f5cde001408454b5e65bd48685686f008fcdb3afda8997800c01574438dfe6e"
+        },
+        {
+          "path": "resources/ww_role_pile/1301/builtin_5.webp",
+          "size": 128236,
+          "sha256": "8fbafe8eb994d1f064de8e104b024fbe8df9dbc8da96263500f865a914f00eb6"
+        },
+        {
+          "path": "resources/ww_role_pile/1302/builtin_1.webp",
+          "size": 124768,
+          "sha256": "abe0b698b1701ee33c38d28c40b49533f17658be7604447cc25bc11c80f828c9"
+        },
+        {
+          "path": "resources/ww_role_pile/1302/builtin_2.webp",
+          "size": 138638,
+          "sha256": "5c491edb9c879f36e543f07199a6848f11c778f78a200d624937b9b283f7f498"
+        },
+        {
+          "path": "resources/ww_role_pile/1302/builtin_3.webp",
+          "size": 215114,
+          "sha256": "09bda7957e5d5c6abbb169a52e510524ede4de2bd302ebff5269c4fe8018f85a"
+        },
+        {
+          "path": "resources/ww_role_pile/1302/builtin_4.webp",
+          "size": 84026,
+          "sha256": "4d6d909da59ef4ed3f915214a6d6c206259578ae003a883ce8134a2cec9758cc"
+        },
+        {
+          "path": "resources/ww_role_pile/1302/builtin_5.webp",
+          "size": 94968,
+          "sha256": "755eab4e138a4765d693fdc8e3b2c005e7c763a063783019470121f39dd0ded9"
+        },
+        {
+          "path": "resources/ww_role_pile/1303/builtin_1.webp",
+          "size": 211328,
+          "sha256": "9076741c5d82bd672e83b7d6a55c099c4911e36b56ebab0a97aaa179ded5a8b9"
+        },
+        {
+          "path": "resources/ww_role_pile/1303/builtin_2.webp",
+          "size": 157768,
+          "sha256": "5e3b52111ce09f183a1149f1e8c201162f4422a72d19ddf2c0952e3eef79c2c3"
+        },
+        {
+          "path": "resources/ww_role_pile/1303/builtin_3.webp",
+          "size": 33136,
+          "sha256": "6dd57c59af56c26d5fa2af87de3024041ead39348ee50f47ecd7df180c82667a"
+        },
+        {
+          "path": "resources/ww_role_pile/1303/builtin_4.webp",
+          "size": 76246,
+          "sha256": "a78331ce8af8402cb5780e94ed78f78b00fa73a7b5a5224ebb6c458b64320887"
+        },
+        {
+          "path": "resources/ww_role_pile/1303/builtin_5.webp",
+          "size": 44804,
+          "sha256": "8ca15d93e38a1684352548f6c702136978fe158b53f065271979df085f100d82"
+        },
+        {
+          "path": "resources/ww_role_pile/1304/builtin_1.webp",
+          "size": 101958,
+          "sha256": "d065c1d7d19b4cc27e23b03d6317f55274f2fe04bbcaf6bfd30c472d4a28fd38"
+        },
+        {
+          "path": "resources/ww_role_pile/1304/builtin_2.webp",
+          "size": 129334,
+          "sha256": "bad43f45c0d592e7f36a4da3a5d23344db71aca0f24e0436c11a7792752939fc"
+        },
+        {
+          "path": "resources/ww_role_pile/1304/builtin_3.webp",
+          "size": 122696,
+          "sha256": "c096a085d8307199536b27c2777e5f92205072981f5810d6edf091aeebcd0c42"
+        },
+        {
+          "path": "resources/ww_role_pile/1304/builtin_4.webp",
+          "size": 132620,
+          "sha256": "9c9492acfbe00915ebc90056e861f3335016bd07549b3e632fee8d15668b121f"
+        },
+        {
+          "path": "resources/ww_role_pile/1304/builtin_5.webp",
+          "size": 129098,
+          "sha256": "644098bad91c6ddd7d1383089a9368584ac451f5ad8e30483ddf01d032031b53"
+        },
+        {
+          "path": "resources/ww_role_pile/1305/builtin_1.webp",
+          "size": 88172,
+          "sha256": "79a48574f2ca23d1d7152228129201eaaf0033ae5a800bd7da7e4a9ab5bf1cfd"
+        },
+        {
+          "path": "resources/ww_role_pile/1305/builtin_2.webp",
+          "size": 249140,
+          "sha256": "e5acef3b8b58178a8ea3a54fafc7ac27a633c1bed09dc10ec40b3dfe707956f3"
+        },
+        {
+          "path": "resources/ww_role_pile/1305/builtin_3.webp",
+          "size": 249140,
+          "sha256": "e5acef3b8b58178a8ea3a54fafc7ac27a633c1bed09dc10ec40b3dfe707956f3"
+        },
+        {
+          "path": "resources/ww_role_pile/1305/builtin_4.webp",
+          "size": 180512,
+          "sha256": "2b863b92802ab979234da3718bf1905cef14663256d603979cec11923cddceaa"
+        },
+        {
+          "path": "resources/ww_role_pile/1305/builtin_5.webp",
+          "size": 116762,
+          "sha256": "7886b2b6fca5b7fcdc9a4c306afb45098d9912da3d4480c2f08dd3910a1ad615"
+        },
+        {
+          "path": "resources/ww_role_pile/1306/builtin_1.webp",
+          "size": 483986,
+          "sha256": "4e287f5c88eb4d3e17d7d415bc79ab9db2d53c7baaaa2763638ba273a719fbff"
+        },
+        {
+          "path": "resources/ww_role_pile/1306/builtin_2.webp",
+          "size": 536982,
+          "sha256": "5dc0184bef2d195e2080e4e6a9e49a22e3b69fbff001738ac9399e8d6a1d308c"
+        },
+        {
+          "path": "resources/ww_role_pile/1306/builtin_3.webp",
+          "size": 256872,
+          "sha256": "87fe87e3ad193a0149a923e04fd54c353895c28b213b97d853a24ae5543e8669"
+        },
+        {
+          "path": "resources/ww_role_pile/1306/builtin_4.webp",
+          "size": 190700,
+          "sha256": "9b84acca9f4df49f80d6254485c544a6c75061311bb587f795f16c2b9a271841"
+        },
+        {
+          "path": "resources/ww_role_pile/1306/builtin_5.webp",
+          "size": 361396,
+          "sha256": "d030ac1584a66ecbd13f180441c73a7b568a05b46f2c6340c05581185f25fea9"
+        },
+        {
+          "path": "resources/ww_role_pile/1307/builtin_1.webp",
+          "size": 273450,
+          "sha256": "acce7160ea60ebaf0c76e56e507bf55341564019953e03fd0a6da156403446c1"
+        },
+        {
+          "path": "resources/ww_role_pile/1307/builtin_2.webp",
+          "size": 140138,
+          "sha256": "5dab8648b389bea1c7ed7ee7038d699347d60744e9bf4a3e1a54d72bd784f5f1"
+        },
+        {
+          "path": "resources/ww_role_pile/1307/builtin_3.webp",
+          "size": 249664,
+          "sha256": "ad42a273747641c13d66bf404b326e9db7e6cdeabb5702768b5c97cbf4445289"
+        },
+        {
+          "path": "resources/ww_role_pile/1307/builtin_4.webp",
+          "size": 180366,
+          "sha256": "81de58e0a5f24363c30a78d70fc434a6cba0770b8f493598dbf496d2b45c15ba"
+        },
+        {
+          "path": "resources/ww_role_pile/1307/builtin_5.webp",
+          "size": 322004,
+          "sha256": "f1b2ea0a1afadd3992129eb3ba1b698c2855ad72414a49f17484f6623d540a7a"
+        },
+        {
+          "path": "resources/ww_role_pile/1308/builtin_1.webp",
+          "size": 133304,
+          "sha256": "1be4af9d8ffd050f98d5c0f5b5c0ef0fe6068fbd7a213d17fb3679a99a4d55af"
+        },
+        {
+          "path": "resources/ww_role_pile/1308/builtin_2.webp",
+          "size": 80126,
+          "sha256": "c42f6cf41bab02089e128fbb5ca5a3677528b7663c87bb426d9ffb72a040a47f"
+        },
+        {
+          "path": "resources/ww_role_pile/1308/builtin_3.webp",
+          "size": 235714,
+          "sha256": "758a00e055d137d3af2021f8d2274bfa48ea375656a14f2b0b1153e31e1de944"
+        },
+        {
+          "path": "resources/ww_role_pile/1308/builtin_4.webp",
+          "size": 109290,
+          "sha256": "ad006e1d289e904f9ee35bde72a893f59b5426cb7d68a68598d74aad54d1e507"
+        },
+        {
+          "path": "resources/ww_role_pile/1308/builtin_5.webp",
+          "size": 91364,
+          "sha256": "74cf9e337a3dd1ebf6eb964c32322e94f8ceefde53a8720ea18866d04750d9d8"
+        },
+        {
+          "path": "resources/ww_role_pile/1402/builtin_1.webp",
+          "size": 85716,
+          "sha256": "35985ee65ce86842e05eb0d191f89e3d95def288756b3fa766ae2a688a3de040"
+        },
+        {
+          "path": "resources/ww_role_pile/1402/builtin_2.webp",
+          "size": 196372,
+          "sha256": "0574e1f5dacfa16dc12f8c782767b259964c977891f189eb00626ada325668eb"
+        },
+        {
+          "path": "resources/ww_role_pile/1402/builtin_3.webp",
+          "size": 106818,
+          "sha256": "fe375029b0744b915a476a053622fa8cc09eb3c2f5d602631f00c801e5853589"
+        },
+        {
+          "path": "resources/ww_role_pile/1402/builtin_4.webp",
+          "size": 90946,
+          "sha256": "2cb3e1db0e005f7a72a561336d0bd483cc11facca4c3b2fe2e623793e6aca8ba"
+        }
+      ]
+    },
+    {
+      "id": "assets_waves_2",
+      "label": "鸣潮内置角色立绘资源分包",
+      "description": "鸣潮内置角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-9ab7fcc47878",
+      "package": "packages/assets_waves_2/2.1.0-9ab7fcc47878.xhmp",
+      "sha256": "003304d2efb0bf24c3a6cebfac621d5006445dfb2e37e7e08e9da82fa39ccb08",
+      "bytes": 24433955,
+      "files": [
+        {
+          "path": "resources/ww_role_pile/1402/builtin_5.webp",
+          "size": 134624,
+          "sha256": "ef06a122ff880b140337ba00746c69e01797077aacb624286792b8d681aae8f5"
+        },
+        {
+          "path": "resources/ww_role_pile/1403/builtin_1.webp",
+          "size": 144086,
+          "sha256": "fbcb0bc2dc3edc605153fe7116ef67a55cf7325ff324c47eeec8f5e8f2401cb0"
+        },
+        {
+          "path": "resources/ww_role_pile/1403/builtin_2.webp",
+          "size": 411480,
+          "sha256": "a3a5a5e977ac459f176412dad31ec4d6c29a28315f167e635796c1a4e9edb249"
+        },
+        {
+          "path": "resources/ww_role_pile/1403/builtin_3.webp",
+          "size": 103592,
+          "sha256": "c5085fd455888d1e86d1a443c3831e61cbbadf4773aa109c406959bf85f71500"
+        },
+        {
+          "path": "resources/ww_role_pile/1403/builtin_4.webp",
+          "size": 27036,
+          "sha256": "eee66093c96e7e51656d84912c60778ea9a7832ba31bd753be93972300bc6e55"
+        },
+        {
+          "path": "resources/ww_role_pile/1404/builtin_1.webp",
+          "size": 61244,
+          "sha256": "a69fea773b6d969ef679717585ec97434931b73cdf0eaf32dfa57e7925f42e2b"
+        },
+        {
+          "path": "resources/ww_role_pile/1404/builtin_2.webp",
+          "size": 251052,
+          "sha256": "7eaa0aaa81fca8ec6ab09f0e254a0219769b8bcd3b63c251e67d1420bc5e43c2"
+        },
+        {
+          "path": "resources/ww_role_pile/1404/builtin_3.webp",
+          "size": 78274,
+          "sha256": "faad9f45969603271cfcadece5dba3b2bdbe9f40f5bb546fe3fc01cf360ad9c5"
+        },
+        {
+          "path": "resources/ww_role_pile/1404/builtin_4.webp",
+          "size": 113970,
+          "sha256": "10f09a31c4be81d166ea1be0b0f46a3ce0ab0456496e41c9d9c8c0a695a0b930"
+        },
+        {
+          "path": "resources/ww_role_pile/1404/builtin_5.webp",
+          "size": 249264,
+          "sha256": "5e6566584b669607c2fb349fb8bbce5b3c06bc03bf89072f979e28c401d388b5"
+        },
+        {
+          "path": "resources/ww_role_pile/1405/builtin_1.webp",
+          "size": 84700,
+          "sha256": "b6bd536b0e5663d864068010a9c8dcc2ebd4ecb105539ba68830c2d416cf8c9c"
+        },
+        {
+          "path": "resources/ww_role_pile/1405/builtin_2.webp",
+          "size": 81102,
+          "sha256": "230e5596592b854f06f762ad498c0c965998063fa6524152a1877449bbb7dedd"
+        },
+        {
+          "path": "resources/ww_role_pile/1405/builtin_3.webp",
+          "size": 161772,
+          "sha256": "6aaea0ea206a0be0f772ed74b17c7339aa1cb9c12d95672db1199b8a9e04f2c3"
+        },
+        {
+          "path": "resources/ww_role_pile/1405/builtin_4.webp",
+          "size": 128336,
+          "sha256": "528fdd3f8f9f89b657b38f96e9fed3ce73a5a6f485490a524e0c6f735341b358"
+        },
+        {
+          "path": "resources/ww_role_pile/1405/builtin_5.webp",
+          "size": 91046,
+          "sha256": "33944f7d76a019fe476e35c633b563bb7d0383ec542a9d94ca72db4447eeb8d7"
+        },
+        {
+          "path": "resources/ww_role_pile/1406/builtin_1.webp",
+          "size": 168470,
+          "sha256": "74a17a4fd35b2adaf95f326861a79893bfda19fedddc51dd85a341201c6c2b74"
+        },
+        {
+          "path": "resources/ww_role_pile/1406/builtin_2.webp",
+          "size": 278688,
+          "sha256": "6f06947a55b10269994527bc0b0026737390c36ea9ceecd4e0b5a1b01499df37"
+        },
+        {
+          "path": "resources/ww_role_pile/1406/builtin_3.webp",
+          "size": 126750,
+          "sha256": "876d95dba2d0a8d953d6c5d76ce0e1fd8ec3a7d96c4bd746b6ee6e69f9013c7d"
+        },
+        {
+          "path": "resources/ww_role_pile/1406/builtin_4.webp",
+          "size": 128136,
+          "sha256": "547c22f16755b47575dd3c0b64c0dd2a924c9824b7666166f187664ca928898c"
+        },
+        {
+          "path": "resources/ww_role_pile/1406/builtin_5.webp",
+          "size": 354384,
+          "sha256": "2fa491b6ae9110e3cc1af3d6b89e1fb7e64b1dd1698cac614706ed0476adf2b3"
+        },
+        {
+          "path": "resources/ww_role_pile/1407/builtin_1.webp",
+          "size": 116286,
+          "sha256": "d57a09cb1dd550e1f902c3cf77dfd7cbaf8db1b4eed9cdc1170492ed90640243"
+        },
+        {
+          "path": "resources/ww_role_pile/1407/builtin_2.webp",
+          "size": 146600,
+          "sha256": "22dc05cc7931e35ca82cd78e901e178cbd8dec0ded61e1a188968f4b22f25cda"
+        },
+        {
+          "path": "resources/ww_role_pile/1407/builtin_3.webp",
+          "size": 201972,
+          "sha256": "f18b2812fc1e7ddf7ddf533b9bae5d1e0fa74b2e9787c9f76299719c8cfe67d3"
+        },
+        {
+          "path": "resources/ww_role_pile/1407/builtin_4.webp",
+          "size": 166868,
+          "sha256": "1d1d2e0c24a48d0a931e272cbfd44983808cd06c2fa1e1d7e5fc13c76cd2afc7"
+        },
+        {
+          "path": "resources/ww_role_pile/1407/builtin_5.webp",
+          "size": 156968,
+          "sha256": "e16d71cf0b16a5acf5a6a7f682a7c6b6b804628129c2c1ac5d31a6172b73aa31"
+        },
+        {
+          "path": "resources/ww_role_pile/1408/builtin_1.webp",
+          "size": 85652,
+          "sha256": "f2ee240a5ff73b92d191094ff46ba0faa552c485774c44cbad9d9ec87c165c3c"
+        },
+        {
+          "path": "resources/ww_role_pile/1408/builtin_2.webp",
+          "size": 228970,
+          "sha256": "0b791c9fecaeb59bd628cddcfc08f3342881d7052e079d3921fd379bb105c77b"
+        },
+        {
+          "path": "resources/ww_role_pile/1408/builtin_3.webp",
+          "size": 216662,
+          "sha256": "d74c38f2751b9db8f8bb72f1bf0b664c3dec2bf47922dd3de908345ac3338c48"
+        },
+        {
+          "path": "resources/ww_role_pile/1408/builtin_4.webp",
+          "size": 45182,
+          "sha256": "354575df82b3ec0d0ce19496d61efef0c2b245855acb4afd1fe067e7b5876a9d"
+        },
+        {
+          "path": "resources/ww_role_pile/1408/builtin_5.webp",
+          "size": 167086,
+          "sha256": "cb1b70ff69b1321bf8bf5359d4a822dbdeb5c6f025c289ae6f789e85fdc85a43"
+        },
+        {
+          "path": "resources/ww_role_pile/1409/builtin_1.webp",
+          "size": 157842,
+          "sha256": "bbc681afa14d76936195c2e377615a9c03713a1a699c5e7aaa696435135fc69e"
+        },
+        {
+          "path": "resources/ww_role_pile/1409/builtin_2.webp",
+          "size": 199418,
+          "sha256": "a981a4d2bc4bea9944ba2301fea9962907437b9ca008d55df0798e8b538d79a5"
+        },
+        {
+          "path": "resources/ww_role_pile/1409/builtin_3.webp",
+          "size": 181058,
+          "sha256": "57fc4d537892906b4f7a1909d330d7105bbbd4a56ec2ccec8819bd9c2b2c6c84"
+        },
+        {
+          "path": "resources/ww_role_pile/1409/builtin_4.webp",
+          "size": 145230,
+          "sha256": "f53c685afac5f872bef2414af1cae8441f655d81c26cb8b9888ed378d27d3bec"
+        },
+        {
+          "path": "resources/ww_role_pile/1409/builtin_5.webp",
+          "size": 84456,
+          "sha256": "0751414854943d46704eb9d0dfa1941daae9811268b60310bca719cd5f3b2fef"
+        },
+        {
+          "path": "resources/ww_role_pile/1410/builtin_1.webp",
+          "size": 218030,
+          "sha256": "8255d8030ea198411e80a86fc2c9e9b6d742a4c066b543609687a65f06312745"
+        },
+        {
+          "path": "resources/ww_role_pile/1410/builtin_2.webp",
+          "size": 563574,
+          "sha256": "1bd51bb29f8f2bed4787c24519edbfb626b3af273bd8502b64cc783474e5534c"
+        },
+        {
+          "path": "resources/ww_role_pile/1410/builtin_3.webp",
+          "size": 462042,
+          "sha256": "7f48a7725dfc296e14a22cd7a13233b0658f71acd1a96466cde2ae6933e73c3f"
+        },
+        {
+          "path": "resources/ww_role_pile/1410/builtin_4.webp",
+          "size": 128170,
+          "sha256": "02d811cb1ba268721df21ccb89d78357ef468b091718319059d5f6976d89a48e"
+        },
+        {
+          "path": "resources/ww_role_pile/1410/builtin_5.webp",
+          "size": 256294,
+          "sha256": "26a5cfbbbc92d37d6f3b3fa8015a17d01e23cb7f831d827f859a31c69fbddbab"
+        },
+        {
+          "path": "resources/ww_role_pile/1411/builtin_1.webp",
+          "size": 155624,
+          "sha256": "599787ed24e47c700edc0a81ff0d6ab76305f317bebd655a020cb59156fa0857"
+        },
+        {
+          "path": "resources/ww_role_pile/1411/builtin_2.webp",
+          "size": 94918,
+          "sha256": "ff5bc1c714f7860d45f2b4a5356d0e966d3fcbd542f826e239a8049a6b583b37"
+        },
+        {
+          "path": "resources/ww_role_pile/1411/builtin_3.webp",
+          "size": 167892,
+          "sha256": "20e1f63b10a9732b96362a8c7d02ea4c274feadfb4abee925ffa186f3ac7407b"
+        },
+        {
+          "path": "resources/ww_role_pile/1411/builtin_4.webp",
+          "size": 290898,
+          "sha256": "a891c6554641026f91e5e5bd74841482e2e2fa104bcaa7802c984b60cf118b47"
+        },
+        {
+          "path": "resources/ww_role_pile/1411/builtin_5.webp",
+          "size": 149510,
+          "sha256": "5f0532815550223746ae49fb89985f54cf5101e89409a6711af69710785f9534"
+        },
+        {
+          "path": "resources/ww_role_pile/1412/builtin_1.webp",
+          "size": 142286,
+          "sha256": "bdf9cf62a489618e4daf2dc387056333c5fbfa3e903a21ef264bd7cc95163125"
+        },
+        {
+          "path": "resources/ww_role_pile/1412/builtin_2.webp",
+          "size": 311956,
+          "sha256": "a7f72fee228fd1516c809c828a9e96ebab472f594488399a8c41ebd5067c272f"
+        },
+        {
+          "path": "resources/ww_role_pile/1412/builtin_3.webp",
+          "size": 158576,
+          "sha256": "42ce936d6b3f8a0fda60ff8b42d1c9c52665b5f2494d6a6ef7cd237f3229496b"
+        },
+        {
+          "path": "resources/ww_role_pile/1412/builtin_4.webp",
+          "size": 183734,
+          "sha256": "2a0da12a38bc6126275d429674a6b76305368fe5014281e9c224e8d631e5f7fa"
+        },
+        {
+          "path": "resources/ww_role_pile/1412/builtin_5.webp",
+          "size": 188420,
+          "sha256": "d735496f963726817a66cfb36b17cb8bc693b2b5efadec19a940025d033fe222"
+        },
+        {
+          "path": "resources/ww_role_pile/1501/builtin_1.webp",
+          "size": 168470,
+          "sha256": "74a17a4fd35b2adaf95f326861a79893bfda19fedddc51dd85a341201c6c2b74"
+        },
+        {
+          "path": "resources/ww_role_pile/1501/builtin_2.webp",
+          "size": 278688,
+          "sha256": "6f06947a55b10269994527bc0b0026737390c36ea9ceecd4e0b5a1b01499df37"
+        },
+        {
+          "path": "resources/ww_role_pile/1501/builtin_3.webp",
+          "size": 126750,
+          "sha256": "876d95dba2d0a8d953d6c5d76ce0e1fd8ec3a7d96c4bd746b6ee6e69f9013c7d"
+        },
+        {
+          "path": "resources/ww_role_pile/1501/builtin_4.webp",
+          "size": 128136,
+          "sha256": "547c22f16755b47575dd3c0b64c0dd2a924c9824b7666166f187664ca928898c"
+        },
+        {
+          "path": "resources/ww_role_pile/1501/builtin_5.webp",
+          "size": 354384,
+          "sha256": "2fa491b6ae9110e3cc1af3d6b89e1fb7e64b1dd1698cac614706ed0476adf2b3"
+        },
+        {
+          "path": "resources/ww_role_pile/1502/builtin_1.webp",
+          "size": 85652,
+          "sha256": "f2ee240a5ff73b92d191094ff46ba0faa552c485774c44cbad9d9ec87c165c3c"
+        },
+        {
+          "path": "resources/ww_role_pile/1502/builtin_2.webp",
+          "size": 228970,
+          "sha256": "0b791c9fecaeb59bd628cddcfc08f3342881d7052e079d3921fd379bb105c77b"
+        },
+        {
+          "path": "resources/ww_role_pile/1502/builtin_3.webp",
+          "size": 216662,
+          "sha256": "d74c38f2751b9db8f8bb72f1bf0b664c3dec2bf47922dd3de908345ac3338c48"
+        },
+        {
+          "path": "resources/ww_role_pile/1502/builtin_4.webp",
+          "size": 45182,
+          "sha256": "354575df82b3ec0d0ce19496d61efef0c2b245855acb4afd1fe067e7b5876a9d"
+        },
+        {
+          "path": "resources/ww_role_pile/1502/builtin_5.webp",
+          "size": 167086,
+          "sha256": "cb1b70ff69b1321bf8bf5359d4a822dbdeb5c6f025c289ae6f789e85fdc85a43"
+        },
+        {
+          "path": "resources/ww_role_pile/1503/builtin_1.webp",
+          "size": 80414,
+          "sha256": "2a8ad9d8a9fef3873916a3dbae0adc7b25a975ad96c002fe82a9a2522be3035d"
+        },
+        {
+          "path": "resources/ww_role_pile/1503/builtin_2.webp",
+          "size": 113616,
+          "sha256": "ed69f0fce06bd41a1c2492385bf1f9b3a4f74ae00d79b9c27d91debde92f9071"
+        },
+        {
+          "path": "resources/ww_role_pile/1503/builtin_3.webp",
+          "size": 132230,
+          "sha256": "7a2581fad18691824d21046cec3f559fab1db0a02a86e9c540ee8baa5a68f168"
+        },
+        {
+          "path": "resources/ww_role_pile/1503/builtin_4.webp",
+          "size": 71300,
+          "sha256": "631f3d480641f670cfc41b3e64356635231db400de00d127cf1d37ab2ceeee86"
+        },
+        {
+          "path": "resources/ww_role_pile/1503/builtin_5.webp",
+          "size": 162602,
+          "sha256": "30aee67f70337217797e5e58518e2d3a62fb25317d7e740b0c7208914a2aff36"
+        },
+        {
+          "path": "resources/ww_role_pile/1504/builtin_1.webp",
+          "size": 141520,
+          "sha256": "606843e74cd6838c27815ef6373d53e21916da4578b3ba9bd0f20530febd949f"
+        },
+        {
+          "path": "resources/ww_role_pile/1504/builtin_2.webp",
+          "size": 188918,
+          "sha256": "2a77d48e067f9c0ca8e8dced3f2fe2acefd4603bfefe822a014f96ea464deca1"
+        },
+        {
+          "path": "resources/ww_role_pile/1504/builtin_3.webp",
+          "size": 93124,
+          "sha256": "858d953bcb3a502a0fcdce2805ad505bc10fee097e17200738576b8ecf4e1098"
+        },
+        {
+          "path": "resources/ww_role_pile/1504/builtin_4.webp",
+          "size": 153846,
+          "sha256": "340250854fb950f91033b32768915045d4010f3c469781b6ff76d94548a35509"
+        },
+        {
+          "path": "resources/ww_role_pile/1504/builtin_5.webp",
+          "size": 201162,
+          "sha256": "18ff89a6688d36925f7d5222f949a1282e6fd737e4e3db3a0608cd4180c0e2ee"
+        },
+        {
+          "path": "resources/ww_role_pile/1505/builtin_1.webp",
+          "size": 159512,
+          "sha256": "b2e7b100d7d14f1497c390f34a8f7896e3d243cdaf44ab2b0eb7afca29bb4fb9"
+        },
+        {
+          "path": "resources/ww_role_pile/1505/builtin_2.webp",
+          "size": 92044,
+          "sha256": "e3e864306b2e19f311719d4c88ee10bd35e0fb5b06965a89bb64b33617562f8e"
+        },
+        {
+          "path": "resources/ww_role_pile/1505/builtin_3.webp",
+          "size": 140462,
+          "sha256": "1dc8a4267d3620633b1f8336c27b99f5dc35549963cb60ead53874c7a6991b55"
+        },
+        {
+          "path": "resources/ww_role_pile/1505/builtin_4.webp",
+          "size": 215932,
+          "sha256": "fb67df818bcb7aa5a8d9ec018699eeb9ed8e479670617e292757790058ee1597"
+        },
+        {
+          "path": "resources/ww_role_pile/1505/builtin_5.webp",
+          "size": 99680,
+          "sha256": "4956b9bcb426b10d39fd8c8a1f840f1b5d18db21136c5615175dadec23abdd1f"
+        },
+        {
+          "path": "resources/ww_role_pile/1506/builtin_1.webp",
+          "size": 208420,
+          "sha256": "b21e959d652d0d64dbe80fb5c74f803c5b96267ee1c41ab0cf1d4d42f1ec0b10"
+        },
+        {
+          "path": "resources/ww_role_pile/1506/builtin_2.webp",
+          "size": 268708,
+          "sha256": "b0f85c61c4ed99904e45cbf876feafe4c475ce7a515cda847e82098211ee5ba6"
+        },
+        {
+          "path": "resources/ww_role_pile/1506/builtin_3.webp",
+          "size": 135480,
+          "sha256": "167655ccf6f19088d798e581262e5d0fcf8c6d573ea1e9ab60ac8377232c0736"
+        },
+        {
+          "path": "resources/ww_role_pile/1506/builtin_4.webp",
+          "size": 155788,
+          "sha256": "2cd7d1aab1a04da554e72fe54d698a9e76c51efba1bef0d17027e191a3ab3641"
+        },
+        {
+          "path": "resources/ww_role_pile/1506/builtin_5.webp",
+          "size": 124504,
+          "sha256": "8cf68b765ca7c6c553e862483a1bf4a2623a7778eb0a64b3be31f52993b4301b"
+        },
+        {
+          "path": "resources/ww_role_pile/1507/builtin_1.webp",
+          "size": 106448,
+          "sha256": "4329246139a119bb72dda1f5d23d1a417d677aa04b4bf35fab7e537a8440d867"
+        },
+        {
+          "path": "resources/ww_role_pile/1507/builtin_2.webp",
+          "size": 116754,
+          "sha256": "cd5686276ac296e47606e7e4dc0bdb53c4796fd2bf0d0cb3f3fd11017c12f7c8"
+        },
+        {
+          "path": "resources/ww_role_pile/1507/builtin_3.webp",
+          "size": 189676,
+          "sha256": "a4d880fa4f18c027255a1d55c9551ec8cf235742885d5078fcbe563b7e3b0db0"
+        },
+        {
+          "path": "resources/ww_role_pile/1507/builtin_4.webp",
+          "size": 111498,
+          "sha256": "1828219787c376a1b68f49285556bfd3cd76935f404446ddfde72dfeaeb20d99"
+        },
+        {
+          "path": "resources/ww_role_pile/1507/builtin_5.webp",
+          "size": 92362,
+          "sha256": "22b331907656114880ce6102c8d3b5d200b39e2eba85596d63fe9d5dedf2db66"
+        },
+        {
+          "path": "resources/ww_role_pile/1508/builtin_1.webp",
+          "size": 141902,
+          "sha256": "db60d9b11eeeb541c81b815d602c299e42f9132ac7f7cf22e7fdb4c8fbd753fb"
+        },
+        {
+          "path": "resources/ww_role_pile/1508/builtin_2.webp",
+          "size": 237040,
+          "sha256": "fead9910d8ec8526973edfd2b7c0e4871d1e73cd2e5ac86b44046f75d17fa49d"
+        },
+        {
+          "path": "resources/ww_role_pile/1508/builtin_3.webp",
+          "size": 87216,
+          "sha256": "70d8453ef594f544649a5828e96a0b4ae5b11bb33254d211d3adcfc0f735a2b4"
+        },
+        {
+          "path": "resources/ww_role_pile/1508/builtin_4.webp",
+          "size": 163070,
+          "sha256": "100d4af76e64cf71c7765fd529e6df12b1fa84f1bee6643150299865afaadf85"
+        },
+        {
+          "path": "resources/ww_role_pile/1508/builtin_5.webp",
+          "size": 184642,
+          "sha256": "124628db3c2ed3eeecb378bc948976ec960fd9fc28c28a64ff8dbec94e7a9f9b"
+        },
+        {
+          "path": "resources/ww_role_pile/1509/builtin_1.webp",
+          "size": 72352,
+          "sha256": "7153bc8bf5d9efd9738e36b9090e8c8bb1809dc35374a0320a9e44febec561ae"
+        },
+        {
+          "path": "resources/ww_role_pile/1509/builtin_2.webp",
+          "size": 115422,
+          "sha256": "502a59d5822832a7fda8b634eefc5300cd509fe5ff8dfc7676211e1f75d65a4d"
+        },
+        {
+          "path": "resources/ww_role_pile/1509/builtin_3.webp",
+          "size": 109798,
+          "sha256": "e2743ae4b5643c2db73579080049f13736bbe287e50ec9398d9e46136ddc3572"
+        },
+        {
+          "path": "resources/ww_role_pile/1509/builtin_4.webp",
+          "size": 111086,
+          "sha256": "82953d93e527064df21cf367ee8e215cc5b0ea24604502b854d5cc93bdd2bb9e"
+        },
+        {
+          "path": "resources/ww_role_pile/1509/builtin_5.webp",
+          "size": 124206,
+          "sha256": "509a349f499d32f4a3dc72f68d0010405b814ec562329def7a1ec0ba3132f0ae"
+        },
+        {
+          "path": "resources/ww_role_pile/1510/builtin_1.webp",
+          "size": 152304,
+          "sha256": "159c47ffbd9eb73dbf8f7ef0fffd84d61fbd01a01fba471e389c37127e9e1677"
+        },
+        {
+          "path": "resources/ww_role_pile/1510/builtin_2.webp",
+          "size": 163590,
+          "sha256": "7c83cd9bc658eb6580af504c2e722f7956042ff71e13b24f1e011d192e1174c3"
+        },
+        {
+          "path": "resources/ww_role_pile/1510/builtin_3.webp",
+          "size": 457858,
+          "sha256": "dfc0cc556ace4f4fbca92a6a7f2d35d67a8423666936ad312135d86f367ce833"
+        },
+        {
+          "path": "resources/ww_role_pile/1510/builtin_4.webp",
+          "size": 269194,
+          "sha256": "d49b6aa07c9001490b7f4ae80ca9502d24cf76d4b17784206787523afd8eb23a"
+        },
+        {
+          "path": "resources/ww_role_pile/1510/builtin_5.webp",
+          "size": 155956,
+          "sha256": "648afb47bd119d09464d16ed937229c3e45cb9529e1a325a042e0cfdf6c5aa54"
+        },
+        {
+          "path": "resources/ww_role_pile/1511/builtin_1.webp",
+          "size": 102846,
+          "sha256": "52dedd90fa31b89f8d14c53d50b165df909f8a2800172e07e81cdd62042b93e3"
+        },
+        {
+          "path": "resources/ww_role_pile/1511/builtin_2.webp",
+          "size": 162764,
+          "sha256": "38f2a0e28d8e51807367d2e871e021e18d3b4c473ff6ccbe525a1812ef6d6f2e"
+        },
+        {
+          "path": "resources/ww_role_pile/1511/builtin_3.webp",
+          "size": 127508,
+          "sha256": "27ba07497eda6b8feb78ae16df6555c551c84cc4526ec6eb06cf5d3d0d7beb0d"
+        },
+        {
+          "path": "resources/ww_role_pile/1511/builtin_4.webp",
+          "size": 120094,
+          "sha256": "a3e8112e40dbec696f748aecee2f19cf3009f8f385cb17a3a67f06c60314a708"
+        },
+        {
+          "path": "resources/ww_role_pile/1511/builtin_5.webp",
+          "size": 247992,
+          "sha256": "7641fa6e30e2def5cc5dc3da76893a1e3ab1c7b26b9e7fb7534648c537a3f72b"
+        },
+        {
+          "path": "resources/ww_role_pile/1601/builtin_1.webp",
+          "size": 111172,
+          "sha256": "18032c6e76cda1bfcb6651a4c502e8ea4964e65c57a9760435943615a1c9e630"
+        },
+        {
+          "path": "resources/ww_role_pile/1601/builtin_2.webp",
+          "size": 162838,
+          "sha256": "ba22f1e734ad28b11df68d28081a784fbc1bf7a7abaf56c1006f3a7ccb5877eb"
+        },
+        {
+          "path": "resources/ww_role_pile/1601/builtin_3.webp",
+          "size": 120212,
+          "sha256": "78654f30a300cf2ec7f79a39e48f49c75b99626e55732f36b23b750d2eed2c03"
+        },
+        {
+          "path": "resources/ww_role_pile/1601/builtin_4.webp",
+          "size": 106118,
+          "sha256": "86b789c9a8889e063023bfc3aadb741756a05d1e8fbd4113919fdce6ddbaadba"
+        },
+        {
+          "path": "resources/ww_role_pile/1601/builtin_5.webp",
+          "size": 90708,
+          "sha256": "9ba3479ab15e6d11b56d15f80e303274b762739e13f8535ad4fa3fe1865d5046"
+        },
+        {
+          "path": "resources/ww_role_pile/1602/builtin_1.webp",
+          "size": 121100,
+          "sha256": "354b118b5244ff8a12368dcf363df611f51b2982621975bb9117766dbdf1e149"
+        },
+        {
+          "path": "resources/ww_role_pile/1602/builtin_2.webp",
+          "size": 68956,
+          "sha256": "af1e0b8e87103847e0e03422aa70aa12f1686e88fe1f837baa45c3070d2f1c9b"
+        },
+        {
+          "path": "resources/ww_role_pile/1602/builtin_3.webp",
+          "size": 64114,
+          "sha256": "1443ecff1805d399acd13629340876759212aa462c0cbb6f188b33199feae444"
+        },
+        {
+          "path": "resources/ww_role_pile/1602/builtin_4.webp",
+          "size": 132426,
+          "sha256": "bd4aa40a82109530ab344331c7d8dadd9dcc2e4e9ebecc7c2a96cee0f04331cb"
+        },
+        {
+          "path": "resources/ww_role_pile/1602/builtin_5.webp",
+          "size": 42194,
+          "sha256": "14fcec8dd09c2265dbf30525af6ed6a19ac1dec58996e7952ce786a52c30e2ea"
+        },
+        {
+          "path": "resources/ww_role_pile/1603/builtin_1.webp",
+          "size": 174544,
+          "sha256": "f0650d08f6a1f9a4bac8c0a043440bd0c7a3b588d0b5caf972f403204173cf8b"
+        },
+        {
+          "path": "resources/ww_role_pile/1603/builtin_2.webp",
+          "size": 144610,
+          "sha256": "be2386bf15f0bb9d15e846fd8a6088c933c906b9d363165408668d8cc31efba1"
+        },
+        {
+          "path": "resources/ww_role_pile/1603/builtin_3.webp",
+          "size": 158154,
+          "sha256": "53b72d1efc3f638dc39d8d790adcf22d7267798479c8c2ea1c4ea22540ca08a5"
+        },
+        {
+          "path": "resources/ww_role_pile/1603/builtin_4.webp",
+          "size": 145112,
+          "sha256": "96e2c57af6407c721d1cd8fe7490086282590c45456938760b66e8aaa151c3f6"
+        },
+        {
+          "path": "resources/ww_role_pile/1603/builtin_5.webp",
+          "size": 88518,
+          "sha256": "8d2938fc7c4c1478bd9fd7c1e26ebbe9f2d6d0939177f561304904634809611b"
+        },
+        {
+          "path": "resources/ww_role_pile/1604/builtin_1.webp",
+          "size": 85652,
+          "sha256": "f2ee240a5ff73b92d191094ff46ba0faa552c485774c44cbad9d9ec87c165c3c"
+        },
+        {
+          "path": "resources/ww_role_pile/1604/builtin_2.webp",
+          "size": 228970,
+          "sha256": "0b791c9fecaeb59bd628cddcfc08f3342881d7052e079d3921fd379bb105c77b"
+        },
+        {
+          "path": "resources/ww_role_pile/1604/builtin_3.webp",
+          "size": 216662,
+          "sha256": "d74c38f2751b9db8f8bb72f1bf0b664c3dec2bf47922dd3de908345ac3338c48"
+        },
+        {
+          "path": "resources/ww_role_pile/1604/builtin_4.webp",
+          "size": 45182,
+          "sha256": "354575df82b3ec0d0ce19496d61efef0c2b245855acb4afd1fe067e7b5876a9d"
+        },
+        {
+          "path": "resources/ww_role_pile/1604/builtin_5.webp",
+          "size": 167086,
+          "sha256": "cb1b70ff69b1321bf8bf5359d4a822dbdeb5c6f025c289ae6f789e85fdc85a43"
+        },
+        {
+          "path": "resources/ww_role_pile/1605/builtin_1.webp",
+          "size": 168470,
+          "sha256": "74a17a4fd35b2adaf95f326861a79893bfda19fedddc51dd85a341201c6c2b74"
+        },
+        {
+          "path": "resources/ww_role_pile/1605/builtin_2.webp",
+          "size": 278688,
+          "sha256": "6f06947a55b10269994527bc0b0026737390c36ea9ceecd4e0b5a1b01499df37"
+        },
+        {
+          "path": "resources/ww_role_pile/1605/builtin_3.webp",
+          "size": 126750,
+          "sha256": "876d95dba2d0a8d953d6c5d76ce0e1fd8ec3a7d96c4bd746b6ee6e69f9013c7d"
+        },
+        {
+          "path": "resources/ww_role_pile/1605/builtin_4.webp",
+          "size": 128136,
+          "sha256": "547c22f16755b47575dd3c0b64c0dd2a924c9824b7666166f187664ca928898c"
+        },
+        {
+          "path": "resources/ww_role_pile/1605/builtin_5.webp",
+          "size": 354384,
+          "sha256": "2fa491b6ae9110e3cc1af3d6b89e1fb7e64b1dd1698cac614706ed0476adf2b3"
+        },
+        {
+          "path": "resources/ww_role_pile/1606/builtin_1.webp",
+          "size": 220904,
+          "sha256": "5673379229826db2dd9811fe1d8dc133b3d41e8e3a1409ac14e75ce391dba5f3"
+        },
+        {
+          "path": "resources/ww_role_pile/1606/builtin_2.webp",
+          "size": 109084,
+          "sha256": "960a647a0d29baea937c661e0036307ed028095d21a60bb44249f149c46a6a0c"
+        },
+        {
+          "path": "resources/ww_role_pile/1606/builtin_3.webp",
+          "size": 99748,
+          "sha256": "aba0e9a10ff5a98ead0d4410cb88975db8ae9bd0312665059309a6ea1e9fc403"
+        },
+        {
+          "path": "resources/ww_role_pile/1606/builtin_4.webp",
+          "size": 132206,
+          "sha256": "8279c9a3ae6559051c73f133dab162c5448efd51636b01d3060ef3becf609bc4"
+        },
+        {
+          "path": "resources/ww_role_pile/1606/builtin_5.webp",
+          "size": 155974,
+          "sha256": "43e060cf915ffbeab4a1b2604f0fdcea880e3fe804ceffed38ab38fed224a6d7"
+        },
+        {
+          "path": "resources/ww_role_pile/1607/builtin_1.webp",
+          "size": 118058,
+          "sha256": "a47f98d6673c66c430cb984737331852c13b0eca2378beccb02254c28a608247"
+        },
+        {
+          "path": "resources/ww_role_pile/1607/builtin_2.webp",
+          "size": 242288,
+          "sha256": "fecaaff4b61101f7c26a4fd7ff524b5cc874fb9b713357dd75884caa640b6364"
+        },
+        {
+          "path": "resources/ww_role_pile/1607/builtin_3.webp",
+          "size": 220282,
+          "sha256": "e5faaa52b5cfad7a7da73ca517edd9d9decb28e97889c4ad2b68633f7fe31d87"
+        },
+        {
+          "path": "resources/ww_role_pile/1607/builtin_4.webp",
+          "size": 229968,
+          "sha256": "59e20f5c36b1aac0af082ee1e7c31539c533c13185341dd82c27c7ec8bb7d266"
+        },
+        {
+          "path": "resources/ww_role_pile/1607/builtin_5.webp",
+          "size": 190102,
+          "sha256": "da258f00914c1c5ee5a9b742e8f80349018dec6b550d7254a658b9d678c5ef99"
+        },
+        {
+          "path": "resources/ww_role_pile/1608/builtin_1.webp",
+          "size": 71730,
+          "sha256": "99113ebac540bc45d0e8bb814989e6fbc00d1c9c90e93299407e37b1a64f173f"
+        },
+        {
+          "path": "resources/ww_role_pile/1608/builtin_2.webp",
+          "size": 135074,
+          "sha256": "12ce2ae73dcd08200edbd95c83296cd660b303af8a1b25e5cbad85c8da1e9f90"
+        },
+        {
+          "path": "resources/ww_role_pile/1608/builtin_3.webp",
+          "size": 122062,
+          "sha256": "3e0143646d64beccf5294a06a19d562e55d5f75b225e92e0b8f929078e900696"
+        },
+        {
+          "path": "resources/ww_role_pile/1608/builtin_4.webp",
+          "size": 151762,
+          "sha256": "d239cd1030f0c071fbfd7e292de13ab86abc15291e6adf8a837c59cce1438f29"
+        },
+        {
+          "path": "resources/ww_role_pile/1608/builtin_5.webp",
+          "size": 134520,
+          "sha256": "633d773f6a5639660849c904a5f1c6157ff267eb709f2d2756d6ed9510a11a52"
+        },
+        {
+          "path": "resources/ww_role_pile/1610/builtin_1.webp",
+          "size": 168678,
+          "sha256": "aaa8cc9ce4ed445bda0bafaaff0f23e2efb0f2c485698b96781036274602f7be"
+        },
+        {
+          "path": "resources/ww_role_pile/1610/builtin_2.webp",
+          "size": 166848,
+          "sha256": "91d02adec5ac9fa08139a5b6460d620bc180f779442c786a4b82b6a52ecb8f3b"
+        },
+        {
+          "path": "resources/ww_role_pile/1610/builtin_3.webp",
+          "size": 193266,
+          "sha256": "0352bf5584738dcf47646ad5b636194140b4e1713b4ef36583f9d164f565ca1e"
+        },
+        {
+          "path": "resources/ww_role_pile/1610/builtin_4.webp",
+          "size": 213428,
+          "sha256": "069851c9c05e2676ec72c62ebcefbbb11bd63a71959be2527a2a523f943d8a2b"
+        },
+        {
+          "path": "resources/ww_role_pile/1610/builtin_5.webp",
+          "size": 129598,
+          "sha256": "6d9656da4f581fe90fca6b421a6e4e5979d685b9856a503a6c31bb8efd80338d"
+        }
+      ]
+    },
+    {
+      "id": "assets_waves",
+      "label": "鸣潮内置角色立绘",
+      "description": "鸣潮内置角色立绘，不影响另外配置的自备图库。",
+      "coreApi": 2,
+      "dependencies": [
+        "assets_waves_1",
+        "assets_waves_2"
+      ],
+      "entries": [],
+      "internal": false,
+      "legacyResource": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "assets_waves_1": "2.1.0-e3fb9b5ba612",
+        "assets_waves_2": "2.1.0-9ab7fcc47878"
+      },
+      "version": "2.1.0-51a04b573c5f",
+      "package": "packages/assets_waves/2.1.0-51a04b573c5f.xhmp",
+      "sha256": "a84c43497ca2ed6673d8a5cee34dc38e7b26c888d480e9f78ef38db828e8c28e",
+      "bytes": 92,
+      "files": []
+    },
+    {
+      "id": "assets_zzz_1",
+      "label": "绝区零角色立绘资源分包",
+      "description": "绝区零角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-739d56449328",
+      "package": "packages/assets_zzz_1/2.1.0-739d56449328.xhmp",
+      "sha256": "85a9c043fe9f9842a744c44adb64772775013255223eb35b7686a1053967cc12",
+      "bytes": 24128295,
+      "files": [
+        {
+          "path": "resources/zzzrole/IconRole01.png",
+          "size": 810008,
+          "sha256": "66c7161b781ccabc7f848624494b6438a14c0f784eae57975efbedb2e9e48591"
+        },
+        {
+          "path": "resources/zzzrole/IconRole05.png",
+          "size": 1421257,
+          "sha256": "14815835b079ab846c14ab1f926c24577b89305a911d34d541af43e21d2c9899"
+        },
+        {
+          "path": "resources/zzzrole/IconRole09.png",
+          "size": 2378585,
+          "sha256": "1a7d0021805c83d3c238eb1eb264a6a41d8403f8297bdda8f21635d5a725a5db"
+        },
+        {
+          "path": "resources/zzzrole/IconRole10.png",
+          "size": 3034789,
+          "sha256": "28e3732cf6eb55ae0373143753a821debb562588558adc5b77c5aa88d1a125ed"
+        },
+        {
+          "path": "resources/zzzrole/IconRole11.png",
+          "size": 1211180,
+          "sha256": "aeb92b80ebbbee9fa3ef42aab54354edc31492eb6e6a737b0cb49324be6ee4cb"
+        },
+        {
+          "path": "resources/zzzrole/IconRole12.png",
+          "size": 2098376,
+          "sha256": "5fc99c9f5b345bbdd8dbd24f7f57c909b5d5b68b8d8c7c21998be2b7703751ab"
+        },
+        {
+          "path": "resources/zzzrole/IconRole13.png",
+          "size": 1198379,
+          "sha256": "387c8d9aa66bfe2a89382ca0bb58092d2a4bd2c58bd41d24a878f58d0899fa75"
+        },
+        {
+          "path": "resources/zzzrole/IconRole14.png",
+          "size": 1907450,
+          "sha256": "99806ab1df10f7045ab10a09df30ae1a36545a03af10ec21b006db0d11600615"
+        },
+        {
+          "path": "resources/zzzrole/IconRole15.png",
+          "size": 3742756,
+          "sha256": "3665b8b92f118e7cef0020428c926e0a264ed5499f68259dd6c4322ef00be229"
+        },
+        {
+          "path": "resources/zzzrole/IconRole16.png",
+          "size": 5084811,
+          "sha256": "a2ee9343ddd8eaeeb799877f64526049ffab39138abd13ac7e18fe86309ddea5"
+        },
+        {
+          "path": "resources/zzzrole/IconRole17.png",
+          "size": 1225140,
+          "sha256": "efe25f3df2decfc561205032c12761c399803a1fa4b6950d3d914642f9a8ad51"
+        }
+      ]
+    },
+    {
+      "id": "assets_zzz_2",
+      "label": "绝区零角色立绘资源分包",
+      "description": "绝区零角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-f0863dcd1198",
+      "package": "packages/assets_zzz_2/2.1.0-f0863dcd1198.xhmp",
+      "sha256": "c94d96d17de01ab4c71154633e100e7cae4fcc161d507b16c2657cfb681cf14a",
+      "bytes": 24400170,
+      "files": [
+        {
+          "path": "resources/zzzrole/IconRole18.png",
+          "size": 2290398,
+          "sha256": "84edcaa05cbeb6d1acae5924b64e344f412a2591314e7011eb3cbb0b286e2358"
+        },
+        {
+          "path": "resources/zzzrole/IconRole20.png",
+          "size": 1662195,
+          "sha256": "359e47ae9c3f47926c554617417ca9378d7c6460c5732b7cd1c5d418795745df"
+        },
+        {
+          "path": "resources/zzzrole/IconRole21.png",
+          "size": 2320900,
+          "sha256": "7c1e31a7aca87f2b1d2cb4a45a5e2272b3723e492d53b806a4ebaa8c9ac7657a"
+        },
+        {
+          "path": "resources/zzzrole/IconRole22.png",
+          "size": 1784258,
+          "sha256": "51e2d387166667498806866398bd8ce8b813aa93ac3d9a7cf1b1a3bbd3cad758"
+        },
+        {
+          "path": "resources/zzzrole/IconRole23.png",
+          "size": 2093061,
+          "sha256": "744aa81a13146a36fbadb6015312af24add9ea082591f8bb91e09dfbbb604c10"
+        },
+        {
+          "path": "resources/zzzrole/IconRole24.png",
+          "size": 1965676,
+          "sha256": "abd3b550cb141e86847a6a3ad814016c193fb9accbe794e916a7094344f6b888"
+        },
+        {
+          "path": "resources/zzzrole/IconRole25.png",
+          "size": 1248670,
+          "sha256": "07561dc68602294d8fe27bbe8161afb7ed898d02da3fdc9e015b19de072f503b"
+        },
+        {
+          "path": "resources/zzzrole/IconRole26.png",
+          "size": 1905978,
+          "sha256": "667c610660549b958fc22268318f25c05c1467237d893cd64ecccc9dc34a35ac"
+        },
+        {
+          "path": "resources/zzzrole/IconRole27.png",
+          "size": 1554624,
+          "sha256": "1c409983390ba147781cd5dea459d2cdae5985fd596e625ea6af753433859d88"
+        },
+        {
+          "path": "resources/zzzrole/IconRole28.png",
+          "size": 739548,
+          "sha256": "8183c355d3f09338a6448812f70ae710c332c68947f69d5bb7a52f04f63c9d49"
+        },
+        {
+          "path": "resources/zzzrole/IconRole29.png",
+          "size": 914789,
+          "sha256": "a7732df58c8a488bb681266f9e53d602e581450f9adf77ab53d69c08eed172ce"
+        },
+        {
+          "path": "resources/zzzrole/IconRole30.png",
+          "size": 3494894,
+          "sha256": "fd9c04ab034ca17fa06a7d4bdb67fe62226d1f36f533d261ce434ce263d12eaf"
+        },
+        {
+          "path": "resources/zzzrole/IconRole31.png",
+          "size": 1238727,
+          "sha256": "41f8900fd1dcb1af2ac53db48a1181973aeea36bb258a107708acc720226aa7a"
+        },
+        {
+          "path": "resources/zzzrole/IconRole32.png",
+          "size": 1198406,
+          "sha256": "eaea73c1b9e1c317f36985ee78ed28cbe23d0455da6d960e4697c2ad70e17ab1"
+        }
+      ]
+    },
+    {
+      "id": "assets_zzz_3",
+      "label": "绝区零角色立绘资源分包",
+      "description": "绝区零角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-d69adb1666e2",
+      "package": "packages/assets_zzz_3/2.1.0-d69adb1666e2.xhmp",
+      "sha256": "55d9b2b08990bf031cde7cadb6d8913dfada7dbd4009eb65b9de5e67201f1601",
+      "bytes": 24451208,
+      "files": [
+        {
+          "path": "resources/zzzrole/IconRole35.png",
+          "size": 1408801,
+          "sha256": "d9c4fb8c7cd544a39d219217a725d3491d6769ea065d23457ed09c51f0b84f4e"
+        },
+        {
+          "path": "resources/zzzrole/IconRole36.png",
+          "size": 1405960,
+          "sha256": "412041ec25c944d252234d9d9dd9d39b338c5a72f8e962e0fb9ff100611feaa8"
+        },
+        {
+          "path": "resources/zzzrole/IconRole37.png",
+          "size": 1094097,
+          "sha256": "b9ae550a6b112c441ee36c798f0714fa5e0dc50c89372ae7542490fa9610641a"
+        },
+        {
+          "path": "resources/zzzrole/IconRole38.png",
+          "size": 1415254,
+          "sha256": "003c2e6ac92e2c86a96396c00885165edeb47d56d2a93c8b88e998bef14d2f63"
+        },
+        {
+          "path": "resources/zzzrole/IconRole39.png",
+          "size": 1498860,
+          "sha256": "20fbf5707be539b97eb0310c11040a9ff27679be3c3bc2b3a37c7a0b9904e1f5"
+        },
+        {
+          "path": "resources/zzzrole/IconRole40.png",
+          "size": 1199498,
+          "sha256": "efc0134c2ffaf5f7f8163a7599b77c634904d90711e699067dd402baaab657ba"
+        },
+        {
+          "path": "resources/zzzrole/IconRole41.png",
+          "size": 2112121,
+          "sha256": "8b18600d11f2af1f1ace3a554227f1b0a5ac3936ffda806924b737d4d4216ff7"
+        },
+        {
+          "path": "resources/zzzrole/IconRole42.png",
+          "size": 3406468,
+          "sha256": "75a6341bc0cf9faa7ce0712ed3da9625133e7e2f2b039feeefa83579c2bf36f8"
+        },
+        {
+          "path": "resources/zzzrole/IconRole43.png",
+          "size": 1106475,
+          "sha256": "fd064b34467c76c38fdc19f8e4c9b56f029f94b1b0f7ce0ba377a201d2f91a79"
+        },
+        {
+          "path": "resources/zzzrole/IconRole44.png",
+          "size": 1472844,
+          "sha256": "1fbe3680d1c2cd6e0519480e71fd7837d8253f7a045dcd5622462b7972237080"
+        },
+        {
+          "path": "resources/zzzrole/IconRole45.png",
+          "size": 1383702,
+          "sha256": "6cf7b5271da36746306fadb51dbc6aceda20e875655c3bfcabf8a2386f3b83de"
+        },
+        {
+          "path": "resources/zzzrole/IconRole46.png",
+          "size": 1263549,
+          "sha256": "cabf631d0332c11c1542d992b172ccf46cfa090fcedf8e307463c6dba3b6e00c"
+        },
+        {
+          "path": "resources/zzzrole/IconRole47.png",
+          "size": 1825428,
+          "sha256": "6f84a6c603af631a7e82d1f7a0851a31dd1a9acd40b7f5c4eb05f3a0e16d0d92"
+        },
+        {
+          "path": "resources/zzzrole/IconRole48.png",
+          "size": 1202607,
+          "sha256": "49652b894c9e5259b80d27e89421006d6933f6a88d2bda4f789d0d88a7e19a80"
+        },
+        {
+          "path": "resources/zzzrole/IconRole49.png",
+          "size": 1413710,
+          "sha256": "5eb2e5c63bbce3045de4772ad52d759b0ea40ae5f370fdf237c7f1ca4933a702"
+        },
+        {
+          "path": "resources/zzzrole/IconRole50.png",
+          "size": 1261015,
+          "sha256": "9b7f86dd3dec57b84451f91b4dfe9278b476bfaa58aef2e659aef34a6b209a11"
+        }
+      ]
+    },
+    {
+      "id": "assets_zzz_4",
+      "label": "绝区零角色立绘资源分包",
+      "description": "绝区零角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-f7566926dc44",
+      "package": "packages/assets_zzz_4/2.1.0-f7566926dc44.xhmp",
+      "sha256": "600b623fe7bca4d88386932fdb947d152e9920dc8b64f86bd6160783fcc27c6c",
+      "bytes": 24594886,
+      "files": [
+        {
+          "path": "resources/zzzrole/IconRole51.png",
+          "size": 1480514,
+          "sha256": "ee96fbebb900528d3f8214b4ca634d876111ba981ff30315a643928fdb03a660"
+        },
+        {
+          "path": "resources/zzzrole/IconRole52.png",
+          "size": 1727323,
+          "sha256": "964ddb5384d0cb5512b7c0bca1e17962e716cf123f2847d07f653ed254ffc451"
+        },
+        {
+          "path": "resources/zzzrole/IconRole53.png",
+          "size": 2389116,
+          "sha256": "43d82971d1e635d4372c78009958191e02a837ed6fb2f5c4f2402e85058906b4"
+        },
+        {
+          "path": "resources/zzzrole/IconRole54.png",
+          "size": 1942243,
+          "sha256": "8a759025630f0860ea1dee8460d1638569a678133daa59c1d11c3ad3644dce58"
+        },
+        {
+          "path": "resources/zzzrole/IconRole55.png",
+          "size": 2931576,
+          "sha256": "dc4c145acdd35eb7846cd34b248bad5664af5644d5093658e3233e869e3be44c"
+        },
+        {
+          "path": "resources/zzzrole/IconRole56.png",
+          "size": 1527467,
+          "sha256": "0d9c89ad52b45ba55708cbce451d09285be7dc23c71970b3cd0454f114f35840"
+        },
+        {
+          "path": "resources/zzzrole/IconRole57.png",
+          "size": 1435733,
+          "sha256": "0b3ba2b41400007a1934a853eb89e688631670a6bb0530c6b30b9c1ce4beeb19"
+        },
+        {
+          "path": "resources/zzzrole/IconRole58.png",
+          "size": 1114748,
+          "sha256": "6903f7f983ad54db9c7ff19dbcdedc6651ba6ed8a1e6d7661c53f4814c4a407d"
+        },
+        {
+          "path": "resources/zzzrole/IconRole59.png",
+          "size": 1894086,
+          "sha256": "6cdbbb34a62718670dff0cf8023e09f9f90ace2fe1c7535a96e63458d4cc4927"
+        },
+        {
+          "path": "resources/zzzrole/IconRole60.png",
+          "size": 2089627,
+          "sha256": "34c858a87e1d414f5349d2b96e40ac0e9d387f5e50b89e8b146e4f6925a40db9"
+        },
+        {
+          "path": "resources/zzzrole/IconRole61.png",
+          "size": 2251362,
+          "sha256": "25a1462d5768701ff237d7eb5e573a41c98c63a9bae987b25baaf6448cd796f2"
+        },
+        {
+          "path": "resources/zzzrole/IconRole63.png",
+          "size": 1594297,
+          "sha256": "a0fb74f950b1790809750bd391451e42701f180c1c2b13d744bdf41c1d023de8"
+        },
+        {
+          "path": "resources/zzzrole/IconRole64.png",
+          "size": 2233792,
+          "sha256": "b26888c473ce97d7d5d407b6b7455ab5a08526641fd436288158973328674a3f"
+        }
+      ]
+    },
+    {
+      "id": "assets_zzz_5",
+      "label": "绝区零角色立绘资源分包",
+      "description": "绝区零角色立绘资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-8e6f7ccca7b2",
+      "package": "packages/assets_zzz_5/2.1.0-8e6f7ccca7b2.xhmp",
+      "sha256": "665e0a7cf6b29aa5521cc36e2309d622d30b7937a50dedf92bf174f7f86c3d46",
+      "bytes": 3309473,
+      "files": [
+        {
+          "path": "resources/zzzrole/IconRole65.png",
+          "size": 2819533,
+          "sha256": "4b29227f6dac64535b5bd3c21a35cdf1c5b406ba2240ad68c50d3e6d159e7b40"
+        },
+        {
+          "path": "resources/zzzrole/IconRole66.webp",
+          "size": 490458,
+          "sha256": "360135310f2e16eb3e6797b99437b553eef60f43fcc506d385c93969019e222c"
+        }
+      ]
+    },
+    {
+      "id": "assets_zzz",
+      "label": "绝区零角色立绘",
+      "description": "绝区零角色立绘，供体力立绘卡和桌面小组件使用。",
+      "coreApi": 2,
+      "dependencies": [
+        "assets_zzz_1",
+        "assets_zzz_2",
+        "assets_zzz_3",
+        "assets_zzz_4",
+        "assets_zzz_5"
+      ],
+      "entries": [],
+      "internal": false,
+      "legacyResource": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "assets_zzz_1": "2.1.0-739d56449328",
+        "assets_zzz_2": "2.1.0-f0863dcd1198",
+        "assets_zzz_3": "2.1.0-d69adb1666e2",
+        "assets_zzz_4": "2.1.0-f7566926dc44",
+        "assets_zzz_5": "2.1.0-8e6f7ccca7b2"
+      },
+      "version": "2.1.0-d71c4df4f65e",
+      "package": "packages/assets_zzz/2.1.0-d71c4df4f65e.xhmp",
+      "sha256": "101e242ebb2a5e467b0f956df8b15673f4cc2821945afa7872de20a251a2c357",
+      "bytes": 91,
+      "files": []
+    },
+    {
+      "id": "auto_sign",
+      "label": "米游社自动签到",
+      "description": "原神、星铁、绝区零手动签到与每日自动签到。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/autoSign.js",
+          "export": "autoSign"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-e73a4c98472e",
+      "package": "packages/auto_sign/2.1.0-e73a4c98472e.xhmp",
+      "sha256": "0ec4c8569d1ce9343c2c86c9666eadde58a3e5ad1c312fb826ea7669e119abe3",
+      "bytes": 18994,
+      "files": [
+        {
+          "path": "apps/autoSign.js",
+          "size": 18635,
+          "sha256": "56ee4110ada30d879c86f24d5b92e8639b0648b53aa34e6b0d746b47bc5b91da"
+        },
+        {
+          "path": "resources/auto_sign/auto_sign.html",
+          "size": 6769,
+          "sha256": "df2a7d6fec6d49aaa2850174658ac0a50a91a8eb3f543733d75b88c76a67e1d4"
+        },
+        {
+          "path": "utils/signClient.js",
+          "size": 9216,
+          "sha256": "0d5becd50245b25b0fa6c9f60c2d4e27b0d6d68ce7caf270ce1939c34a1086c5"
+        }
+      ]
+    },
+    {
+      "id": "shared_sqlite",
+      "label": "SQLite 读取兼容层",
+      "description": "SQLite 读取兼容层",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-b965389ca310",
+      "package": "packages/shared_sqlite/2.1.0-b965389ca310.xhmp",
+      "sha256": "8638b69beaae91938a17d14e95e61a6b31ed5648986ce7eea41e1795619e6da2",
+      "bytes": 6473,
+      "files": [
+        {
+          "path": "utils/sqlite.js",
+          "size": 10301,
+          "sha256": "57107d23e217806c70816b87384b273c5d7e4b13c6867c0cc1ddccc4ef98d3d8"
+        }
+      ]
+    },
+    {
+      "id": "bbs_coin",
+      "label": "米游币社区任务",
+      "description": "完成米游币社区任务，查询余额并管理自动任务。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account",
+        "shared_sqlite",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/autoBbsCoin.js",
+          "export": "autoBbsCoin"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d",
+        "shared_sqlite": "2.1.0-b965389ca310",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-c93758139522",
+      "package": "packages/bbs_coin/2.1.0-c93758139522.xhmp",
+      "sha256": "57d1a622c0ba02a3cfe0bfa685eb5b95e25de18f00300e690a919f15dd147445",
+      "bytes": 32710,
+      "files": [
+        {
+          "path": "apps/autoBbsCoin.js",
+          "size": 19830,
+          "sha256": "965ba38d46937a14a85c5cb7547b9400eab496a6eef4e0b41ed33ba99ccff42d"
+        },
+        {
+          "path": "resources/bbs_coin/bbs_coin.html",
+          "size": 7854,
+          "sha256": "1bd55dd232f03132846a4a327f2ea025f4f07e630d4d7ac458a1dc1ea0f2e378"
+        },
+        {
+          "path": "utils/bbsCoinClient.js",
+          "size": 32730,
+          "sha256": "52734492164db92dc77984c179c1d993a4137e847cdb1aa2b9ed52737f35d0ff"
+        }
+      ]
+    },
+    {
+      "id": "captcha",
+      "label": "撞码自动处理",
+      "description": "处理米游社验证码提示，配合过码服务继续请求。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account"
+      ],
+      "entries": [
+        {
+          "path": "apps/captchaNotice.js",
+          "export": "captchaNotice"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d"
+      },
+      "version": "2.1.0-b41ffbc13d3a",
+      "package": "packages/captcha/2.1.0-b41ffbc13d3a.xhmp",
+      "sha256": "1d7873ad9d765e9a7ab33c5bbb54c4678e8e43aed1c667e68e2f8be8f00f0c57",
+      "bytes": 5745,
+      "files": [
+        {
+          "path": "apps/captchaNotice.js",
+          "size": 8218,
+          "sha256": "caf858ef7b861b305af9a1ea9bfee69f896f077a912edee11e60669196ec246a"
+        }
+      ]
+    },
+    {
+      "id": "del_ck",
+      "label": "删除 CK 对账",
+      "description": "删除账号时记录残留凭证，避免已删账号被重新识别。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account"
+      ],
+      "entries": [
+        {
+          "path": "apps/delCkHook.js",
+          "export": "TLDelCkHook"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d"
+      },
+      "version": "2.1.0-51fe831bdda6",
+      "package": "packages/del_ck/2.1.0-51fe831bdda6.xhmp",
+      "sha256": "bd489f0c7e826ef3a03a527f699ba90b9e9b39fed1c11146afac7b41ad25bfe2",
+      "bytes": 3808,
+      "files": [
+        {
+          "path": "apps/delCkHook.js",
+          "size": 5030,
+          "sha256": "dc3d95d850fcfe93dc7faa149f87314dcb42738baef21a8990b4ef15ec8cd593"
+        }
+      ]
+    },
+    {
+      "id": "gs_all_abyss",
+      "label": "原神全部深渊",
+      "description": "一张图汇总原神深境螺旋、幽境危战与幻想真境剧诗。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/gsAllAbyss.js",
+          "export": "gsAllAbyss"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-f4397dde6470",
+      "package": "packages/gs_all_abyss/2.1.0-f4397dde6470.xhmp",
+      "sha256": "d8985aeeeb6898efc051f0948ea3eebf429ddbf7be5096bf28c883e95dd7f392",
+      "bytes": 43342,
+      "files": [
+        {
+          "path": "apps/gsAllAbyss.js",
+          "size": 29387,
+          "sha256": "d82274accb198dc99c9ab2f32244776418a706f0d48a61987ce5af879dd3dd08"
+        },
+        {
+          "path": "resources/gs_all_abyss/char-mcard.html",
+          "size": 1181,
+          "sha256": "efc234cc3a6370ca63dcb8ccf11739e53fc0cef1f7766dda07ca769eca4a49bf"
+        },
+        {
+          "path": "resources/gs_all_abyss/gs_all_abyss.css",
+          "size": 65830,
+          "sha256": "d767195b3ac0b81e12dd0b2e0ba1fffabdd394679b31469703b3c89365536ae3"
+        },
+        {
+          "path": "resources/gs_all_abyss/gs_all_abyss.html",
+          "size": 28304,
+          "sha256": "1663369fa64f3e12ad47c90d664313986694774c0666b31d7f791a3ae8cb6ff0"
+        }
+      ]
+    },
+    {
+      "id": "hard_team",
+      "label": "危战配队",
+      "description": "查看幽境危战配队，结合角色信息选择挑战阵容。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/hardTeam.js",
+          "export": "hardTeam"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-29e2d676ca80",
+      "package": "packages/hard_team/2.1.0-29e2d676ca80.xhmp",
+      "sha256": "d56605a1eb11cef8c8d72c76de4f96d61506aa3af5afbafc9e521be39cde481b",
+      "bytes": 10636,
+      "files": [
+        {
+          "path": "apps/hardTeam.js",
+          "size": 8436,
+          "sha256": "56edc5ec934972c8f14ec8033cf4dc3529c4327f2dc2ccac2f3b5c211072bdcf"
+        },
+        {
+          "path": "resources/hard_team/hard_team.css",
+          "size": 7686,
+          "sha256": "ecd1b507b17933e5fb5a15c7f1c92c0cd83c8e80f1d0364e15a75f2e578ba26f"
+        },
+        {
+          "path": "resources/hard_team/hard_team.html",
+          "size": 3540,
+          "sha256": "a81aac42a3002c741207cd4db91dc4398d25b7d35b421d7e7f0ec3134ee0ebd1"
+        }
+      ]
+    },
+    {
+      "id": "hold_rate",
+      "label": "角色持有率",
+      "description": "查看原神角色持有率和统计信息。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/holdRate.js",
+          "export": "holdRate"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-b60cb0e1e134",
+      "package": "packages/hold_rate/2.1.0-b60cb0e1e134.xhmp",
+      "sha256": "92532c359787b6007608a5f4bd14700f8b2253cdbfe4b88ee5df3a08bb73524c",
+      "bytes": 8161,
+      "files": [
+        {
+          "path": "apps/holdRate.js",
+          "size": 4776,
+          "sha256": "2db6a99bb1efce7bc14e993dd00c0c29aaca3365286149d9469d4c97d47717cd"
+        },
+        {
+          "path": "resources/hold_rate/hold_rate.css",
+          "size": 7035,
+          "sha256": "620ef753b7e9bb574f5c977fff6fa37f21b8e48a5d49d026d5fb81b99c6640ab"
+        },
+        {
+          "path": "resources/hold_rate/hold_rate.html",
+          "size": 3228,
+          "sha256": "d55c7cf5dede40b019f6bb378441453c7fa856819852761707ff67cd1c5864c8"
+        }
+      ]
+    },
+    {
+      "id": "shared_versions",
+      "label": "版本资料接口",
+      "description": "版本资料接口",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-0e6a650cb52b",
+      "package": "packages/shared_versions/2.1.0-0e6a650cb52b.xhmp",
+      "sha256": "3d18f24c6e29845e22736f6e9dcf3b790715dd9ca8acffaffbe253826ea796a5",
+      "bytes": 7881,
+      "files": [
+        {
+          "path": "utils/alioth.js",
+          "size": 12668,
+          "sha256": "18d826c12ec14554c9476ddfa0b01612de355573bc779aad6d6b2252eacee025"
+        }
+      ]
+    },
+    {
+      "id": "nanoka",
+      "label": "版本配置（深渊/剧诗/危战）",
+      "description": "查看原神与星铁各期挑战配置、敌人及版本资料。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_versions",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/nanokaAbyss.js",
+          "export": "nanokaAbyss"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_versions": "2.1.0-0e6a650cb52b",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-66f635df27fe",
+      "package": "packages/nanoka/2.1.0-66f635df27fe.xhmp",
+      "sha256": "3bf22b56a222d691d7fa4c15cf763ec1295a34764353fc14c8b555689c700b9f",
+      "bytes": 30392,
+      "files": [
+        {
+          "path": "apps/nanokaAbyss.js",
+          "size": 34840,
+          "sha256": "127e7b9ea48448c0db5a422f97603f41f5357c6a5cdd0f6d499623fb5215bcea"
+        },
+        {
+          "path": "resources/leyline_luna/leyline_luna.html",
+          "size": 9373,
+          "sha256": "4fa42cc63deb5329f44d599222a8bb1d56a33088d339a3fc9fc42ddee4841af0"
+        },
+        {
+          "path": "resources/nanoka_abyss/nanoka_abyss.css",
+          "size": 12751,
+          "sha256": "8d49cc68774b0ea32b9f2328ccebbc2bb1afb56059b3de59dde8674f86a1320c"
+        },
+        {
+          "path": "resources/nanoka_abyss/nanoka_abyss.html",
+          "size": 23008,
+          "sha256": "322d53670a991f4f430f999f39c07ea932446f8e3cf3a0136aebd0aacd07f930"
+        }
+      ]
+    },
+    {
+      "id": "redeem",
+      "label": "三游戏兑换码",
+      "description": "三游戏国服兑换码手动使用及官方前瞻码自动订阅。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account"
+      ],
+      "entries": [
+        {
+          "path": "apps/redeemCodes.js",
+          "export": "redeemCodes"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d"
+      },
+      "version": "2.1.0-12e131a9c5c5",
+      "package": "packages/redeem/2.1.0-12e131a9c5c5.xhmp",
+      "sha256": "7922979ab52ae325fe5ed95658a50b2447936a9afa0ff1fc3b8e343bd82137d2",
+      "bytes": 10435,
+      "files": [
+        {
+          "path": "apps/redeemCodes.js",
+          "size": 10830,
+          "sha256": "7b9e34acb98cbbef3c9e506862749c93f120869c67a78d5558ef45f6a8fb89fe"
+        },
+        {
+          "path": "utils/redeemClient.js",
+          "size": 7514,
+          "sha256": "211cec807c479089c97c5a477556c07008454721f3e5c8cdfcef34692731b0b0"
+        }
+      ]
+    },
+    {
+      "id": "shared_stamina",
+      "label": "体力数据与出图",
+      "description": "体力数据与出图",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account",
+        "shared_fonts"
+      ],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-d93a83f1c7bf",
+      "package": "packages/shared_stamina/2.1.0-d93a83f1c7bf.xhmp",
+      "sha256": "83992c302569af8c277fb03276cceaeb7abc68dd19d9b57857c6617c8f40a628",
+      "bytes": 2023806,
+      "files": [
+        {
+          "path": "resources/Tl/Portrait.html",
+          "size": 3421,
+          "sha256": "1659ba425f8cafa4182ff08b7855bb0ce6e96d55b0af1041dd3c5774dd7a79fe"
+        },
+        {
+          "path": "resources/Tl/Remind.html",
+          "size": 1908,
+          "sha256": "4a6503c536c59dc2ce91b10f46609540b5010cc6b4660b51ee731998b922da99"
+        },
+        {
+          "path": "resources/Tl/Tl.html",
+          "size": 14183,
+          "sha256": "97564e2fa0504f221b9648eb2169200902d5a8baad71ee0c0bc81e1cbe73bcc7"
+        },
+        {
+          "path": "resources/Tl/Widget.html",
+          "size": 5090,
+          "sha256": "f84dbfa361554cbcbc41bde863b99705c17ab6200fa71d8da66b9b425ad5be41"
+        },
+        {
+          "path": "resources/Tl/imgs/bg.jpg",
+          "size": 523841,
+          "sha256": "8fcd31deed94b79ee4cee340253795c3b715964b66511221ac7bfac9997313ae"
+        },
+        {
+          "path": "resources/Tl/imgs/bg1.jpg",
+          "size": 151610,
+          "sha256": "f894b731e6ff6268edaf1cb8a44aa801e914e0a5242e2d0d12ec71e1fdda385f"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/冥歌海墟.png",
+          "size": 6474,
+          "sha256": "17a74521d15d72371430b760018336c3be37e082ff1356c0706486e20a90d93d"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/周度游历.png",
+          "size": 21221,
+          "sha256": "3b43afd7248e8b60114f6705283fc5cdc40c61ece3b2c038d61e11c4f8594c6c"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/战歌重奏.png",
+          "size": 6947,
+          "sha256": "04314d0bd8cb6d79fe10e2c6ad82baf7e867c8d4f13f30f28baf8e432f23347b"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/活跃度.png",
+          "size": 61579,
+          "sha256": "1bf11014745a6b34b7de4e5a3850011ff50348ac6b9849a97b8a32c826f0c1c2"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/终焉矩阵.png",
+          "size": 2460,
+          "sha256": "dc5f6ce9a2cadd9284fad72450536a97e2a7564bf1d6adf0b40d6c4a982fce47"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/结晶单质.png",
+          "size": 33804,
+          "sha256": "e40291f7b29d83df1c8b5e2500cc45df434718cb2dd8de24af64d9a89a3edc41"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/结晶波片.png",
+          "size": 29028,
+          "sha256": "3434adc405327e4465ac5d59fa38c6bb3bbc6d35d61d4767563bcb955de36791"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/逆境深塔.png",
+          "size": 5429,
+          "sha256": "8681bc2cf097bd72ca4cd0548ce4551e9c9b0cbd3576eb309a2170fa58b8722d"
+        },
+        {
+          "path": "resources/Tl/imgs/ww/鸣潮.png",
+          "size": 103753,
+          "sha256": "88a1c484c77e0dd839931dc5c7f325cd3027a1914aba8fb204371930bb816669"
+        },
+        {
+          "path": "resources/Tl/imgs/zzz.png",
+          "size": 946,
+          "sha256": "53340b0b0f529b26db6af632a0112708233bf312448c5b89a1357b2cd70b3f42"
+        },
+        {
+          "path": "resources/Tl/imgs/冒险委托.png",
+          "size": 4040,
+          "sha256": "816c6cff9cdce8250ccfb7cc992c9289c27f7aedc4bc38c7d2a317fda7d345ea"
+        },
+        {
+          "path": "resources/Tl/imgs/原神.jpg",
+          "size": 375851,
+          "sha256": "6a6e765d9d4f93889c0e4b0a9e43f360f1997af420a152ca5c806043964c1509"
+        },
+        {
+          "path": "resources/Tl/imgs/参量质变仪.png",
+          "size": 60757,
+          "sha256": "31a6b5b38c83e6b18046114ac34da758272bcc08c2b0a2a159ff66f44e5e5289"
+        },
+        {
+          "path": "resources/Tl/imgs/后备开拓力.png",
+          "size": 7569,
+          "sha256": "0f6c1c05d4b01c1e86f3d76c300efd6689cae4b1a6f1363f095b6e7ddd88b535"
+        },
+        {
+          "path": "resources/Tl/imgs/委托执行.png",
+          "size": 685,
+          "sha256": "aee2ad6b0e27374a1882f3f1dacd45e4c710c5c0b55f3f7b8de17c70e93c4147"
+        },
+        {
+          "path": "resources/Tl/imgs/开拓力.png",
+          "size": 7279,
+          "sha256": "e0796a939e10606db5874f6e642cffa4dbe3270dc46f1e14617595a714f4f624"
+        },
+        {
+          "path": "resources/Tl/imgs/探索派遣.png",
+          "size": 3643,
+          "sha256": "9a553579b40115481da9717edc5b17568ce1928b5ebff03d158864eff213c2b1"
+        },
+        {
+          "path": "resources/Tl/imgs/星铁.jpg",
+          "size": 167821,
+          "sha256": "95cb81f51c54700ef25a4481a3257ce563ee9361218ee103b89034e17013ccd8"
+        },
+        {
+          "path": "resources/Tl/imgs/树脂.png",
+          "size": 4244,
+          "sha256": "5d486d97a6460178fc065b31850630cb9340f3b41d01f914232088504124bffb"
+        },
+        {
+          "path": "resources/Tl/imgs/模拟宇宙.png",
+          "size": 1194,
+          "sha256": "f82babae01911d80ceaa56f3212fb77f6981bcab80bb51bfa5577a5c3c86e21b"
+        },
+        {
+          "path": "resources/Tl/imgs/每日实训.png",
+          "size": 971,
+          "sha256": "bcb9ddb382adc4fe54489db51aa8e602c1dad7feb6a5f3e6eb4cdcbd298eaa0d"
+        },
+        {
+          "path": "resources/Tl/imgs/洞天宝钱.png",
+          "size": 3368,
+          "sha256": "9c01c5c120477587cfb0f6708a0e9a96fa191e6265dd5667ce4830d1a5c5e51d"
+        },
+        {
+          "path": "resources/Tl/imgs/活跃度.png",
+          "size": 2306,
+          "sha256": "f3c15f7da3e196ba0462410196cc6252465795b5b2be701f87e7b04aec3d1a64"
+        },
+        {
+          "path": "resources/Tl/imgs/电池.png",
+          "size": 22006,
+          "sha256": "ecd419c0f334ded0991e98764053ad4d04d42fa2b919c753f91b021bf06955b6"
+        },
+        {
+          "path": "resources/Tl/imgs/签到.png",
+          "size": 2223,
+          "sha256": "2a5ed9f0be5baab095156027edf5744e05acc929d3c9a79fac631665de1cfda7"
+        },
+        {
+          "path": "resources/Tl/imgs/绝区零.jpg",
+          "size": 247163,
+          "sha256": "8a379b638a8e705a1ee35cea55820e3da4ccb95a89a4e6540f0facc7034894a7"
+        },
+        {
+          "path": "resources/Tl/imgs/面具.png",
+          "size": 132963,
+          "sha256": "1871a5d3b0d5b784da40f197e947c6101ecac1bed55977bf9aa37e07d2675205"
+        },
+        {
+          "path": "resources/Tl/portrait.css",
+          "size": 8549,
+          "sha256": "631c35fc57cebe83da50f9a7ba72b2a340d81d1d2e5e950dee0965565c31c72c"
+        },
+        {
+          "path": "resources/Tl/remind.css",
+          "size": 4262,
+          "sha256": "54ca483437b8f779cd6d465f9453d01a3bd25a305d2447d118187951691f2008"
+        },
+        {
+          "path": "resources/Tl/tl.css",
+          "size": 7544,
+          "sha256": "bb3475540e564aefa6f806a7255cea8b5592694b242a004ee9bdf6f576c9c1bf"
+        },
+        {
+          "path": "resources/Tl/widget.css",
+          "size": 7987,
+          "sha256": "b4f52af3480038f3ab9d989408629b680f7631c24f29677414fa300daa3642fc"
+        },
+        {
+          "path": "utils/portraitPalette.js",
+          "size": 5762,
+          "sha256": "e93d233544822ff722ea3ce4c9b2c169fbb6f5e51f559ec61db5f71c6512f768"
+        },
+        {
+          "path": "utils/staminaService.js",
+          "size": 78212,
+          "sha256": "cccf9051d30d27721d4151cb79869fef9ac264c124e308bfed990708539e1649"
+        }
+      ]
+    },
+    {
+      "id": "shared_delivery",
+      "label": "体力订阅与投递",
+      "description": "体力订阅与投递",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_stamina"
+      ],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_stamina": "2.1.0-d93a83f1c7bf"
+      },
+      "version": "2.1.0-ea73c37c0afd",
+      "package": "packages/shared_delivery/2.1.0-ea73c37c0afd.xhmp",
+      "sha256": "a304fba8bb4f19ac8773e14b827130e70ef3f3ad0b6a718b824eb45f244e3b89",
+      "bytes": 7749,
+      "files": [
+        {
+          "path": "utils/staminaPushService.js",
+          "size": 11964,
+          "sha256": "ed94ef7f33a79f14635c934076132c1b94cc232eed750d0c46fcd7b5797aba0f"
+        }
+      ]
+    },
+    {
+      "id": "resin_push",
+      "label": "体力阈值推送",
+      "description": "设置体力阈值，恢复到指定数值时发送群提醒。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_delivery"
+      ],
+      "entries": [
+        {
+          "path": "apps/resinPush.js",
+          "export": "resinPush"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_delivery": "2.1.0-ea73c37c0afd"
+      },
+      "version": "2.1.0-aabec3c1ed11",
+      "package": "packages/resin_push/2.1.0-aabec3c1ed11.xhmp",
+      "sha256": "83a17768ff3878b9daf4211dc163c2cc53faba1e52d9ebe21ef90694bfbc49cb",
+      "bytes": 13828,
+      "files": [
+        {
+          "path": "apps/resinPush.js",
+          "size": 28913,
+          "sha256": "0dce4399164e54112db320c4b08ac3b5ec4bc2105f3f6f946d7f46e0ff6f8441"
+        }
+      ]
+    },
+    {
+      "id": "resin_timer",
+      "label": "质变仪 / 洞天宝钱到期提醒",
+      "description": "参量质变仪冷却结束、洞天宝钱攒满时，提醒订阅用户。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_delivery"
+      ],
+      "entries": [
+        {
+          "path": "apps/resinReminder.js",
+          "export": "resinReminder"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_delivery": "2.1.0-ea73c37c0afd"
+      },
+      "version": "2.1.0-4c1b61b88ec1",
+      "package": "packages/resin_timer/2.1.0-4c1b61b88ec1.xhmp",
+      "sha256": "06190833278923f04fb59bd842aa1096935cd3ccf7eb813d67c7fcd7faa3b77b",
+      "bytes": 22469,
+      "files": [
+        {
+          "path": "apps/resinReminder.js",
+          "size": 8020,
+          "sha256": "bdffd49611dc0a6373121f12d409fcde1fd70aaf01d35d00c6ec48af5d5e6db9"
+        },
+        {
+          "path": "utils/resinTimer.js",
+          "size": 34058,
+          "sha256": "b84a80afe893facda7fbefb1cae2ef38e9f717c6a07078acb356a8b2f8a807c5"
+        }
+      ]
+    },
+    {
+      "id": "role_combat",
+      "label": "幻想真境剧诗 / 小剧诗",
+      "description": "查询幻想剧诗可用角色与个人小剧诗成绩。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs",
+        "shared_fonts",
+        "shared_versions"
+      ],
+      "entries": [
+        {
+          "path": "apps/role_combat.js",
+          "export": "role_combat"
+        },
+        {
+          "path": "apps/miniRoleCombat.js",
+          "export": "miniRoleCombat"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_fonts": "2.1.0-0e53a82b3dea",
+        "shared_versions": "2.1.0-0e6a650cb52b"
+      },
+      "version": "2.1.0-576cc12b6118",
+      "package": "packages/role_combat/2.1.0-576cc12b6118.xhmp",
+      "sha256": "689ee857b668fead66b38a2438f49c525cd4c7637e3ab360a3840e18ca330e2a",
+      "bytes": 26805,
+      "files": [
+        {
+          "path": "apps/miniRoleCombat.js",
+          "size": 12122,
+          "sha256": "dc22034746af53cc9a50018116eb0299a4b88ae788c3f616ce444f730f04efc3"
+        },
+        {
+          "path": "apps/role_combat.js",
+          "size": 17589,
+          "sha256": "b4a00e3099c9513b216db39363a902c86aed30146f758fc6faed0884e1bf4c51"
+        },
+        {
+          "path": "resources/role_combat/mini_role_combat.css",
+          "size": 12293,
+          "sha256": "b776478cf4ee50ed3961d0579669e04724e16237418c76904ddd04404decb239"
+        },
+        {
+          "path": "resources/role_combat/mini_role_combat.html",
+          "size": 5246,
+          "sha256": "100f84ea71f421ae5581cb7443b1bc0c31b5293d256bd48e06aff47104652004"
+        },
+        {
+          "path": "resources/role_combat/role_combat.css",
+          "size": 7672,
+          "sha256": "6ae24c6cee809720ed85a8b93e609b022d235d56fe4131ee2cc5b05effff290a"
+        },
+        {
+          "path": "resources/role_combat/role_combat.html",
+          "size": 3209,
+          "sha256": "bb0d354b6f5c864cd29f6cb6e2946527931b3bf65aabd5ecb6df58578825c6b4"
+        }
+      ]
+    },
+    {
+      "id": "solver",
+      "label": "过码服务部署",
+      "description": "一键部署和检查独立过码服务，不随模块卸载停止服务。",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [
+        {
+          "path": "apps/solverDeploy.js",
+          "export": "solverDeploy"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-dd55ddb40791",
+      "package": "packages/solver/2.1.0-dd55ddb40791.xhmp",
+      "sha256": "8c8035638bd917ae2fcdb49a5713a0d0cf86b695af43353a7a441bd666c5901e",
+      "bytes": 26817,
+      "files": [
+        {
+          "path": "apps/solverDeploy.js",
+          "size": 32106,
+          "sha256": "101a59e13f77f01ba388f0b9a492a6876aaada5746dbdb45e1eff36d444d568c"
+        },
+        {
+          "path": "utils/pm2.js",
+          "size": 17339,
+          "sha256": "6bbba1d6f064158b2f9638a00912d355c18240098687ca9676bb7af824d06f0c"
+        }
+      ]
+    },
+    {
+      "id": "sr_all_abyss",
+      "label": "星铁全部深渊",
+      "description": "汇总星铁混沌回忆、虚构叙事、末日幻影与异相仲裁。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account"
+      ],
+      "entries": [
+        {
+          "path": "apps/Abyss.js",
+          "export": "Abyss"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d"
+      },
+      "version": "2.1.0-f8bc92f0380f",
+      "package": "packages/sr_all_abyss/2.1.0-f8bc92f0380f.xhmp",
+      "sha256": "8ac6fcec18c0a8d73315f22a7a430bfa19e4de0462df0c472c60a0766af38a9e",
+      "bytes": 2689170,
+      "files": [
+        {
+          "path": "apps/Abyss.js",
+          "size": 1094,
+          "sha256": "600796e4319f762df78b803279830d4b9a9b69996a2945da1b7846aeeec22115"
+        },
+        {
+          "path": "apps/allAbyssModule.js",
+          "size": 27086,
+          "sha256": "bb6d13a2e986a3004b6ac75d2d18b60e5dacf4c2b22c4a20c61dc2aec396a1d2"
+        },
+        {
+          "path": "resources/all-abyss-mobile.html",
+          "size": 29050,
+          "sha256": "7ea788c14d05e01d2b8c976b49c4ead7b41016d5dc9173643d3b2f65b37dff53"
+        },
+        {
+          "path": "resources/all-abyss.html",
+          "size": 31665,
+          "sha256": "ba73fe4712a4fe46758fd62cc2fc83213fd79081cd059128aa628b8aec0643bc"
+        },
+        {
+          "path": "resources/background.png",
+          "size": 2655895,
+          "sha256": "af09e8e509acfc914cdaf0ed453cf40786222f1ac91b9df380ccea05692e1ac3"
+        }
+      ]
+    },
+    {
+      "id": "sr_gacha",
+      "label": "星铁抽卡记录",
+      "description": "更新、导入与查看星铁抽卡记录及卡池统计。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_account",
+        "shared_fonts"
+      ],
+      "entries": [
+        {
+          "path": "apps/srGachaLog.js",
+          "export": "srGachaLog"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_account": "2.1.0-5282f040854d",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
+      },
+      "version": "2.1.0-aa935146f06b",
+      "package": "packages/sr_gacha/2.1.0-aa935146f06b.xhmp",
+      "sha256": "448b638d6b240114fdf0754a3ac2528409efbfe46d38b4cb96eef47bdd54dc13",
+      "bytes": 75845,
+      "files": [
+        {
+          "path": "apps/srGachaLog.js",
+          "size": 93941,
+          "sha256": "1c26fa44134e30ba3b7d91ecd64851cbc6f5a11fce9d394759bdc48dc8f3fad5"
+        },
+        {
+          "path": "resources/gachaLog/allLog.html",
+          "size": 6977,
+          "sha256": "422bacefea605c82b38bd1d034c376ba83a7c66e0a5c317ed0404cdcd2854312"
+        },
+        {
+          "path": "resources/gachaLog/gachaLog.html",
+          "size": 11361,
+          "sha256": "be3abf12d2f32e30c41a19a6af6b5301731d7d37bab2e5aff12b392dafc9ca88"
+        },
+        {
+          "path": "utils/gachaImport.js",
+          "size": 12855,
+          "sha256": "d19c3d862567e3d8967bf9a26b14eaa8da71b043c5fa115e65d588abd05c7da2"
+        },
+        {
+          "path": "utils/gachaStat.js",
+          "size": 13023,
+          "sha256": "87d7cc11c2eeb72fccf8ff2175e496e353c433b2a6d1a3c02fdc430a9a804a8a"
+        },
+        {
+          "path": "utils/srGachaRebuild.js",
+          "size": 2119,
+          "sha256": "5e9deda5041e41290eb5fb2a763ff1bffa2e0400faca6a70e7dbf008df2eeea8"
+        },
+        {
+          "path": "utils/srGachaSources.js",
+          "size": 6179,
+          "sha256": "14b8fe8e34897ef2037bf16466b9040ceb7971d21a7e910e23466da1d72e76b7"
+        },
+        {
+          "path": "utils/xlsxReader.js",
+          "size": 5024,
+          "sha256": "d2047f4c9eb5d458c0b1cc9de02b164da535277af0f3fbac399ba838facfcba8"
+        }
+      ]
+    },
+    {
+      "id": "team_damage",
+      "label": "队伍伤害",
+      "description": "读取喵喵面板，计算队伍伤害并比较搭配。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_gs"
+      ],
+      "entries": [
+        {
+          "path": "apps/teamDamage.js",
+          "export": "teamDamage"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_gs": "2.1.0-71b276a31d73"
+      },
+      "version": "2.1.0-ef775a9cfb5c",
+      "package": "packages/team_damage/2.1.0-ef775a9cfb5c.xhmp",
+      "sha256": "00cfeeeee2c11d8112034592f40fdfa890a1a6dab85bed7671634d7d96433e2e",
+      "bytes": 39373,
+      "files": [
+        {
+          "path": "apps/teamDamage.js",
+          "size": 25889,
+          "sha256": "b06f14b56c068ce6f5fcfbc0549607d18ca4222a805f15c687735414908ac04e"
+        },
+        {
+          "path": "resources/team_damage/team_damage.css",
+          "size": 13132,
+          "sha256": "f2931fb015447b520a0cf435270bbb1b4f88a2df5b59908770cec1bd4cbe85b7"
+        },
+        {
+          "path": "resources/team_damage/team_damage.html",
+          "size": 7528,
+          "sha256": "ff18c7c9cba9ff4f380c1bda9573ef406889d63d02459279f13aa7eb6b2909ef"
+        },
+        {
+          "path": "resources/team_damage/team_damage_help.html",
+          "size": 2522,
+          "sha256": "d2899241c868ee1077777e0269ba1d2dd37169b8cae509214c6deee834461948"
+        },
+        {
+          "path": "utils/teyvatDamage.js",
+          "size": 29880,
+          "sha256": "612665c4bca5843f5e6b91b49a17326900411161a127f2da78a4dd63fef79fb1"
+        }
+      ]
+    },
+    {
+      "id": "tl",
+      "label": "体力查询",
+      "description": "原神、星铁、绝区零体力一页查看，支持多账号与多种卡片。",
+      "coreApi": 2,
+      "dependencies": [
+        "shared_stamina"
+      ],
+      "entries": [
+        {
+          "path": "apps/TL.js",
+          "export": "TL"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "shared_stamina": "2.1.0-d93a83f1c7bf"
+      },
+      "version": "2.1.0-67824e7f4671",
+      "package": "packages/tl/2.1.0-67824e7f4671.xhmp",
+      "sha256": "0e6c328b35b4e2e922c4299d7092aac5080bd7cf43c09f7a703b3aae222b9835",
+      "bytes": 9197,
+      "files": [
+        {
+          "path": "apps/TL.js",
+          "size": 17270,
+          "sha256": "46b148107da4cda7d20ba434a25b883af28e22b5d4edaa462ee0ec30878ea078"
+        }
+      ]
+    },
+    {
+      "id": "tmp_clean",
+      "label": "临时文件清理",
+      "description": "按计划清理小火花出图临时文件，也支持手动清理。",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [
+        {
+          "path": "apps/tmpCleaner.js",
+          "export": "TmpCleaner"
+        }
+      ],
+      "internal": false,
+      "requiresMiao": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-3b9868d41a0b",
+      "package": "packages/tmp_clean/2.1.0-3b9868d41a0b.xhmp",
+      "sha256": "ee2223fa88f5fae88f70e700ef0c0210c95ed1a1912a4ca30de8d149dccb7a47",
+      "bytes": 4931,
+      "files": [
+        {
+          "path": "apps/tmpCleaner.js",
+          "size": 7322,
+          "sha256": "c1bda6c1257c316423020617cf02ccde7d7615a6380d1482b351176f6b8a1b01"
+        }
+      ]
+    },
+    {
+      "id": "waves",
+      "label": "鸣潮体力",
+      "description": "为体力功能接入鸣潮，读取库街区账号与结晶波片。",
+      "coreApi": 2,
+      "dependencies": [
+        "tl",
+        "shared_sqlite"
+      ],
+      "entries": [],
+      "internal": false,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "tl": "2.1.0-67824e7f4671",
+        "shared_sqlite": "2.1.0-b965389ca310"
+      },
+      "version": "2.1.0-a04452f2e305",
+      "package": "packages/waves/2.1.0-a04452f2e305.xhmp",
+      "sha256": "e618680ff700d629815012c2f5130948efb440310f6f8cde3ddbfeb0da66298f",
+      "bytes": 12832,
+      "files": [
+        {
+          "path": "utils/wavesData.js",
+          "size": 20066,
+          "sha256": "2806207e99299ded1b3ec634f0c8c4ec1d8a09e8d8705bfdde33722e4cee0ffa"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { pickHelpBgImage, pluginDir } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
 import { renderTpl } from '../utils/render.js'
-import { filterHelpGroups, disabledModuleLabels, isModuleEnabled } from '../utils/modules.js'
+import { filterHelpGroups, disabledModuleLabels, isModuleVisible } from '../utils/modules.js'
 
 /** 帮助图标目录（相对插件 resources，渲染时拼到 ppath） */
 const HELP_ICON_DIR = 'help/icons'
@@ -64,7 +64,7 @@ function withIconSrc(groups) {
  * 所以至少 2 处必然复用 —— 「全部图标互不重复」这个目标本身做不到，别再按它改。
  * 只有新出现的、不在这张表里的重复才值得告警。
  */
-const DUP_ICON_TOLERATED = new Set(['gs-胡桃.webp', 'gs-钟离.webp', 'gs-夜兰.webp'])
+const DUP_ICON_TOLERATED = new Set(['gs-胡桃.webp', 'gs-钟离.webp', 'gs-夜兰.webp', 'spark.webp'])
 
 /**
  * 图标唯一性自检：撞图时告警（新增指令时容易撞图）
@@ -105,15 +105,15 @@ function checkIconUnique(groups) {
 export function buildHelpGroups() {
   // 鸣潮有独立开关：关掉时这条里连它的名字和别名都不列，
   // 否则用户照着帮助图发 #鸣潮体力 却毫无反应（note_ 已被 waves 挡住）
-  const wwOn = isModuleEnabled('waves')
+  const wwOn = isModuleVisible('waves')
   const soloGames = ['原神', '星铁', '绝区零'].concat(wwOn ? ['鸣潮'] : [])
   const soloAlias = ['#ystl', '#xttl', '#zzztl'].concat(wwOn ? ['#mctl'] : []).join(' ')
   // 质变仪 / 洞天宝钱提醒是独立开关（resin_timer），关掉时列表里不该还写着"含…提醒"
-  const timerOn = isModuleEnabled('resin_timer')
+  const timerOn = isModuleVisible('resin_timer')
   return [
     {
       group: '体力查询',
-      desc: 'TL · 四游戏实时体力',
+      desc: `TL · ${wwOn ? '四' : '三'}游戏体力与提醒`,
       color: 'blue',
       list: [
         {
@@ -121,7 +121,7 @@ export function buildHelpGroups() {
           icon2: 'sr-logo.webp',
           module: 'tl',
           title: '#体力 #tl #体力总览',
-          desc: '一次查原神 / 星铁 / 绝区零（鸣潮需先自行开启）',
+          desc: `一次查原神 / 星铁 / 绝区零${wwOn ? '（鸣潮需先自行开启）' : ''}`,
         },
         {
           // 四游戏单查只是名字不同（TL.js 的 note_ 用同一套游戏别名），合成一条
@@ -134,16 +134,16 @@ export function buildHelpGroups() {
         {
           icon: 'multi.webp',
           module: 'tl',
-          title: '#开启/关闭 原神 / 星铁 / 绝区零 / 鸣潮 体力',
-          desc: '控制「体力总览」是否包含对应游戏（前三个默认显示、鸣潮默认关，单独查询不受影响）',
+          title: `#开启/关闭 ${soloGames.join(' / ')} 体力`,
+          desc: `控制「体力总览」是否包含对应游戏${wwOn ? '（鸣潮默认关闭）' : ''}，单独查询不受影响`,
         },
         {
           icon: 'mask.webp',
           module: 'tl',
           // 标题按旁边那条「开启/关闭 原神/星铁/绝区零/鸣潮 体力」的写法列全四游戏，
           // 别只举原神一个例子 —— 用户只看标题，desc 里的「同理」等于没写
-          title: '#关闭原神/星铁/绝区零/鸣潮 123456789',
-          desc: '屏蔽单个号（不解绑、不影响推送）；#屏蔽星铁体力123456789 / #隐藏鸣潮123456789 都认；恢复：#开启原神123456789',
+          title: `#关闭${soloGames.join('/')} 123456789`,
+          desc: `屏蔽单个号（不解绑、不影响推送）；#屏蔽星铁体力123456789${wwOn ? ' / #隐藏鸣潮123456789' : ''} 都认；恢复：#开启原神123456789`,
         },
         {
           icon: 'sr-忘归人.webp',
@@ -156,13 +156,13 @@ export function buildHelpGroups() {
           module: 'resin_push',
           // 四游戏只是名字不同，正则也是同一个模板套游戏名，合成一条更清爽
           // （对应 setReg：`#?[开启]?<游戏名>体力推送 <阈值>`，开启前缀可省）
-          title: '#原神/星铁/绝区零/鸣潮体力推送 <阈值>',
-          desc: '只盯主号：达标即在群@你发图（原粹树脂/开拓力/电量/结晶波片）；鸣潮需先启用；关闭：加「关闭」',
+          title: `#${soloGames.join('/')}体力推送 <阈值>`,
+          desc: `只盯主号：达标即在群@你发图${wwOn ? '；鸣潮需先启用' : ''}；关闭：加「关闭」`,
         },
         {
           icon: 'gs-枫原万叶.webp',
           module: 'resin_push',
-          title: '#原神/星铁/绝区零/鸣潮体力全推送 <阈值>',
+          title: `#${soloGames.join('/')}体力全推送 <阈值>`,
           desc: '盯名下所有号：各自达标各自@发图；关闭：加「关闭」',
         },
         {
@@ -177,7 +177,7 @@ export function buildHelpGroups() {
           module: 'tl',
           title: '#开启体力uid / #关闭体力uid',
           // toggleUidDisplay 的 redis key 是 xhh:show_uid:<qq>，没有 game 维度 —— 确实一次管四游戏
-          desc: '一次管四个游戏：卡片是否显示 UID（与「#开启原神体力」不同，那个是控制总览含哪几个游戏）',
+          desc: '统一设置卡片是否显示 UID（与「#开启原神体力」不同，那个是控制总览含哪几个游戏）',
         },
       ],
     },
@@ -372,12 +372,7 @@ export function buildHelpGroups() {
           title: '#签到列表',
           desc: '#签到列表 / #签到状态 / #签到查询；也可写 #自动签到列表 / #自动签到状态 / #自动签到查询',
         },
-        {
-          icon: 'sr-花火.webp',
-          module: 'solver',
-          title: '#过码部署 #过码服务状态',
-          desc: '一键装好全自动过码服务；装完撞码自动处理，不用再管',
-        },
+
       ],
     },
     {
@@ -497,15 +492,24 @@ export function buildHelpGroups() {
       color: 'gray',
       list: [
         {
+          icon: 'sr-花火.webp',
+          module: 'solver',
+          title: '#过码部署 #过码服务状态',
+          desc: '一键装好全自动过码服务；装完撞码自动处理，不用再管',
+        },
+        { icon: 'active.webp', module: 'resin_timer', title: '质变仪 / 洞天宝钱到期提醒', desc: '自动功能，无独立指令；沿用已保存的原神推送订阅，重新设置订阅需安装体力推送模块' },
+        { icon: 'mask.webp', module: 'captcha', title: '撞码自动处理', desc: '自动功能，无独立指令；配合过码服务处理米游社验证码' },
+        { icon: 'spark.webp', title: '锅巴 → 扩展页面 → 小火花模块中心', desc: '选择功能安装、更新或卸载，重启机器人后生效；卸载保留配置与数据' },
+        {
           icon: 'spark.webp',
           title: '#小火花帮助',
-          desc: '显示本指令总览图',
+          desc: '名称：小火花/xhh/xhhTL/xhh-TL，可加插件；后缀：命令/帮助/菜单/help/说明/功能/指令/使用说明',
         },
         {
           // 属运维类，从「体力查询」移过来；正则里带「体力插件」是历史别名，不是体力功能
           icon: 'plugin.webp',
-          title: '#更新小火花 #体力插件更新',
-          desc: '拉取插件更新；加「强制」放弃本地修改',
+          title: '#小火花更新 / #小火花体力更新 / #体力插件更新 / #更新小火花',
+          desc: '仅主人；均支持强制更新别名。更新核心后，在锅巴更新模块并重启',
         },
         {
           icon: 'sr-藿藿.webp',
@@ -553,15 +557,10 @@ export class help extends plugin {
       const cmdCount = groups.reduce((n, g) => n + (g.list?.length || 0), 0)
       const version = readVersion()
       const offModules = disabledModuleLabels()
-      const note =
-        '<b>提示</b>：指令大多可省略 #（过码部署类须带 #）；星铁相关请带 <b>*</b> 或「星铁」前缀。' +
-        '版本指令支持 <b>列表 / 上期 / 第N期</b>；个人成绩类需先绑定账号。' +
-        '鸣潮体力需主人先启用并登录鸣潮。' +
-        '支持 @他人查询（对方需已绑定）。' +
-        // 有关掉的模块时点名，避免用户以为指令写错了
-        (offModules.length
-          ? `<br><b>已关闭</b>（锅巴里可重新开启）：${offModules.join('、')}`
-          : '')
+      const hasBusiness = groups.some(g => g.list.some(item => item.module))
+      const note = '<b>安装模块</b>：锅巴 → 扩展页面 → 小火花模块中心；安装、卸载后重启机器人。' +
+        (hasBusiness ? '<br><b>提示</b>：指令大多可省略 #；个人成绩类需先绑定账号。星铁查询请带 * 或“星铁”前缀。' : '') +
+        (offModules.length ? `<br><b>未启用或未加载</b>（重新开启后需重启）：${offModules.join('、')}` : '')
 
       // 出图服务不可用时退文字版，而不是只回一句「请稍后重试」
       if (!e.runtime?.render) {
@@ -572,7 +571,7 @@ export class help extends plugin {
 
       const data = {
         title: '小火花帮助',
-        subTitle: '四游戏体力 · 全部深渊 · 幻想剧诗 · 版本配置',
+        subTitle: '按需安装 · 自由卸载 · 重启生效',
         version,
         cmdCount,
         generatedAt: moment().format('YYYY-MM-DD HH:mm'),
@@ -583,13 +582,15 @@ export class help extends plugin {
       }
 
       const tplFile = path.join(pluginDir, 'resources/help/help.html')
-      return renderTpl(e, {
+      const rendered = await renderTpl(e, {
         tpl: 'help',
         tplFile,
         data,
         baseScale: 1.5,
         rem: true,
       })
+      if (rendered === false) return e.reply(groupsToText(groups), quoteEnabled())
+      return rendered
     } catch (err) {
       logger?.error?.('[xhh-TL][help]', err)
       // 图挂了也别只丢一句「稍后重试」——把同一份清单用文字发出去

@@ -1,11 +1,6 @@
 /* help.css — 与 help.html 内联样式保持一致，便于外部引用与热改 */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-@font-face {
-  font-family: 'NotoSansSC';
-  src: url('../../../../plugins/xhh-TL/resources/font/NotoSansCJKsc-Regular.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
+
 
 html, body {
   width: 900rem;

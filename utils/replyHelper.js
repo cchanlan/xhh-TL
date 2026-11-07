@@ -102,3 +102,18 @@ export async function replyForward(e, forwardMsg) {
   if (!e?.reply) return null
   return e.reply(forwardMsg, false)
 }
+
+/** 不具备转发能力的协议逐条发送；已开始发送后的异常不盲目重发。 */
+export async function replySegments(e,segments,makeForward) {
+  if(!e?.reply||!segments?.length)return false
+  const channel=e.group||e.friend
+  if(typeof channel?.makeForwardMsg==='function' && typeof makeForward==='function') {
+    let forward
+    try { forward=await makeForward(e,segments) }
+    catch(error) {globalThis.logger?.debug?.('[xhh-TL] 合并转发构造不可用，改为逐条发送')}
+    if(forward)return replyForward(e,forward)
+  }
+  let result
+  for(const item of segments)result=await e.reply(item,false)
+  return result
+}

@@ -1,3 +1,6 @@
+import { getCatalog, getState, initializeState, moduleOverview, queueOperation, refreshCatalog, startOperation, previewOperation } from './utils/moduleManager.js'
+import { isModuleEnabled, MODULES } from './utils/modules.js'
+import fs from 'node:fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import {
@@ -9,6 +12,15 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// 两版锅巴 GButtons 的 confirm 形状不同：原版需要 Modal 配置对象，Next 使用字符串。
+// 按实际插件目录能力探测；缺少 Next 扩展服务时保守使用原版协议。
+function confirmation(content) {
+  const plugins=path.dirname(__dirname)
+  let next=false
+  try {next=fs.readdirSync(plugins).some(name=>/guoba/i.test(name)&&fs.existsSync(path.join(plugins,name,'server/service/both/CustomPageService.js')))} catch {}
+  return next?content:{title:'请确认',content}
+}
+
 // 加载时补全新默认键到用户 config.yaml（不覆盖已有）
 try { mergeMissingDefaults() } catch (_) {}
 
@@ -16,13 +28,13 @@ export function supportGuoba() {
   return {
     pluginInfo: {
       name: 'xhh-TL',
-      title: '小火花体力小组件',
+      title: '小火花模块中心',
       author: '@cchanlan',
       authorLink: 'https://github.com/cchanlan',
       link: 'https://github.com/cchanlan/xhh-TL',
       isV3: true,
       isV2: false,
-      description: '支持原神/星铁/绝区零三游戏体力查询+全部深渊三合一',
+      description: '按需安装、更新与卸载功能模块',
       // 锅巴的插件卡片与侧边栏图标都读这里；不配的话会回退成默认图标
       iconPath: path.join(__dirname, 'resources', 'icon.png')
     },
@@ -31,8 +43,28 @@ export function supportGuoba() {
       // 手机端沿用锅巴的横滑页签和竖排表单，不修改公共前端。
       // 这里只在 Linux / JiuLi 上实测，Yunzai 生态沿用同一 schema 协议。
       schemas: [
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '模块管理（兼容入口）' },
+        { field:'module_summary', label:'安装状态', component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
+        { field:'module_migration', label:'旧版迁移', component:'Input', componentProps:{readonly:true} },
+        { field:'download_proxy',label:'模块下载代理',component:'Input',bottomHelpMessage:'需要代理时填写 HTTP 或 HTTPS 代理地址并保存；留空使用 HTTPS_PROXY 环境变量或直连。'},
+        { field:'module_target', label:'选择模块', component:'Select', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))} },
+        { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
+          {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},
+          {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据。')},
+          {label:'更新',action:'moduleUpdate',args:['#{module_target}']},
+          {label:'刷新目录',action:'moduleRefresh'},
+          {label:'迁移旧版功能',action:'moduleMigrate',confirm:confirmation('保留原有功能开关、配置和用户数据，准备模块文件。')},
+          {label:'取消待重启变更',action:'moduleCancel',confirm:confirmation('取消本次尚未生效的安装、更新和卸载。')},
+        ]}},
+        { field:'module_operation',label:'兼容操作',component:'Select',componentProps:{options:[
+          {label:'不执行模块操作',value:''},{label:'安装所选模块',value:'install'},
+          {label:'卸载所选模块（保留数据）',value:'uninstall'},{label:'更新所选模块',value:'update'},
+          {label:'迁移旧版功能',value:'migrate'},{label:'刷新模块目录',value:'refresh'},
+          {label:'取消待重启变更',value:'cancel'},
+        ]},bottomHelpMessage:'看不到上方按钮时，选择操作后点击保存。操作完成后重新打开本页，避免重复提交。'},
+
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '基础设置'
         },
         {
@@ -66,7 +98,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '体力查询'
         },
         {
@@ -209,7 +241,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '鸣潮体力'
         },
         {
@@ -224,9 +256,8 @@ export function supportGuoba() {
           label: 'gsuid_core 数据库路径',
           bottomHelpMessage:
             'core 的 GsData.db 文件路径（只读打开，取鸣潮绑定与凭证）。Windows 推荐填写 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠也会自动归一化）；留空自动探测 Linux 默认路径。多个路径用换行、逗号或分号分隔，按顺序尝试存在的路径；Docker/WSL 请填写 Yunzai 进程可见的路径。',
-          component: 'Input',
+          component: 'InputTextArea',
           componentProps: {
-            type: 'textarea',
             rows: 2,
             placeholder: '/root/gsuid_core/data/GsData.db',
           },
@@ -243,7 +274,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '推送提醒'
         },
         {
@@ -275,7 +306,7 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '原神查询'
         },
         {
@@ -465,7 +496,7 @@ export function supportGuoba() {
           }
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '星铁查询'
         },
         {
@@ -510,7 +541,7 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '米游社签到'
         },
         {
@@ -575,7 +606,7 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '米游币任务'
         },
         {
@@ -624,15 +655,14 @@ export function supportGuoba() {
           label: 'gsuid 数据库路径',
           bottomHelpMessage:
             '米游币任务需要 stoken。若你同时在跑 gsuid_core（早柚core），它#扫码登录的 stoken 存在 GsData.db 里，且带该账号注册过的真实 device_id/fp，比插件现派生的更不容易被风控，因此优先读取。留空自动探测 /opt/gsuid_core/data/GsData.db 与 /root/gsuid_core/data/GsData.db；Windows 需手填如 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠会自动归一化）；多个路径用换行分隔。只读打开，不写入、不锁库，不影响 gsuid 运行',
-          component: 'Input',
+          component: 'InputTextArea',
           componentProps: {
-            type: 'textarea',
             rows: 2,
             placeholder: '/opt/gsuid_core/data/GsData.db',
           },
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '版本配置'
         },
         {
@@ -643,7 +673,7 @@ export function supportGuoba() {
           component: 'Switch'
         },
         {
-          component: 'SOFT_GROUP_BEGIN',
+          component: 'SOFT_GROUP_BEGIN', ifShow: false,
           label: '管理设置'
         },
         {
@@ -661,9 +691,8 @@ export function supportGuoba() {
           label: 'SToken/CK 搜索路径',
           bottomHelpMessage:
             '按优先级从上到下查找 {QQ}.yaml。支持多行，可写绝对路径或相对 Yunzai 根目录。留空则用默认：xhh / 逍遥 / 本插件 data/Stoken',
-          component: 'Input',
+          component: 'InputTextArea',
           componentProps: {
-            type: 'textarea',
             rows: 4,
             placeholder:
               'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
@@ -704,19 +733,50 @@ export function supportGuoba() {
         }
       
       ],
-      getConfigData() {
-        // 返回「默认 + 用户」合并结果，方便锅巴展示完整项
-        return readPluginConfig()
+      actions: {
+        moduleInstall: (args,ctx)=>moduleAction('install',args,ctx),
+        moduleUninstall: (args,ctx)=>moduleAction('uninstall',args,ctx),
+        moduleUpdate: (args,ctx)=>moduleAction('update',args,ctx),
+        moduleRefresh: (args,ctx)=>moduleAction('refresh',args,ctx),
+        moduleMigrate: (args,ctx)=>moduleAction('migrate',args,ctx),
+        moduleCancel: (args,ctx)=>moduleAction('cancel',args,ctx),
       },
-      setConfigData(data, { Result }) {
-        // 只写入用户文件 config.yaml，不改 default_config.yaml
-        const config = readUserConfig()
-        for (const [key, value] of Object.entries(data)) {
-          config[key] = value
+      getConfigData() {
+        const state=initializeState()
+        return {...readPluginConfig(),module_target:'',module_operation:'',
+          module_summary:moduleOverview(id=>MODULES[id]?isModuleEnabled(id):true),
+          module_migration:state.migration==='required'?'待迁移：点击“迁移旧版功能”，完成后重启机器人。':(state.lastError?'上次操作失败，请查看日志并重试。':'无需迁移'),
+        }
+      },
+      async setConfigData(data,ctx) {
+        const action=data.module_operation
+        if(action){
+          try { previewOperation(action,data.module_target) }
+          catch(error){globalThis.logger?.error?.('[xhh-TL][保存预检]',error);return ctx.Result.error('模块操作不可执行，请检查模块选择和当前状态。')}
+        }
+        const config=readUserConfig()
+        for(const [key,value] of Object.entries(data)) {
+          if(key.startsWith('module_')||key==='__proto__'||key==='constructor'||key==='prototype') continue
+          config[key]=value
         }
         writeUserConfig(config)
-        return Result.ok({}, '保存成功~')
+        if(action)return moduleAction(action,[data.module_target],ctx)
+        return ctx.Result.ok({},'保存成功~')
       }
     }
+  }
+}
+
+async function moduleAction(action,args,{Result}) {
+  try {
+    if(!Array.isArray(args)||args.length>1) throw new Error('模块操作参数无效')
+    const message=startOperation(action,args[0])
+    return Result.ok({},message)
+  } catch(error) {
+    globalThis.logger?.error?.('[xhh-TL][模块管理]',error)
+    // 可直接处理的选项错误可以展示，其余技术错误只写日志。
+    const text=String(error?.message||'')
+    const safe=/^(请选择|请先|模块操作进行中|未知模块操作)/.test(text)
+    return Result.error(safe?text:'模块操作失败，请查看日志后重试。')
   }
 }

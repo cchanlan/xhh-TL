@@ -1,20 +1,11 @@
 /**
- * 功能模块注册表 —— 开关的单一事实来源
- *
- * 为什么要有这个文件：
- * 模块开关过去散落在各处 —— 有的键叫 Tl、有的叫 auto_sign_enable，有的模块干脆没有开关；
- * 帮助图的分组又是另一份手写清单，跟实际开关对不上（典型：#幻想角色 明明属于「幻想真境剧诗」，
- * 却不受 role_combat 约束，锅巴里关掉它照样出图）。
- *
- * 这里把「模块 → 配置键 → 帮助图条目」三者绑在一处，任何一侧增删都只改这一张表。
- *
- * ⚠️ 新增模块时三件事一起做，缺一个就会出现「关了没用」或「关了帮助图还在」：
- *   1. MODULES 里加一项
- *   2. config/default_config.yaml 加同名键（默认 true）
- *   3. guoba.support.js 加 Switch（label 与这里保持一致）
+ * 功能 ID、旧配置键与帮助条目的单一映射。
+ * 实际生效必须同时满足：模块已安装、配置开启、未发生加载错误。
+ * 安装/卸载由 moduleManager 管理；这里只处理已生效模块的业务开关。
  */
 
 import { config } from './pluginConfig.js'
+import { isInstalled, moduleError, isModuleLoaded } from './moduleManager.js'
 
 /**
  * 模块清单。
@@ -46,26 +37,16 @@ export const MODULES = {
   del_ck: { key: 'del_ck_hook_enable', label: '删除 CK 对账' },
 }
 
-/**
- * 某模块是否启用。
- *
- * 语义刻意做成「只有明确写 false 才算关」：
- * - 键缺失 / null / undefined → 视为开。老用户升级后 config.yaml 里还没有新键，
- *   不能因为「没配过」就把功能停掉。
- * - 兼容字符串与数字：锅巴的输入框清空后可能提交 '' / 'false' / 0。
- *
- * @param {string} id MODULES 的键
- * @returns {boolean}
- */
+/** 已安装模块才读取旧开关；缺失配置键沿用旧版默认开启语义。 */
 export function isModuleEnabled(id) {
   const mod = MODULES[id]
-  if (!mod) return true
+  if (!mod || !isInstalled(id) || moduleError(id)) return false
   let value
   try {
     value = config()?.[mod.key]
   } catch (_) {
-    // 配置读取异常时放行：宁可多响应一次，也别因为读配置失败把功能全停掉
-    return true
+    // 状态异常时不启动业务。
+    return false
   }
   if (value === undefined || value === null) return true
   if (value === false || value === 0) return false
@@ -75,6 +56,9 @@ export function isModuleEnabled(id) {
   }
   return true
 }
+
+/** 当前进程已经加载且允许使用的功能，用于帮助展示。 */
+export function isModuleVisible(id) { return isModuleEnabled(id) && isModuleLoaded(id) }
 
 /** 取某模块的配置键（日志用） */
 export function moduleKey(id) {
@@ -170,7 +154,7 @@ export function filterHelpGroups(groups) {
   const visible = (item) => {
     if (!item.module) return true
     const ids = Array.isArray(item.module) ? item.module : [item.module]
-    return ids.every((id) => isModuleEnabled(id))
+    return ids.every((id) => isModuleVisible(id))
   }
   return (groups || [])
     .map((g) => ({
@@ -186,6 +170,6 @@ export function filterHelpGroups(groups) {
  */
 export function disabledModuleLabels() {
   return Object.keys(MODULES)
-    .filter((id) => !isModuleEnabled(id))
+    .filter((id) => isInstalled(id) && !isModuleVisible(id))
     .map((id) => MODULES[id].label)
 }

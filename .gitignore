@@ -19,3 +19,24 @@ logs/
 
 # 本地 AI 工具的工作目录（含 worktree 残留，体积大）
 .claude/
+
+# 模块文件由管理器安装，不进入核心仓库
+/apps/*
+!/apps/help.js
+!/apps/manage.js
+/utils/*
+!/utils/moduleManager.js
+!/utils/moduleOptional.js
+!/utils/moduleStore.js
+!/utils/modules.js
+!/utils/pluginConfig.js
+!/utils/render.js
+!/utils/renderImage.js
+!/utils/replyHelper.js
+/resources/*
+!/resources/help/
+!/resources/icon.png
+
+!/utils/delivery.js
+
+!/utils/taskLifecycle.js

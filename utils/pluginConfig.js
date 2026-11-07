@@ -7,6 +7,7 @@
  * 读取时：default 与 user 浅合并，user 优先
  */
 
+import { initializeState } from './moduleManager.js'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -877,6 +878,9 @@ export function loadStokenYaml(qq) {
     return null
   }
 }
+
+// 先识别旧版安装，不能让自动创建 config.yaml 把新用户误判成老用户。
+initializeState()
 
 // 模块加载时：确保用户配置存在，并补全新默认键
 try {
