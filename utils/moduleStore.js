@@ -14,7 +14,7 @@ export const storeDir = path.join(root, 'data', 'module-manager')
 export const stateFile = path.join(storeDir, 'state.json')
 export const sha256 = data => crypto.createHash('sha256').update(data).digest('hex')
 export const CORE_API = 2
-export const CORE_VERSION = '2.1.2'
+export const CORE_VERSION = '2.1.3'
 const RESERVED = new Set(['__proto__','constructor','prototype','tostring','valueof','hasownproperty','__definegetter__','__definesetter__'])
 const validId = id => typeof id==='string' && /^[a-z][a-z0-9_]{0,63}$/.test(id) && !RESERVED.has(id.toLowerCase())
 function atLeast(actual,required){
@@ -29,12 +29,15 @@ export const PACKAGE_PART_SIZE = 512 * 1024
 const DOWNLOAD_TIME = 600_000
 const DOWNLOAD_ATTEMPTS = 3
 const RETRY_HTTP = new Set([408, 418, 429, 500, 502, 503, 504])
+const BLOCK_HTTP = new Set([403, 418, 451])
 const RETRY_NETWORK = new Set(['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE'])
 const SOURCES = Object.freeze({
   github: { label: 'GitHub', gitHosts: ['github.com', 'ssh.github.com'], hosts: ['raw.githubusercontent.com'], base: 'https://raw.githubusercontent.com/cchanlan/xhh-TL-modules/master/' },
   gitee: { label: 'Gitee', gitHosts: ['gitee.com', 'ssh.gitee.com'], hosts: ['gitee.com', 'raw.giteeusercontent.com'], base: 'https://gitee.com/longhengmu/xhh-TL-modules/raw/master/' },
   gitcode: { label: 'GitCode', gitHosts: ['gitcode.com', 'gitcode.net'], hosts: ['api.gitcode.com', 'raw.gitcode.com'] },
 })
+/** 平台风控拦截（如 GitCode 的华为云 WAF 418）在同平台重试仍失败时，换其他平台取同一文件，包内容再由目录里的 sha256 校验。 */
+const FALLBACK_SOURCES = Object.freeze({ gitcode: ['gitee', 'github'] })
 
 /** 只识别平台，不使用远端中的用户、密码或仓库路径构造下载 URL。 */
 export function moduleSourceForRemote(remote) {
@@ -307,11 +310,26 @@ async function downloadFromSource(relative, limit, context) {
   return requestBuffer(url, limit, context)
 }
 
-/** 下载目录/文件跟随核心仓库平台，不自动跨平台回退。 */
+/** 同平台重试耗尽后仍被拦截时，按 GitCode → Gitee → GitHub 换平台取同一文件；全部被拦再给人能照做的提示。 */
+async function withSourceFallback(source, run) {
+  const chain = [source, ...(FALLBACK_SOURCES[source] || [])]
+  for (let index = 0; index < chain.length; index++) {
+    try { return await run(chain[index]) }
+    catch (error) {
+      if (!BLOCK_HTTP.has(error.statusCode)) throw error
+      if (index === chain.length - 1) throw new Error('模块下载被平台拦截，请在锅巴配置模块下载代理后重试')
+      globalThis.logger?.warn?.(`[xhh-TL][模块下载] ${SOURCES[chain[index]].label} 返回 HTTP ${error.statusCode}，改用 ${SOURCES[chain[index + 1]].label}`)
+    }
+  }
+}
+
+/** 下载目录/文件优先跟随核心仓库平台，被平台风控拦截时换源。 */
 export async function download(relative, limit = MAX_PACK, source = getModuleSource()) {
   const context = downloadContext(source)
   globalThis.logger?.debug?.(`[xhh-TL][模块下载] 来源 ${SOURCES[source].label}，文件 ${relative}`)
-  try { return await downloadFromSource(relative, limit, context) }
+  try {
+    return await withSourceFallback(source, candidate => downloadFromSource(relative, limit, { ...context, source: candidate }))
+  }
   finally { context.agent?.destroy() }
 }
 
@@ -321,20 +339,22 @@ export async function downloadPackage(meta, source = getModuleSource()) {
   const context = downloadContext(source)
   globalThis.logger?.debug?.(`[xhh-TL][模块下载] 来源 ${SOURCES[source].label}，模块 ${meta.id}`)
   try {
-    let buffer
-    if (source === 'gitee' && meta.bytes > PACKAGE_PART_SIZE) {
-      const chunks = []
-      for (let offset = 0, index = 1; offset < meta.bytes; offset += PACKAGE_PART_SIZE, index++) {
-        const size = Math.min(PACKAGE_PART_SIZE, meta.bytes - offset)
-        const relative = meta.package + '.parts/' + String(index).padStart(4, '0') + '.part'
-        const part = await downloadFromSource(relative, size, context)
-        if (part.length !== size) throw new Error('模块包分片大小不匹配：' + meta.id)
-        chunks.push(part)
-      }
-      buffer = Buffer.concat(chunks, meta.bytes)
-    } else buffer = await downloadFromSource(meta.package, meta.bytes, context)
-    if (buffer.length !== meta.bytes || sha256(buffer) !== meta.sha256) throw new Error('模块包校验失败：' + meta.id)
-    return buffer
+    return await withSourceFallback(source, async candidate => {
+      let buffer
+      if (candidate === 'gitee' && meta.bytes > PACKAGE_PART_SIZE) {
+        const chunks = []
+        for (let offset = 0, index = 1; offset < meta.bytes; offset += PACKAGE_PART_SIZE, index++) {
+          const size = Math.min(PACKAGE_PART_SIZE, meta.bytes - offset)
+          const relative = meta.package + '.parts/' + String(index).padStart(4, '0') + '.part'
+          const part = await downloadFromSource(relative, size, { ...context, source: candidate })
+          if (part.length !== size) throw new Error('模块包分片大小不匹配：' + meta.id)
+          chunks.push(part)
+        }
+        buffer = Buffer.concat(chunks, meta.bytes)
+      } else buffer = await downloadFromSource(meta.package, meta.bytes, { ...context, source: candidate })
+      if (buffer.length !== meta.bytes || sha256(buffer) !== meta.sha256) throw new Error('模块包校验失败：' + meta.id)
+      return buffer
+    })
   } finally { context.agent?.destroy() }
 }
 function readJsonOrYaml(file){assertNoSymlink(file);return YAML.parse(fs.readFileSync(file,'utf8'))||{}}

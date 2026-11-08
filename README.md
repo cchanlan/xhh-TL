@@ -26,7 +26,7 @@
 - 模块开关只作用于已安装功能，不会触发下载；启动时关闭的模块重新开启后需要重启。
 - 绝区零角色立绘、鸣潮内置角色立绘、背景图库是可选资源包；未安装时使用可用的角色图片或默认背景。额外自备的鸣潮图库不上传、不删除。
 - 空核心不需要 miao-plugin；依赖 miao 的功能安装后仍需自行安装 miao-plugin。业务模块沿用 Yunzai 宿主依赖，缺失时按日志所列依赖安装后重启。
-- 模块源码：[Gitee](https://gitee.com/longhengmu/xhh-TL-modules) / [GitCode](https://gitcode.com/ccxhan/xhh-TL-modules) / [GitHub](https://github.com/cchanlan/xhh-TL-modules)。**模块下载跟随核心仓库来源：Gitee → Gitee、GitCode → GitCode、GitHub → GitHub**，无需另选模块源；目录和包均只从对应官方仓库读取。
+- 模块源码：[Gitee](https://gitee.com/longhengmu/xhh-TL-modules) / [GitCode](https://gitcode.com/ccxhan/xhh-TL-modules) / [GitHub](https://github.com/cchanlan/xhh-TL-modules)。**模块下载跟随核心仓库来源：Gitee → Gitee、GitCode → GitCode、GitHub → GitHub**，无需另选模块源；目录和包均优先从对应官方仓库读取，同一平台重试 3 次仍被拦截时自动改用其他官方仓库取同一文件，内容仍按目录里的 sha256 校验。
 - 新安装命令使用浅克隆、单分支。旧仓库的 Git 历史不重写，完整克隆仍可能下载历史素材。
 
 ### 可安装项目
@@ -574,4 +574,4 @@ Gitee 大包自动分片下载并校验合并，不需要登录 Gitee 或填写�
 | --- | --- | --- |
 | `download_proxy` | 模块下载使用的 HTTP/HTTPS 代理地址 | 空；使用 `HTTPS_PROXY` 环境变量或直连 |
 
-下载较慢时，在锅巴插件配置的模块管理入口填写“模块下载代理”并保存，再安装模块。临时下载失败会等待后自动重试，最多3次；平台返回等待时间时按该时间等待。下载总时限为10分钟，连接30秒没有数据会中止本次请求并限次重试；失败不会写入半成品安装状态。代理仅用于公开模块文件，不发送游戏账号凭据。失败日志会标出来源、文件信息或内容阶段、请求地址和重试次数。
+下载较慢时，在锅巴插件配置的模块管理入口填写“模块下载代理”并保存，再安装模块。被平台风控拦截时会自动改用其他官方仓库；临时下载失败会等待后自动重试，最多3次；平台返回等待时间时按该时间等待。下载总时限为10分钟，连接30秒没有数据会中止本次请求并限次重试；失败不会写入半成品安装状态。代理仅用于公开模块文件，不发送游戏账号凭据。失败日志会标出来源、文件信息或内容阶段、请求地址和重试次数。
