@@ -394,7 +394,7 @@ async function withSourceFallback(candidates, run) {
 }
 
 /** Gitee 分片串行下 25MB 素材包要跑 49 个来回，这里开多路把分片抓齐再拼。三平台仓库都带分片目录。 */
-async function downloadParts(meta, context, parallel = 4) {
+async function downloadParts(meta, context, parallel = PACKAGE_PARALLEL) {
   const total = Math.ceil(meta.bytes / PACKAGE_PART_SIZE)
   const chunks = new Array(total)
   let cursor = 0, failure
