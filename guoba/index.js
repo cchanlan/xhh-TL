@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import {moduleSnapshot,previewOperation,startOperation} from '../utils/moduleManager.js'
+import {moduleSnapshot,previewOperation,startOperation,userFacingError} from '../utils/moduleManager.js'
 import {isModuleEnabled,MODULES} from '../utils/modules.js'
 
 
@@ -33,8 +33,7 @@ export function init(ctx){
     }
     catch(error){
       ctx.logger?.error?.('[xhh-TL][模块中心]',error)
-      const text=String(error?.message||'')
-      const message=/^(请选择|请先|模块操作进行中|未知模块操作|无需迁移)/.test(text)?text:'操作失败，请查看日志后重试。'
+      const message=userFacingError(error)||'操作失败，请查看日志后重试。'
       res.status(400).json({ok:false,message})
     }
   }

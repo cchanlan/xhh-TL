@@ -372,10 +372,25 @@ export function startOperation(action,id){
   const task=action==='refresh'?refreshCatalog():queueOperation(action,id)
   runtime.operationPromise=task.then(message=>{runtime.operation=message;runtime.operationState='success'}).catch(error=>{
     runtime.operationState='failed'
-    runtime.operation='模块操作失败，请查看日志后重试。'
+    runtime.operation=userFacingError(error)||'模块操作失败，请查看日志后重试。'
     globalThis.logger?.error?.('[xhh-TL][模块后台操作]',error)
     try{const s=getState();s.lastError=String(error.message);writeJson(stateFile,s)}catch{}
   })
   return runtime.operation
 }
 export function operationStatus(){return runtime.operation||''}
+/** 能直接展示给用户的错误；其余技术错误只写日志。两个锅巴入口共用这一份判据，避免再出现一边认得一边不认得。 */
+const USER_ERROR = [
+  /^(请选择|请先|模块操作进行中|未知模块操作|无需迁移)/,
+  /^(所有下载源都失败了|模块下载被平台拦截|模块包校验失败)/,
+  /^(模块文件有本地修改|安装目标存在自定义文件)/,
+]
+// 插件主动抛的都是中文提示，英文堆栈、文件路径、超长内容才该留在日志里。
+const TECH_ERROR = /[\r\n]|\bat\s+\S+\s+\(|\.js:\d|ENOENT|EPERM|EACCES|ECONN|Cannot read|is not a function|undefined is not/
+export function userFacingError(error) {
+  const text = String(typeof error === 'string' ? error : error?.message || '').trim()
+  if (!text) return ''
+  if (USER_ERROR.some(pattern => pattern.test(text))) return text
+  if (text.length <= 160 && /^[\u4e00-\u9fa5]/.test(text) && !TECH_ERROR.test(text)) return text
+  return ''
+}

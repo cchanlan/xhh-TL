@@ -1,4 +1,4 @@
-import { getCatalog, getState, initializeState, moduleOverview, queueOperation, refreshCatalog, startOperation, previewOperation } from './utils/moduleManager.js'
+import { getCatalog, getState, initializeState, moduleOverview, queueOperation, refreshCatalog, startOperation, previewOperation, userFacingError } from './utils/moduleManager.js'
 import { isModuleEnabled, MODULES } from './utils/modules.js'
 import fs from 'node:fs'
 import path from 'path'
@@ -745,14 +745,14 @@ export function supportGuoba() {
         const state=initializeState()
         return {...readPluginConfig(),module_target:'',module_operation:'',
           module_summary:moduleOverview(id=>MODULES[id]?isModuleEnabled(id):true),
-          module_migration:state.migration==='required'?'待迁移：点击“迁移旧版功能”，完成后重启机器人。':(state.lastError?'上次操作失败，请查看日志并重试。':'无需迁移'),
+          module_migration:state.migration==='required'?'待迁移：点击“迁移旧版功能”，完成后重启机器人。':(state.lastError?`上次操作失败：${userFacingError(state.lastError)||'请查看日志后重试。'}`:'无需迁移'),
         }
       },
       async setConfigData(data,ctx) {
         const action=data.module_operation
         if(action){
           try { previewOperation(action,data.module_target) }
-          catch(error){globalThis.logger?.error?.('[xhh-TL][保存预检]',error);return ctx.Result.error('模块操作不可执行，请检查模块选择和当前状态。')}
+          catch(error){globalThis.logger?.error?.('[xhh-TL][保存预检]',error);return ctx.Result.error(userFacingError(error)||'模块操作不可执行，请检查模块选择和当前状态。')}
         }
         const config=readUserConfig()
         for(const [key,value] of Object.entries(data)) {
@@ -774,9 +774,6 @@ async function moduleAction(action,args,{Result}) {
     return Result.ok({},message)
   } catch(error) {
     globalThis.logger?.error?.('[xhh-TL][模块管理]',error)
-    // 可直接处理的选项错误可以展示，其余技术错误只写日志。
-    const text=String(error?.message||'')
-    const safe=/^(请选择|请先|模块操作进行中|未知模块操作)/.test(text)
-    return Result.error(safe?text:'模块操作失败，请查看日志后重试。')
+    return Result.error(userFacingError(error)||'模块操作失败，请查看日志后重试。')
   }
 }
