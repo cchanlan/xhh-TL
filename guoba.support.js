@@ -47,6 +47,13 @@ export function supportGuoba() {
         { field:'module_summary', label:'安装状态', component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
         { field:'module_migration', label:'旧版迁移', component:'Input', componentProps:{readonly:true} },
         { field:'download_proxy',label:'模块下载代理',component:'Input',bottomHelpMessage:'需要代理时填写 HTTP 或 HTTPS 代理地址并保存；留空使用 HTTPS_PROXY 环境变量或直连。'},
+        { field:'download_source',label:'模块下载源',component:'Select',componentProps:{options:[
+          {label:'自动（测速选最快）',value:''},
+          {label:'GitHub',value:'github'},
+          {label:'Gitee',value:'gitee'},
+          {label:'GitCode',value:'gitcode'},
+        ]},bottomHelpMessage:'默认自动测速挑最快的平台；固定某个平台会跳过测速直接用它，下载失败仍会自动换源。'},
+        { field:'download_threads',label:'下载并发',component:'InputNumber',componentProps:{min:1,max:8,step:1},bottomHelpMessage:'同时下载几个模块包，默认 3；网络好多可以调到 6~8 加快安装，平台限流或带宽小时调低。'},
         { field:'module_target', label:'选择模块', component:'Select', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))} },
         { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
           {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},

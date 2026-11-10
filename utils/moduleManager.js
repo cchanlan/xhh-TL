@@ -2,7 +2,7 @@ import {beginTaskGeneration,wrapModuleClass} from './taskLifecycle.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download, downloadPackage, setDownloadCancelCheck } from './moduleStore.js'
+import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download, downloadPackage, setDownloadCancelCheck, downloadThreads } from './moduleStore.js'
 const key = Symbol.for('xhh-TL.module-manager.v1')
 const runtimes = globalThis[key] || (globalThis[key] = new Map())
 const runtime = runtimes.get(root) || { booted:false, running:{}, errors:{}, busy:false, progress:null, abort:false, abortReason:'' }
@@ -87,7 +87,6 @@ function dependencyClosure(ids,catalog=getCatalog()){
   return result
 }
 const LOCK_TTL = 10 * 60 * 1000
-const PACKAGE_PARALLEL = 3
 const STALL_LIMIT = 90 * 1000
 const OPERATION_LIMIT = 20 * 60 * 1000
 const STALL_TEXT = '模块下载长时间没有进展，已停止。请检查网络或配置下载代理后重试。'
@@ -152,7 +151,8 @@ async function cachePackages(mods){
       }catch(error){failure=failure||error}
     }
   }
-  await Promise.all(Array.from({length:Math.min(PACKAGE_PARALLEL,queue.length)},worker))
+  const parallel=downloadThreads()
+  await Promise.all(Array.from({length:Math.min(parallel,queue.length)},worker))
   runtime.progress=null
   if(runtime.abort)throw new Error(runtime.abortReason==='cancel'?'操作已取消':runtime.abortReason==='timeout'?TIMEOUT_TEXT:STALL_TEXT)
   if(failure)throw failure

@@ -30,7 +30,8 @@ const DOWNLOAD_TIME = 300_000
 const CONNECT_TIME = 20_000
 const PROBE_TIME = 8_000
 const DOWNLOAD_ATTEMPTS = 3
-const PACKAGE_PARALLEL = 4
+const DEFAULT_THREADS = 3
+const MAX_THREADS = 8
 const SOURCE_SPEED_TTL = 15 * 60 * 1000
 const RETRY_HTTP = new Set([408, 418, 429, 500, 502, 503, 504])
 const BLOCK_HTTP = new Set([403, 418, 451])
@@ -192,14 +193,33 @@ export function decodePackage(buffer, meta) {
 function validDownloadPath(relative) {
   return relative === 'catalog.json' || (typeof relative === 'string' && /^packages\/[a-z][a-z0-9_]*\/[a-zA-Z0-9._-]+\.xhmp(?:\.parts\/[0-9]{4}\.part)?$/.test(relative))
 }
+/** 用户配置（config.yaml，gitignore，不受更新覆盖）；读不到就当空。 */
+function userConfig() {
+  try {
+    const file = path.join(root, 'config', 'config.yaml')
+    return fs.existsSync(file) ? (readJsonOrYaml(file) || {}) : {}
+  } catch { return {} }
+}
+/** 锅巴里固定了下载源就用它；留空则每次测速挑最快的。 */
+function configuredSource() {
+  const value = String(userConfig().download_source || '').trim()
+  return Object.prototype.hasOwnProperty.call(SOURCES, value) ? value : ''
+}
+/** 下载并发：默认 3，锅巴里可调 1~8；分片并发跟着它走。 */
+export function downloadThreads() {
+  const value = Number(userConfig().download_threads)
+  return Number.isInteger(value) && value >= 1 ? Math.min(MAX_THREADS, value) : DEFAULT_THREADS
+}
+function partThreads(source) {
+  const threads = downloadThreads()
+  // GitCode 的每个分片要两次 API 请求，并发开太高会被 WAF 限流（429）。
+  return source === 'gitcode' ? Math.max(2, Math.min(3, threads - 1)) : Math.min(MAX_THREADS, threads + 1)
+}
 function downloadContext(source, options = {}) {
   if (typeof source !== 'string' || !Object.prototype.hasOwnProperty.call(SOURCES, source)) throw new Error('模块下载来源无效')
   let proxy = process.env.HTTPS_PROXY || process.env.https_proxy || ''
-  const userFile = path.join(root, 'config', 'config.yaml')
-  if (fs.existsSync(userFile)) {
-    const config = readJsonOrYaml(userFile)
-    if (config.download_proxy) proxy = String(config.download_proxy).trim()
-  }
+  const config = userConfig()
+  if (config.download_proxy) proxy = String(config.download_proxy).trim()
   let agent
   if (proxy) {
     let url; try { url = new URL(proxy) } catch { throw new Error('下载代理地址无效') }
@@ -381,6 +401,12 @@ export async function rankSources() {
 }
 
 async function candidateSources(preferred) {
+  const fixed = configuredSource()
+  if (fixed) {
+    // 用户指定了平台就不再测速，省掉几秒探测；失败仍按顺序换下一个源。
+    globalThis.logger?.debug?.(`[xhh-TL][模块下载] 使用指定源 ${SOURCES[fixed].label}`)
+    return [fixed, ...SOURCE_IDS.filter(id => id !== fixed)]
+  }
   const ranked = await rankSources()
   const list = preferred ? [preferred, ...ranked.filter(id => id !== preferred)] : [...ranked]
   const now = Date.now()
@@ -420,7 +446,7 @@ async function withSourceFallback(candidates, run) {
 }
 
 /** Gitee 分片串行下 25MB 素材包要跑 49 个来回，这里开多路把分片抓齐再拼。三平台仓库都带分片目录。 */
-async function downloadParts(meta, context, parallel = PACKAGE_PARALLEL) {
+async function downloadParts(meta, context, parallel = partThreads(context.source)) {
   const total = Math.ceil(meta.bytes / PACKAGE_PART_SIZE)
   const chunks = new Array(total)
   let cursor = 0, failure
@@ -468,7 +494,7 @@ export async function downloadPackage(meta, source) {
       const ctx = { ...context, source: candidate, deadline: Date.now() + sourceDeadline(candidate, meta.bytes) }
       let buffer
       if (meta.bytes > PACKAGE_PART_SIZE) {
-        try { buffer = await downloadParts(meta, ctx, candidate === 'gitcode' ? 2 : 4) }
+        try { buffer = await downloadParts(meta, ctx, partThreads(candidate)) }
         catch (error) {
           if (error?.fatal) throw error
           // 只有「源上确实没有分片目录」才退回整包；网络抖动/风控交给换源，别在坏源上再耗一轮。
