@@ -44,7 +44,7 @@ export function supportGuoba() {
       // 这里只在 Linux / JiuLi 上实测，Yunzai 生态沿用同一 schema 协议。
       schemas: [
         { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '模块管理（兼容入口）' },
-        { field:'module_summary', label:'安装状态', component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
+        { field:'module_summary', label:'安装状态', block:false, component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
         { field:'module_migration', label:'旧版迁移', component:'Input', componentProps:{readonly:true} },
         { field:'download_proxy',label:'模块下载代理',component:'Input',bottomHelpMessage:'需要代理时填写 HTTP 或 HTTPS 代理地址并保存；留空使用 HTTPS_PROXY 环境变量或直连。'},
         { field:'github_accel',label:'GitHub 加速前缀',component:'Input',bottomHelpMessage:'默认 https://ghp.lyln114514.top/，会拼在 GitHub 原始地址前面；留空直连。配置了模块下载代理时不生效。'},

@@ -427,8 +427,20 @@ export function moduleOverview(enabled=()=>true){
   // 启动事务失败时所有模块都会「已安装但不工作」，必须把原因直接摆出来，不能只留在日志里。
   if(runtime.errors.boot) head.push('模块加载失败：'+runtime.errors.boot)
   if(snapshot.operation.message) head.push(snapshot.operation.message)
-  return (head.length?head.join('\n\n')+'\n\n':'')+snapshot.modules.map(m=>
-    `${m.label}｜${STATE_LABELS[m.status]}${m.error?'（'+m.error+'）':''}｜${m.version||'—'} → ${m.latestVersion}${m.dependencies.length?'\n  依赖：'+m.dependencies.join('、'):''}`).join('\n')
+  const rows=snapshot.modules.map(m=>{
+    // 兼容入口也要一眼看出模块有新版：已安装但哈希对不上时标「可更新」，别只靠版本号差异
+    const label=m.status==='installed'&&m.updateAvailable?'可更新':STATE_LABELS[m.status]
+    return {m,label}
+  })
+  // textarea 是纯文本：按显示宽度用全角空格补齐（中文 2、英文数字 1），让状态列和版本列竖向对齐。
+  // 不用普通空格是因为比例字体下空格和汉字宽度不等，补了也对不齐。
+  const width=s=>[...String(s)].reduce((n,ch)=>n+(ch.charCodeAt(0)>0x2e7f?2:1),0)
+  const pad=(s,target)=>{let out=String(s),w=width(out);for(;w+2<=target;w+=2)out+='\u3000';if(w<target)out+=' ';return out}
+  const nameW=Math.max(0,...rows.map(r=>width(r.m.label)))+2
+  const stateW=Math.max(0,...rows.map(r=>width(r.label)))+2
+  const indent='\u3000'.repeat(Math.ceil(nameW/2))
+  return (head.length?head.join('\n\n')+'\n\n':'')+rows.map(({m,label})=>
+    `${pad(m.label,nameW)}｜${pad(label,stateW)}｜${m.version||'—'} → ${m.latestVersion}${m.dependencies.length?'\n'+indent+'依赖：'+m.dependencies.join('、'):''}`).join('\n')
 }
 export function previewOperation(action,id){
   // 取消是唯一在忙碌时也要放行的动作：下载卡住时用户总得有条退路。
