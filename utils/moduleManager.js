@@ -61,26 +61,36 @@ function dependencyClosure(ids,catalog=getCatalog()){
   for(const id of ids) visit(id)
   return result
 }
+const LOCK_TTL = 30 * 60 * 1000
+const PACKAGE_PARALLEL = 3
 async function exclusive(action){
   if(runtime.busy) throw new Error('模块操作进行中，请稍后再试')
   runtime.busy=true
   const lock=path.join(storeDir,'operation.lock')
-  let descriptor
+  let descriptor, token
   try {
     assertNoSymlink(lock);fs.mkdirSync(storeDir,{recursive:true})
     try { descriptor=fs.openSync(lock,'wx',0o600) }
     catch(error) {
       if(error.code!=='EEXIST') throw error
-      const owner=readJson(lock)
-      let alive=true
-      try {process.kill(owner.pid,0)} catch(e) {if(e.code==='ESRCH') alive=false}
+      // 进程崩溃/被重启后锁文件会留在盘上，pid 还可能被别的进程复用 —— 超时或读不出来就直接接管。
+      let owner
+      try { owner=readJson(lock) } catch { owner=null }
+      const stale=!Number.isFinite(owner?.at)||Date.now()-owner.at>LOCK_TTL
+      let alive=!stale
+      if(alive){ try {process.kill(owner.pid,0)} catch(e) {if(e.code==='ESRCH') alive=false} }
       if(alive) throw new Error('模块操作进行中，请稍后再试')
       fs.unlinkSync(lock);descriptor=fs.openSync(lock,'wx',0o600)
     }
-    fs.writeFileSync(descriptor,JSON.stringify({pid:process.pid}))
+    token=`${process.pid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`
+    fs.writeFileSync(descriptor,JSON.stringify({pid:process.pid,at:Date.now(),token}))
     return await action()
   } finally {
-    if(descriptor!==undefined){fs.closeSync(descriptor);fs.unlinkSync(lock)}
+    if(descriptor!==undefined){
+      fs.closeSync(descriptor)
+      // 只删自己的锁：卡住的操作如果已被后来者接管，这里不能把新锁删掉。
+      try { if(readJson(lock)?.token===token) fs.unlinkSync(lock) } catch {}
+    }
     runtime.busy=false
   }
 }
@@ -89,6 +99,20 @@ async function cachePackage(m){
   if(fs.existsSync(file)){decodePackage(fs.readFileSync(file),m);return}
   const bytes=await downloadPackage(m)
   decodePackage(bytes,m);atomicWrite(file,bytes)
+}
+/** 迁移要拉几十个包，串行时慢源会把整轮拖到几十分钟；三路并发只压在下载这一步。 */
+async function cachePackages(mods){
+  let failure
+  const queue=[...mods]
+  const worker=async()=>{
+    while(!failure){
+      const m=queue.shift()
+      if(!m)return
+      try{await cachePackage(m)}catch(error){failure=failure||error}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(PACKAGE_PARALLEL,queue.length)},worker))
+  if(failure)throw failure
 }
 export async function refreshCatalog(){return exclusive(async()=>{
   const c=validateCatalog(JSON.parse((await download('catalog.json',4*1024*1024)).toString('utf8')))
@@ -134,7 +158,7 @@ export async function queueOperation(action,id){return exclusive(async()=>{
   const state=initializeState()
   if(action==='cancel'){state.pending=null;writeJson(stateFile,state);return '待重启变更已取消。'}
   const {target,explicit}=calculateOperation(state,action,id)
-  for(const m of Object.values(target)) if(state.installed[m.id]?.sha256!==m.sha256) await cachePackage(m)
+  await cachePackages(Object.values(target).filter(m=>state.installed[m.id]?.sha256!==m.sha256))
   state.pending={target,explicit,action,requestedAt:new Date().toISOString()};state.lastError=''
   writeJson(stateFile,state)
   const labels=Object.values(target).filter(m=>state.installed[m.id]?.sha256!==m.sha256).map(m=>m.label)
