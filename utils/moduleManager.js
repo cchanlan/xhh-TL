@@ -200,7 +200,8 @@ function calculateOperation(state,action,id){
       }
     }
     explicit=explicit.filter(v=>!ids.includes(v))
-    const retained=dependencyClosure(explicit)
+    // 依赖检查要用「已安装版本」的定义：catalog 更新过而旧模块还没更新时，按新定义放行卸载会把它的依赖抽走。
+    const retained=dependencyClosure(explicit,{modules:Object.values(previous)})
     for(const item of ids) if(retained[item]) throw new Error('请先卸载依赖它的模块：'+explicit.filter(v=>dependencyClosure([v])[item]).map(labelOf).join('、'))
   }else{
     for(const item of ids){
@@ -282,16 +283,20 @@ function applyPending(){
   const touched=[...new Set([...old.keys(),...next.keys()])].filter(n=>old.get(n)?.sha256!==next.get(n)?.sha256)
   const journal={schema:1,id:Date.now().toString(36),previous:state,files:[]}
   // 先校验所有包，再备份/修改任何文件；按包读取，避免全部素材同时常驻内存。
-  for(const m of Object.values(state.pending.target)) if(state.installed[m.id]?.sha256!==m.sha256) decodePackage(fs.readFileSync(packageFile(m)),m)
+  for(const m of Object.values(state.pending.target)) if(state.installed[m.id]?.sha256!==m.sha256){
+    const file=packageFile(m)
+    if(!fs.existsSync(file)) throw new Error(`模块包缓存缺失（${m.label}），请在锅巴重新点一次安装。`)
+    decodePackage(fs.readFileSync(file),m)
+  }
   for(const name of touched){
     const target=managedPath(name),existed=fs.existsSync(target)
     let hash=''
     if(existed){
       const bytes=fs.readFileSync(target);hash=sha256(bytes)
-      if(old.has(name)&&hash!==old.get(name).sha256) throw new Error('模块文件有本地修改，请先备份处理：'+name)
+      if(old.has(name)&&hash!==old.get(name).sha256) throw new Error('模块文件有本地修改，请先恢复或删除它再操作：'+name)
       if(!old.has(name)){
         const baseline=state.migration==='required'?readJson(path.join(root,'config','legacy-files.json')).files:{}
-        if(hash!==next.get(name)?.sha256 && hash!==baseline[name]) throw new Error('安装目标存在自定义文件，请先备份处理：'+name)
+        if(hash!==next.get(name)?.sha256 && hash!==baseline[name]) throw new Error('安装目标存在自定义文件，请先备份或删除它：'+name)
       }
       atomicWrite(path.join(storeDir,'rollback',journal.id,sha256(name)+'.bin'),bytes)
     }
@@ -406,19 +411,24 @@ export function moduleSnapshot(enabled=()=>true){
     return {id:m.id,label:m.label,description:m.description,category:m.legacyResource?'assets':'feature',
       installed:!!active,status,version:active?.version||'',latestVersion:m.version,
       updateAvailable:!!active&&active.sha256!==m.sha256,
+      error:runtime.errors[m.id]||'',
       dependencies:[...new Set(m.dependencies.map(id=>catalog.modules.find(x=>x.id===id)?.label||id))],
       bytes:closure.reduce((sum,x)=>sum+x.bytes,0),
       requiresMiao:closure.some(x=>x.requiresMiao),
     }
   })
   return {modules,busy:runtime.busy,operation:{status:runtime.operationState||'idle',message:operationStatus(),action:runtime.action||'',moduleId:runtime.moduleId||''},
-    pending:!!state.pending,migrationRequired:state.migration==='required',hasError:!!state.lastError}
+    pending:!!state.pending,migrationRequired:state.migration==='required',hasError:!!state.lastError,bootError:runtime.errors.boot||''}
 }
 const STATE_LABELS={installed:'已安装',disabled:'已关闭',available:'未安装',failed:'加载失败','pending-install':'待重启安装','pending-uninstall':'待重启卸载','pending-update':'待重启更新'}
 export function moduleOverview(enabled=()=>true){
   const snapshot=moduleSnapshot(enabled)
-  return (snapshot.operation.message?snapshot.operation.message+'\n\n':'')+snapshot.modules.map(m=>
-    `${m.label}｜${STATE_LABELS[m.status]}｜${m.version||'—'} → ${m.latestVersion}${m.dependencies.length?'\n  依赖：'+m.dependencies.join('、'):''}`).join('\n')
+  const head=[]
+  // 启动事务失败时所有模块都会「已安装但不工作」，必须把原因直接摆出来，不能只留在日志里。
+  if(runtime.errors.boot) head.push('模块加载失败：'+runtime.errors.boot)
+  if(snapshot.operation.message) head.push(snapshot.operation.message)
+  return (head.length?head.join('\n\n')+'\n\n':'')+snapshot.modules.map(m=>
+    `${m.label}｜${STATE_LABELS[m.status]}${m.error?'（'+m.error+'）':''}｜${m.version||'—'} → ${m.latestVersion}${m.dependencies.length?'\n  依赖：'+m.dependencies.join('、'):''}`).join('\n')
 }
 export function previewOperation(action,id){
   // 取消是唯一在忙碌时也要放行的动作：下载卡住时用户总得有条退路。
