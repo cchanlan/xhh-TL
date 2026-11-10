@@ -211,5 +211,8 @@ download_proxy: ""
 # 模块下载源：留空自动测速挑最快；github / gitee / gitcode 固定使用（失败仍会自动换源）。
 download_source: ""
 
+# GitHub 公开文件加速前缀：拼在原始地址前面，留空直连；配置了下载代理时不生效。
+github_accel: "https://ghp.lyln114514.top/"
+
 # 模块下载并发：同时下载几个包，默认 3，可调 1~8。
 download_threads: 3

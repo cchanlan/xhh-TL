@@ -193,12 +193,55 @@ export function decodePackage(buffer, meta) {
 function validDownloadPath(relative) {
   return relative === 'catalog.json' || (typeof relative === 'string' && /^packages\/[a-z][a-z0-9_]*\/[a-zA-Z0-9._-]+\.xhmp(?:\.parts\/[0-9]{4}\.part)?$/.test(relative))
 }
-/** 用户配置（config.yaml，gitignore，不受更新覆盖）；读不到就当空。 */
+/** 用户配置（config.yaml，gitignore，不受更新覆盖）；读不到就当空。缓存 5 秒，避免下载几十个包时反复读盘。 */
+let configCache = { at: 0, data: {} }
+let configParseWarned = false
 function userConfig() {
+  if (Date.now() - configCache.at < 5000) return configCache.data
   try {
     const file = path.join(root, 'config', 'config.yaml')
-    return fs.existsSync(file) ? (readJsonOrYaml(file) || {}) : {}
-  } catch { return {} }
+    const data = fs.existsSync(file) ? (readJsonOrYaml(file) || {}) : {}
+    configCache = { at: Date.now(), data }
+    return data
+  } catch (error) {
+    // 配置文件被手改坏时只提醒一次，否则每个下载请求都要刷一条。
+    if (!configParseWarned) {
+      configParseWarned = true
+      globalThis.logger?.warn?.(`[xhh-TL][模块下载] config.yaml 解析失败，本次使用默认下载设置：${error?.message || error}`)
+    }
+    return configCache.data
+  }
+}
+/** GitHub 公开文件加速前缀：默认走公共加速站，拼在原始地址前面。
+ * 它只做 URL 转发、不是 HTTP 代理；配了下载代理时不再叠加，免得白绕一跳。 */
+const DEFAULT_GITHUB_ACCEL = 'https://ghp.lyln114514.top/'
+function proxyValue() {
+  let proxy = process.env.HTTPS_PROXY || process.env.https_proxy || ''
+  const config = userConfig()
+  if (config.download_proxy) proxy = String(config.download_proxy).trim()
+  return proxy
+}
+function githubAccel() {
+  if (proxyValue()) return ''
+  const config = userConfig()
+  let value = config.github_accel === undefined ? DEFAULT_GITHUB_ACCEL : String(config.github_accel || '').trim()
+  if (!value) return ''
+  if (!value.endsWith('/')) value += '/'
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || url.username || url.password) return ''
+  } catch { return '' }
+  return value
+}
+function sourceBase(source) {
+  const base = SOURCES[source].base
+  const accel = source === 'github' ? githubAccel() : ''
+  return accel ? accel + base : base
+}
+function accelHost() {
+  const accel = githubAccel()
+  if (!accel) return ''
+  try { return new URL(accel).hostname } catch { return '' }
 }
 /** 锅巴里固定了下载源就用它；留空则每次测速挑最快的。 */
 function configuredSource() {
@@ -217,9 +260,7 @@ function partThreads(source) {
 }
 function downloadContext(source, options = {}) {
   if (typeof source !== 'string' || !Object.prototype.hasOwnProperty.call(SOURCES, source)) throw new Error('模块下载来源无效')
-  let proxy = process.env.HTTPS_PROXY || process.env.https_proxy || ''
-  const config = userConfig()
-  if (config.download_proxy) proxy = String(config.download_proxy).trim()
+  const proxy = proxyValue()
   let agent
   if (proxy) {
     let url; try { url = new URL(proxy) } catch { throw new Error('下载代理地址无效') }
@@ -236,7 +277,11 @@ function downloadContext(source, options = {}) {
 }
 function allowedDownloadURL(value, source) {
   const url = new URL(value)
-  if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443') || !SOURCES[source].hosts.includes(url.hostname)) throw new Error('模块下载跳转地址不允许')
+  if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) throw new Error('模块下载跳转地址不允许')
+  const hosts = SOURCES[source].hosts.slice()
+  const accel = source === 'github' ? accelHost() : ''
+  if (accel) hosts.push(accel)
+  if (!hosts.includes(url.hostname)) throw new Error('模块下载跳转地址不允许')
   return url
 }
 /** Retry-After 是等待下限；不缩短平台要求的等待，也不重置整包限时。 */
@@ -358,7 +403,8 @@ async function downloadFromSource(relative, limit, context) {
     const info = JSON.parse((await requestBuffer(endpoint, metaLimit, context)).toString('utf8'))
     if (info.type !== 'file' || info.path !== relative || !/^[a-f0-9]{40}$/.test(info.sha) || !Number.isSafeInteger(info.size) || info.size > limit || info.size < 0) throw new Error('GitCode 模块文件信息无效')
     url = 'https://raw.gitcode.com/ccxhan/xhh-TL-modules/blobs/' + info.sha + '/' + relative
-  } else url = SOURCES[context.source].base + relative
+  } else url = sourceBase(context.source) + relative
+  globalThis.logger?.debug?.(`[xhh-TL][模块下载] 地址 ${url}`)
   return requestBuffer(url, limit, context)
 }
 

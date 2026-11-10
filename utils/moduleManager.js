@@ -163,40 +163,57 @@ export async function refreshCatalog(){return exclusive(async()=>{
   writeJson(cacheCatalogFile,c);runtime.catalog=c
   return '模块目录已刷新，请重新读取配置查看。'
 })}
+function operationIds(id){
+  // 锅巴按钮会把多选数组插值成逗号串（模块 id 只含小写字母、数字和下划线），两种形态都要吃。
+  const list=Array.isArray(id)?id:[id]
+  return [...new Set(list.flatMap(v=>String(v==null?'':v).split(',')).map(v=>v.trim()).filter(Boolean))]
+}
 function calculateOperation(state,action,id){
   if(!['install','uninstall','update','migrate'].includes(action)) throw new Error('未知模块操作')
-  const known=getCatalog().modules.find(m=>m.id===id)
-  if(action!=='migrate' && (!known||known.internal)) throw new Error('请选择可管理的模块')
+  const ids=operationIds(id)
+  const catalog=getCatalog()
+  const find=item=>catalog.modules.find(m=>m.id===item)
+  const labelOf=item=>find(item)?.label||item
+  if(action!=='migrate'){
+    if(!ids.length) throw new Error('请选择可管理的模块')
+    for(const item of ids) if(!find(item)||find(item).internal) throw new Error('请选择可管理的模块')
+  }
   if(state.migration==='required' && action!=='migrate') throw new Error('请先完成旧版功能迁移')
   let explicit=[...(state.pending?.explicit||state.explicit)]
   const previous=state.pending?.target||state.installed
   if(action==='migrate'){
     if(state.migration!=='required') throw new Error('无需迁移旧版功能。')
-    explicit=[...legacyIds,...getCatalog().modules.filter(m=>m.legacyResource).map(m=>m.id)]
+    explicit=[...legacyIds,...catalog.modules.filter(m=>m.legacyResource).map(m=>m.id)]
   }else if(action==='install'){
-    if(previous[id]){
-      const pendingInstall=state.pending&&!state.installed[id]
-      throw new Error(pendingInstall?'该模块已安排安装，重启机器人后生效。':'该模块已安装，无需重复安装。')
+    for(const item of ids){
+      if(previous[item]){
+        const pendingInstall=state.pending&&!state.installed[item]
+        throw new Error(pendingInstall?`${labelOf(item)} 已安排安装，重启机器人后生效。`:`${labelOf(item)} 已安装，无需重复安装。`)
+      }
+      if(!explicit.includes(item)) explicit.push(item)
     }
-    if(!explicit.includes(id)) explicit.push(id)
   }else if(action==='uninstall'){
-    if(!previous[id]){
-      const pendingRemoval=!!(state.pending&&state.installed[id])
-      throw new Error(pendingRemoval?'该模块已安排卸载，重启机器人后生效。':'该模块未安装，无需卸载。')
+    for(const item of ids){
+      if(!previous[item]){
+        const pendingRemoval=!!(state.pending&&state.installed[item])
+        throw new Error(pendingRemoval?`${labelOf(item)} 已安排卸载，重启机器人后生效。`:`${labelOf(item)} 未安装，无需卸载。`)
+      }
     }
-    explicit=explicit.filter(v=>v!==id)
+    explicit=explicit.filter(v=>!ids.includes(v))
     const retained=dependencyClosure(explicit)
-    if(retained[id]) throw new Error('请先卸载依赖它的模块：'+explicit.filter(v=>dependencyClosure([v])[id]).map(v=>getCatalog().modules.find(m=>m.id===v).label).join('、'))
+    for(const item of ids) if(retained[item]) throw new Error('请先卸载依赖它的模块：'+explicit.filter(v=>dependencyClosure([v])[item]).map(labelOf).join('、'))
   }else{
-    if(!previous[id]) throw new Error('请先安装该模块')
-    if(previous[id].sha256===known.sha256){
-      const pendingUpdate=!!(state.pending&&state.installed[id]&&state.installed[id].sha256!==previous[id].sha256)
-      throw new Error(pendingUpdate?'该模块已安排更新，重启机器人后生效。':'该模块已是最新版本。')
+    for(const item of ids){
+      if(!previous[item]) throw new Error(`请先安装 ${labelOf(item)}`)
+      if(previous[item].sha256===find(item).sha256){
+        const pendingUpdate=!!(state.pending&&state.installed[item]&&state.installed[item].sha256!==previous[item].sha256)
+        throw new Error(pendingUpdate?`${labelOf(item)} 已安排更新，重启机器人后生效。`:`${labelOf(item)} 已是最新版本。`)
+      }
     }
   }
-  const refreshIds=action==='update'?new Set(Object.keys(dependencyClosure([id]))):new Set()
+  const refreshIds=action==='update'?new Set(ids.flatMap(item=>Object.keys(dependencyClosure([item])))):new Set()
   // 更新共享依赖时同步准备依赖它的已安装模块，避免跨版本调用断裂。
-  const available=getCatalog().modules
+  const available=catalog.modules
   let candidates
   for(let round=0;round<=available.length;round++) {
     candidates=available.map(m=>previous[m.id]&&!refreshIds.has(m.id)?previous[m.id]:m)
@@ -430,9 +447,10 @@ export function startOperation(action,id){
     runtime.operation='正在停止当前模块操作，请稍候…'
     return runtime.operation
   }
-  if(['install','uninstall','update'].includes(action)&&!getCatalog().modules.some(m=>m.id===id&&!m.internal)) throw new Error('请选择可管理的模块')
-  previewOperation(action,id)
-  runtime.operationState='running';runtime.action=action;runtime.moduleId=id||''
+  const ids=operationIds(id)
+  if(['install','uninstall','update'].includes(action)&&(!ids.length||ids.some(item=>!getCatalog().modules.some(m=>m.id===item&&!m.internal)))) throw new Error('请选择可管理的模块')
+  previewOperation(action,ids)
+  runtime.operationState='running';runtime.action=action;runtime.moduleId=ids.join(',')
   runtime.operation='正在准备模块变更…'
   runtime.abort=false;runtime.abortReason='';runtime.progress=null
   setDownloadCancelCheck(()=>runtime.abort)
