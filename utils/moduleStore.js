@@ -35,6 +35,10 @@ const SOURCE_SPEED_TTL = 15 * 60 * 1000
 const RETRY_HTTP = new Set([408, 418, 429, 500, 502, 503, 504])
 const BLOCK_HTTP = new Set([403, 418, 451])
 const RETRY_NETWORK = new Set(['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE'])
+// 429/418/403 这类是平台限流或风控，对每个分片都退避重试纯属浪费；本次进程内先冷落该源两分钟。
+const THROTTLE_HTTP = new Set([403, 418, 429, 451])
+const SOURCE_PENALTY = new Map()
+const PENALTY_TIME = 2 * 60 * 1000
 const SOURCES = Object.freeze({
   github: { label: 'GitHub', gitHosts: ['github.com', 'ssh.github.com'], hosts: ['raw.githubusercontent.com'], base: 'https://raw.githubusercontent.com/cchanlan/xhh-TL-modules/master/' },
   gitee: { label: 'Gitee', gitHosts: ['gitee.com', 'ssh.gitee.com'], hosts: ['gitee.com', 'raw.giteeusercontent.com'], base: 'https://gitee.com/longhengmu/xhh-TL-modules/raw/master/' },
@@ -236,18 +240,31 @@ function logDownloadFailure(url, context, error, attempt, headers, delay) {
   if (context.probe) globalThis.logger?.debug?.(text)
   else globalThis.logger?.warn?.(text)
 }
+/** 同一进程里只允许一个模块操作；moduleManager 用这个钩子让点击取消/停滞检测能立刻掐断正在跑的请求。 */
+let cancelCheck = null
+export function setDownloadCancelCheck(check) { cancelCheck = typeof check === 'function' ? check : null }
+function throwIfCancelled() {
+  if (cancelCheck?.()) throw Object.assign(new Error('模块操作已取消'), { cancelled: true, fatal: true })
+}
 /** 同平台 HTTPS 跳转上限 5 次；GET 临时失败最多三次，保持匿名访问与原有代理。 */
 function requestBuffer(initial, limit, context) {
   return new Promise((resolve, reject) => {
-    let settled = false, current, timer, retryTimer
+    let settled = false, current, timer, retryTimer, cancelTimer
     const done = (error, bytes) => {
       if (settled) return
-      settled = true; clearTimeout(timer); clearTimeout(retryTimer)
+      settled = true; clearTimeout(timer); clearTimeout(retryTimer); clearInterval(cancelTimer)
       if (error) current?.destroy()
       error ? reject(error) : resolve(bytes)
     }
+    // 黑洞代理下 TCP 连接可能干等 20 秒，单独轮询取消标记才能让「取消」秒级生效。
+    cancelTimer = setInterval(() => {
+      if (settled) { clearInterval(cancelTimer); return }
+      if (cancelCheck?.()) { done(Object.assign(new Error('模块操作已取消'), { cancelled: true })) }
+    }, 500)
+    if (cancelTimer.unref) cancelTimer.unref()
     const visit = (value, redirects = 0, attempt = 1) => {
       if (settled) return
+      if (cancelCheck?.()) { done(Object.assign(new Error('模块操作已取消'), { cancelled: true })); return }
       let url
       try { url = allowedDownloadURL(value, context.source) } catch (error) { done(error); return }
       let retired = false, hasResponse = false, request
@@ -289,6 +306,7 @@ function requestBuffer(initial, limit, context) {
           const chunks = []
           response.on('data', chunk => {
             if (settled || retired) return
+            if (cancelCheck?.()) { done(Object.assign(new Error('模块操作已取消'), { cancelled: true })); return }
             received += chunk.length
             if (received > limit) { done(new Error('下载超过大小限制')); return }
             chunks.push(chunk)
@@ -309,6 +327,7 @@ function requestBuffer(initial, limit, context) {
 }
 const fatalError = message => Object.assign(new Error(message), { fatal: true })
 async function downloadFromSource(relative, limit, context) {
+  throwIfCancelled()
   if (!validDownloadPath(relative) || !Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PACK) throw fatalError('下载目标或大小限制无效')
   let url
   if (context.source === 'gitcode') {
@@ -363,7 +382,10 @@ export async function rankSources() {
 
 async function candidateSources(preferred) {
   const ranked = await rankSources()
-  return preferred ? [preferred, ...ranked.filter(id => id !== preferred)] : ranked
+  const list = preferred ? [preferred, ...ranked.filter(id => id !== preferred)] : [...ranked]
+  const now = Date.now()
+  // 被限流的源排到最后，但仍保留：三个源全被限时还得能试。
+  return [...list.filter(id => !(SOURCE_PENALTY.get(id) > now)), ...list.filter(id => SOURCE_PENALTY.get(id) > now)]
 }
 
 /** 按测速速度给每个源单独算限时：快源留有富余，慢源别拖满全局超时，换源时重新计时。 */
@@ -382,7 +404,11 @@ async function withSourceFallback(candidates, run) {
     try { return await run(source) }
     catch (error) {
       lastError = error
-      if (error?.fatal) throw error
+      if (error?.fatal || error?.cancelled) throw error
+      if (THROTTLE_HTTP.has(error.statusCode)) {
+        SOURCE_PENALTY.set(source, Date.now() + PENALTY_TIME)
+        globalThis.logger?.warn?.(`[xhh-TL][模块下载] ${SOURCES[source].label} 被限流（HTTP ${error.statusCode}），2 分钟内优先用其他源`)
+      }
       if (index === candidates.length - 1) break
       const reason = error.statusCode || error.code || error.message
       globalThis.logger?.warn?.(`[xhh-TL][模块下载] ${SOURCES[source].label} 失败（${reason}），改用 ${SOURCES[candidates[index + 1]].label}`)
@@ -400,6 +426,7 @@ async function downloadParts(meta, context, parallel = PACKAGE_PARALLEL) {
   let cursor = 0, failure
   const worker = async () => {
     while (!failure) {
+      if (cancelCheck?.()) { failure = Object.assign(new Error('模块操作已取消'), { cancelled: true, fatal: true }); return }
       const index = cursor++
       if (index >= total) return
       const offset = index * PACKAGE_PART_SIZE
@@ -441,7 +468,7 @@ export async function downloadPackage(meta, source) {
       const ctx = { ...context, source: candidate, deadline: Date.now() + sourceDeadline(candidate, meta.bytes) }
       let buffer
       if (meta.bytes > PACKAGE_PART_SIZE) {
-        try { buffer = await downloadParts(meta, ctx, candidate === 'gitcode' ? 3 : 4) }
+        try { buffer = await downloadParts(meta, ctx, candidate === 'gitcode' ? 2 : 4) }
         catch (error) {
           if (error?.fatal) throw error
           // 只有「源上确实没有分片目录」才退回整包；网络抖动/风控交给换源，别在坏源上再耗一轮。

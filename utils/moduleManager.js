@@ -2,10 +2,10 @@ import {beginTaskGeneration,wrapModuleClass} from './taskLifecycle.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download, downloadPackage } from './moduleStore.js'
+import { CORE_API, CORE_VERSION, root, storeDir, stateFile, readJson, writeJson, atomicWrite, sha256, managedPath, assertNoSymlink, validateCatalog, decodePackage, download, downloadPackage, setDownloadCancelCheck } from './moduleStore.js'
 const key = Symbol.for('xhh-TL.module-manager.v1')
 const runtimes = globalThis[key] || (globalThis[key] = new Map())
-const runtime = runtimes.get(root) || { booted:false, running:{}, errors:{}, busy:false }
+const runtime = runtimes.get(root) || { booted:false, running:{}, errors:{}, busy:false, progress:null, abort:false, abortReason:'' }
 runtimes.set(root,runtime)
 const catalogFile = path.join(root,'config','modules-catalog.json')
 const cacheCatalogFile = path.join(storeDir,'catalog.json')
@@ -61,8 +61,12 @@ function dependencyClosure(ids,catalog=getCatalog()){
   for(const id of ids) visit(id)
   return result
 }
-const LOCK_TTL = 30 * 60 * 1000
+const LOCK_TTL = 10 * 60 * 1000
 const PACKAGE_PARALLEL = 3
+const STALL_LIMIT = 90 * 1000
+const OPERATION_LIMIT = 20 * 60 * 1000
+const STALL_TEXT = '模块下载长时间没有进展，已停止。请检查网络或配置下载代理后重试。'
+const TIMEOUT_TEXT = '模块准备超过 20 分钟仍未完成，已停止。已下载的包会保留，下次操作继续用；请检查网络或配置下载代理后重试。'
 async function exclusive(action){
   if(runtime.busy) throw new Error('模块操作进行中，请稍后再试')
   runtime.busy=true
@@ -100,20 +104,35 @@ async function cachePackage(m){
   const bytes=await downloadPackage(m)
   decodePackage(bytes,m);atomicWrite(file,bytes)
 }
-/** 迁移要拉几十个包，串行时慢源会把整轮拖到几十分钟；三路并发只压在下载这一步。 */
+/** 迁移要拉几十个包，串行时慢源会把整轮拖到几十分钟；三路并发只压在下载这一步。
+ * 每完成一个包刷新进度，锅巴和模块中心都能看到；abort 由停滞检测/取消按钮置位。 */
 async function cachePackages(mods){
+  if(!mods.length)return
+  const total=mods.length, totalBytes=mods.reduce((n,m)=>n+(m.bytes||0),0)
+  let done=0, bytes=0
+  const report=()=>{
+    runtime.progress={done,total,bytes,totalBytes,updatedAt:Date.now()}
+    runtime.operation=`正在下载模块 ${done}/${total}（${mb(bytes)} / ${mb(totalBytes)}）…`
+  }
+  report()
   let failure
   const queue=[...mods]
   const worker=async()=>{
-    while(!failure){
+    while(!failure&&!runtime.abort){
       const m=queue.shift()
       if(!m)return
-      try{await cachePackage(m)}catch(error){failure=failure||error}
+      try{
+        await cachePackage(m)
+        done++;bytes+=m.bytes||0;report()
+      }catch(error){failure=failure||error}
     }
   }
   await Promise.all(Array.from({length:Math.min(PACKAGE_PARALLEL,queue.length)},worker))
+  runtime.progress=null
+  if(runtime.abort)throw new Error(runtime.abortReason==='cancel'?'操作已取消':runtime.abortReason==='timeout'?TIMEOUT_TEXT:STALL_TEXT)
   if(failure)throw failure
 }
+const mb=bytes=>(bytes/1048576).toFixed(1)+' MB'
 export async function refreshCatalog(){return exclusive(async()=>{
   const c=validateCatalog(JSON.parse((await download('catalog.json',4*1024*1024)).toString('utf8')))
   writeJson(cacheCatalogFile,c);runtime.catalog=c
@@ -360,7 +379,8 @@ export function moduleOverview(enabled=()=>true){
     `${m.label}｜${STATE_LABELS[m.status]}｜${m.version||'—'} → ${m.latestVersion}${m.dependencies.length?'\n  依赖：'+m.dependencies.join('、'):''}`).join('\n')
 }
 export function previewOperation(action,id){
-  if(runtime.busy) throw new Error('模块操作进行中，请稍后再试')
+  // 取消是唯一在忙碌时也要放行的动作：下载卡住时用户总得有条退路。
+  if(runtime.busy&&action!=='cancel') throw new Error(runtime.progress?runtime.operation:'模块操作进行中，请稍后再试')
   const state=initializeState()
   if(action==='refresh')return {action,changes:[],downloadBytes:0}
   if(action==='cancel')return {action,changes:[],downloadBytes:0}
@@ -377,18 +397,48 @@ export function previewOperation(action,id){
 
 /** 锅巴请求只提交后台操作，避免大包下载超过面板 HTTP 超时。 */
 export function startOperation(action,id){
-  if(runtime.busy) throw new Error('模块操作进行中，请稍后再试')
   if(!['install','uninstall','update','migrate','cancel','refresh'].includes(action)) throw new Error('未知模块操作')
+  if(runtime.busy){
+    if(action!=='cancel') throw new Error(runtime.progress?runtime.operation:'模块操作进行中，请稍后再试')
+    // 正在下载时点取消：先让后台停下，等它退出后再取消待重启变更。
+    runtime.abort=true;runtime.abortReason='cancel'
+    runtime.operation='正在停止当前模块操作，请稍候…'
+    return runtime.operation
+  }
   if(['install','uninstall','update'].includes(action)&&!getCatalog().modules.some(m=>m.id===id&&!m.internal)) throw new Error('请选择可管理的模块')
   previewOperation(action,id)
   runtime.operationState='running';runtime.action=action;runtime.moduleId=id||''
   runtime.operation='正在准备模块变更…'
+  runtime.abort=false;runtime.abortReason='';runtime.progress=null
+  setDownloadCancelCheck(()=>runtime.abort)
   const task=action==='refresh'?refreshCatalog():queueOperation(action,id)
+  const startedAt=Date.now()
+  const watchdog=setInterval(()=>{
+    if(runtime.operationState!=='running'||runtime.abort){clearInterval(watchdog);return}
+    const last=runtime.progress?.updatedAt||startedAt
+    if(Date.now()-startedAt>OPERATION_LIMIT){
+      runtime.abort=true;runtime.abortReason='timeout';runtime.operationState='failed';runtime.operation=TIMEOUT_TEXT
+      globalThis.logger?.error?.('[xhh-TL][模块后台操作] 超过总时限，已请求停止')
+    }else if(Date.now()-last>STALL_LIMIT){
+      runtime.abort=true;runtime.abortReason='stall';runtime.operationState='failed';runtime.operation=STALL_TEXT
+      globalThis.logger?.error?.('[xhh-TL][模块后台操作] 下载长时间无进展，已请求停止')
+    }
+  },10_000)
   runtime.operationPromise=task.then(message=>{runtime.operation=message;runtime.operationState='success'}).catch(error=>{
+    const stopped={cancel:'当前模块操作已停止，请稍候再试。',timeout:TIMEOUT_TEXT,stall:STALL_TEXT}[runtime.abortReason]
     runtime.operationState='failed'
-    runtime.operation=userFacingError(error)||'模块操作失败，请查看日志后重试。'
+    runtime.operation=stopped||userFacingError(error)||'模块操作失败，请查看日志后重试。'
     globalThis.logger?.error?.('[xhh-TL][模块后台操作]',error)
-    try{const s=getState();s.lastError=String(error.message);writeJson(stateFile,s)}catch{}
+    // 用户主动取消不是故障，不写进「上次操作失败」。
+    if(runtime.abortReason!=='cancel'){
+      try{const s=getState();s.lastError=stopped||String(error.message);writeJson(stateFile,s)}catch{}
+    }
+  }).finally(()=>{
+    clearInterval(watchdog)
+    setDownloadCancelCheck(null)
+    runtime.abort=false
+    runtime.abortReason=''
+    runtime.progress=null
   })
   return runtime.operation
 }
