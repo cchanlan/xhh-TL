@@ -767,6 +767,30 @@ function getMiaoCharNames(game) {
  * @param {'gs'|'sr'|'zzz'|'ww'} game
  * @param {object} [opts]
  */
+/**
+ * 立绘目录名与 miao 角色名对不上时的归一化。
+ * normal-character 里混了几套命名：同角色的另一套立绘带 Pro 后缀；
+ * 个别用了别名或错字（琳尼特=琳妮特）；还有 miao 尚未收录、只能按 wiki 别名判游戏的新角色。
+ * 只在名字对不上时才回退，避免把本来能匹配的目录误改。
+ */
+const PORTRAIT_DIR_ALIAS = {
+  琳尼特: '琳妮特',
+}
+const PORTRAIT_GAME_OVERRIDE = {
+  艾莉丝: 'gs',
+  安娜丝塔夏: 'gs',
+  虚照: 'sr',
+}
+
+function portraitDirMatches(name, game, names) {
+  if (PORTRAIT_GAME_OVERRIDE[name] === game) return true
+  if (names.has(name)) return true
+  const alias = PORTRAIT_DIR_ALIAS[name]
+  if (alias && names.has(alias)) return true
+  const noPro = name.replace(/\s*Pro$/i, '')
+  return noPro !== name && names.has(noPro)
+}
+
 export function pickCharacterPortrait(game, opts = {}) {
   const cfg = readPluginConfig()
   if (game === 'zzz') {
@@ -795,7 +819,7 @@ export function pickCharacterPortrait(game, opts = {}) {
     DEFAULT_TL_PORTRAIT_FOLDER
 
   const names = getMiaoCharNames(game === 'sr' ? 'sr' : 'gs')
-  const filterDir = names ? (name) => names.has(name) : null
+  const filterDir = names ? (name) => portraitDirMatches(name, game, names) : null
 
   return pickRoleCombatBgImage({
     folder,
