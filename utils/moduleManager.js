@@ -130,12 +130,26 @@ function calculateOperation(state,action,id){
     if(state.migration!=='required') throw new Error('无需迁移旧版功能。')
     explicit=[...legacyIds,...getCatalog().modules.filter(m=>m.legacyResource).map(m=>m.id)]
   }else if(action==='install'){
+    if(previous[id]){
+      const pendingInstall=state.pending&&!state.installed[id]
+      throw new Error(pendingInstall?'该模块已安排安装，重启机器人后生效。':'该模块已安装，无需重复安装。')
+    }
     if(!explicit.includes(id)) explicit.push(id)
   }else if(action==='uninstall'){
+    if(!previous[id]){
+      const pendingRemoval=!!(state.pending&&state.installed[id])
+      throw new Error(pendingRemoval?'该模块已安排卸载，重启机器人后生效。':'该模块未安装，无需卸载。')
+    }
     explicit=explicit.filter(v=>v!==id)
     const retained=dependencyClosure(explicit)
     if(retained[id]) throw new Error('请先卸载依赖它的模块：'+explicit.filter(v=>dependencyClosure([v])[id]).map(v=>getCatalog().modules.find(m=>m.id===v).label).join('、'))
-  }else if(!previous[id]) throw new Error('请先安装该模块')
+  }else{
+    if(!previous[id]) throw new Error('请先安装该模块')
+    if(previous[id].sha256===known.sha256){
+      const pendingUpdate=!!(state.pending&&state.installed[id]&&state.installed[id].sha256!==previous[id].sha256)
+      throw new Error(pendingUpdate?'该模块已安排更新，重启机器人后生效。':'该模块已是最新版本。')
+    }
+  }
   const refreshIds=action==='update'?new Set(Object.keys(dependencyClosure([id]))):new Set()
   // 更新共享依赖时同步准备依赖它的已安装模块，避免跨版本调用断裂。
   const available=getCatalog().modules
