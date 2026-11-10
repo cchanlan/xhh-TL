@@ -30,11 +30,36 @@ function validateState(s) {
   if(s.pending)validateSet(s.pending.target,s.pending.explicit)
   return s
 }
-export function getState(){return validateState(readJson(stateFile))}
+/** 旧版安装痕迹：保存过锅巴配置、旧版业务文件还在，或 data 下有旧版用户数据。
+ * 只认 config.yaml 会把「从没在锅巴保存过配置」的老用户当成全新安装，他们更新后会永远显示无需迁移、功能全丢。 */
+const LEGACY_DATA = ['auto_sign.json','bbs_coin.json','deleted_ck.yaml','resin_push.json','resin_timer.json','sr_gacha_pools.json','MysCookie','tmp']
+function hasLegacyInstall(){
+  if(fs.existsSync(path.join(root,'config','config.yaml'))) return true
+  try{
+    const files=readJson(path.join(root,'config','legacy-files.json')).files||{}
+    if(Object.keys(files).some(name=>{try{return fs.existsSync(path.join(root,...name.split('/')))}catch{return false}})) return true
+  }catch{}
+  const dataDir=path.join(root,'data')
+  try{
+    if(LEGACY_DATA.some(name=>fs.existsSync(path.join(dataDir,name)))) return true
+    if(fs.readdirSync(dataDir).some(name=>name!=='module-manager'&&/\.ya?ml$/i.test(name))) return true
+  }catch{}
+  return false
+}
+export function getState(){
+  const state=validateState(readJson(stateFile))
+  // 已经误判成「无需迁移」且一个业务模块都没装的老用户，按数据痕迹纠正回待迁移。
+  if(state.migration==='none'&&!legacyIds.some(id=>state.installed[id])&&hasLegacyInstall()){
+    state.migration='required'
+    writeJson(stateFile,state)
+    globalThis.logger?.warn?.('[xhh-TL][模块迁移] 检测到旧版安装痕迹，已重新标记为待迁移')
+  }
+  return state
+}
 /** 在 config.yaml 自动创建之前调用；入口与锅巴共用。 */
 export function initializeState(){
   if(fs.existsSync(stateFile)) return getState()
-  const legacy=fs.existsSync(path.join(root,'config','config.yaml'))
+  const legacy=hasLegacyInstall()
   const state={schema:1,installed:{},explicit:[],pending:null,migration:legacy?'required':'none',lastError:''}
   assertNoSymlink(stateFile);fs.mkdirSync(storeDir,{recursive:true})
   let fd
