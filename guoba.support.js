@@ -55,7 +55,7 @@ export function supportGuoba() {
           {label:'GitCode',value:'gitcode'},
         ]},bottomHelpMessage:'默认自动测速挑最快的平台；固定某个平台会跳过测速直接用它，下载失败仍会自动换源。'},
         { field:'download_threads',label:'下载并发',component:'InputNumber',componentProps:{min:1,max:8,step:1},bottomHelpMessage:'同时下载几个模块包，默认 3；网络好多可以调到 6~8 加快安装，平台限流或带宽小时调低。'},
-        { field:'module_target', label:'选择模块（可多选）', component:'Select', componentProps:{mode:'multiple', allowClear:true, placeholder:'可多选，安装/更新会一次下载多个', options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))}, bottomHelpMessage:'按住 Ctrl / Shift 或直接连续点选可以选多个模块，安装会一次下完、重启后一起生效。' },
+        { field:'module_target', label:'选择模块（可多选）', component:'CheckboxGroup', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))}, bottomHelpMessage:'勾选一个或多个模块，安装会一次下完、重启后一起生效；卸载和更新同样支持多选。' },
         { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
           {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},
           {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据。')},

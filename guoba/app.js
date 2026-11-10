@@ -39,7 +39,7 @@ async function api(route,body){
  }finally{clearTimeout(timeout)}
 }
 function error(e){$('error').hidden=false;$('error-text').textContent=e.name==='AbortError'?'请求超时，请稍后重试。':e.message||'连接失败，请稍后重试。';$('retry').hidden=authFailed;updateButtons()}
-function button(text,action,id,secondary=false){const b=node('button',text,secondary?'secondary':'');b.dataset.action=action;b.dataset.module=id||'';b.onclick=()=>preview(action,id);return b}
+function button(text,action,id,kind=''){const b=node('button',text,kind);b.dataset.action=action;b.dataset.module=id||'';b.onclick=()=>preview(action,id);return b}
 function render(){
  if(!snapshot)return
  const q=$('search').value.trim().toLowerCase(),category=$('category').value
@@ -60,7 +60,7 @@ function render(){
   card.append(details)
   const bottom=node('div',undefined,'card-bottom'),actions=node('div',undefined,'card-actions')
   if(m.status.startsWith('pending-'))actions.append(node('span','重启后生效','size'))
-  else if(m.installed){if(m.updateAvailable)actions.append(button('更新','update',m.id));actions.append(button('卸载','uninstall',m.id,true))}
+  else if(m.installed){if(m.updateAvailable)actions.append(button('更新','update',m.id));actions.append(button('卸载','uninstall',m.id,'danger'))}
   else actions.append(button('安装','install',m.id))
   bottom.append(node('span','含依赖 '+size(m.bytes),'size'),actions);card.append(bottom);fragment.append(card)
  }
