@@ -238,7 +238,7 @@ export async function queueOperation(action,id){return exclusive(async()=>{
   state.pending={target,explicit,action,requestedAt:new Date().toISOString()};state.lastError=''
   writeJson(stateFile,state)
   const labels=Object.values(target).filter(m=>state.installed[m.id]?.sha256!==m.sha256).map(m=>m.label)
-  return action==='uninstall'?'已安排卸载，重启机器人后生效；配置和用户数据保留。':`已准备${labels.length?'：'+labels.join('、'):''}。重启机器人后生效。`
+  return action==='uninstall'?'已安排卸载，重启机器人后生效；配置和用户数据保留。'+(operationIds(id).some(item=>getCatalog().modules.find(m=>m.id===item)?.legacyResource)?'素材包卸载后，相关卡片会缺少对应背景或立绘。':''):`已准备${labels.length?'：'+labels.join('、'):''}。重启机器人后生效。`
 })}
 
 function fileMap(installed){

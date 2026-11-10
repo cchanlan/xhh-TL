@@ -58,7 +58,7 @@ export function supportGuoba() {
         { field:'module_target', label:'选择模块（可多选）', component:'CheckboxGroup', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))}, bottomHelpMessage:'勾选一个或多个模块，安装会一次下完、重启后一起生效；卸载和更新同样支持多选。' },
         { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
           {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},
-          {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据。')},
+          {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据；卸载素材包后出图会缺背景或立绘。')},
           {label:'更新',action:'moduleUpdate',args:['#{module_target}']},
           {label:'刷新目录',action:'moduleRefresh'},
           {label:'迁移旧版功能',action:'moduleMigrate',confirm:confirmation('保留原有功能开关、配置和用户数据，准备模块文件。')},

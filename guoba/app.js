@@ -54,6 +54,7 @@ function render(){
   heading.append(node('h3',m.label),node('span',m.category==='assets'?'素材图库':'功能模块','kind'))
   top.append(imageIcon(m.id),heading,node('span',labels[m.status]||m.status,'badge '+m.status))
   card.append(top,node('p',m.description,'description'))
+  if(m.error)card.append(node('p','加载失败：'+m.error,'error-note'))
   const details=node('dl',undefined,'details')
   for(const [label,text] of [['当前版本',m.version||'尚未安装'],['可用版本',m.latestVersion],['依赖',m.dependencies.join('、')||'无额外模块']])details.append(node('dt',label),node('dd',text))
   if(m.requiresMiao)details.append(node('dt','运行环境'),node('dd','需要 miao-plugin'))
@@ -92,7 +93,10 @@ async function preview(action,id){
   dialogAction=body;returnFocus=document.activeElement
   const name=snapshot.modules.find(m=>m.id===id)?.label||''
   $('dialog-title').textContent=verbs[action]+(name?' · '+name:'')
-  $('dialog-note').textContent=action==='uninstall'?'重启后移除所选功能及不再使用的依赖，保留账号、配置与订阅。':action==='cancel'?'取消全部尚未生效的变更，已生效的模块不受影响。':action==='refresh'?'获取最新模块目录，不自动安装或更新任何功能。':'准备以下模块及依赖，重启机器人后生效。'
+  const target=snapshot.modules.find(m=>m.id===id)
+  $('dialog-note').textContent=action==='uninstall'
+    ? (target?.category==='assets'?'重启后移除该素材包；相关卡片会缺少对应背景/立绘，出图可能缺图。账号、配置与订阅保留。':'重启后移除所选功能及不再使用的依赖，保留账号、配置与订阅。')
+    : action==='cancel'?'取消全部尚未生效的变更，已生效的模块不受影响。':action==='refresh'?'获取最新模块目录，不自动安装或更新任何功能。':'准备以下模块及依赖，重启机器人后生效。'
   $('dialog-changes').replaceChildren(...plan.changes.map(m=>node('li',(verbs[m.action]||m.action)+' · '+m.label)))
   $('dialog-size').textContent=plan.downloadBytes?'本次预计下载 '+size(plan.downloadBytes):'无需额外下载'
   $('confirm').textContent='确认'+verbs[action];$('modal').hidden=false;$('dismiss').focus()
