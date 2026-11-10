@@ -3353,25 +3353,25 @@
         "shared_account": "2.1.0-5282f040854d",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-aa935146f06b",
-      "package": "packages/sr_gacha/2.1.0-aa935146f06b.xhmp",
-      "sha256": "448b638d6b240114fdf0754a3ac2528409efbfe46d38b4cb96eef47bdd54dc13",
-      "bytes": 75845,
+      "version": "2.1.0-3eafde037868",
+      "package": "packages/sr_gacha/2.1.0-3eafde037868.xhmp",
+      "sha256": "40bc279e97d124162daabec4d274c10b741762fa1a34ab67a2f0050046496050",
+      "bytes": 77612,
       "files": [
         {
           "path": "apps/srGachaLog.js",
-          "size": 93941,
-          "sha256": "1c26fa44134e30ba3b7d91ecd64851cbc6f5a11fce9d394759bdc48dc8f3fad5"
+          "size": 94350,
+          "sha256": "8528f3344944653c5dcebad49725726df4867e9ffd3e9439d41e1059f36d7cc6"
         },
         {
           "path": "resources/gachaLog/allLog.html",
-          "size": 6977,
-          "sha256": "422bacefea605c82b38bd1d034c376ba83a7c66e0a5c317ed0404cdcd2854312"
+          "size": 9381,
+          "sha256": "651675a6469082b420b66a68d0594b135a2e732f1a88ef20807d707499635e58"
         },
         {
           "path": "resources/gachaLog/gachaLog.html",
-          "size": 11361,
-          "sha256": "be3abf12d2f32e30c41a19a6af6b5301731d7d37bab2e5aff12b392dafc9ca88"
+          "size": 13371,
+          "sha256": "50f2af2ffba506b038c3a4e3e94a169f21c472bcc5c85383c62e589fb4d683de"
         },
         {
           "path": "utils/gachaImport.js",
@@ -3380,8 +3380,8 @@
         },
         {
           "path": "utils/gachaStat.js",
-          "size": 13023,
-          "sha256": "87d7cc11c2eeb72fccf8ff2175e496e353c433b2a6d1a3c02fdc430a9a804a8a"
+          "size": 13794,
+          "sha256": "93805268687a96d09c9668f172b0c239db473da54878d608ca38858055b5c068"
         },
         {
           "path": "utils/srGachaRebuild.js",
