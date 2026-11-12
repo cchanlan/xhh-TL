@@ -524,6 +524,316 @@
       "files": []
     },
     {
+      "id": "assets_gacha_hero_1",
+      "label": "抽卡记录背景图资源分包",
+      "description": "抽卡记录背景图资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-6af79d89e3ff",
+      "package": "packages/assets_gacha_hero_1/2.1.0-6af79d89e3ff.xhmp",
+      "sha256": "fa28a21e9844fa4b0b281f74159f469a09e7332eee82e279e7c7a8762dda716d",
+      "bytes": 2639365,
+      "files": [
+        {
+          "path": "resources/gachaLog/hero/丹恒•饮月.webp",
+          "size": 97460,
+          "sha256": "952927336c6b34813fa27824eead8284ad483545a854edf088f479068bef8146"
+        },
+        {
+          "path": "resources/gachaLog/hero/卡芙卡.webp",
+          "size": 95528,
+          "sha256": "5195860e323e88902072ecff88a04bf837451ebfd239cfbd6229d768b987e552"
+        },
+        {
+          "path": "resources/gachaLog/hero/大黑塔.webp",
+          "size": 120726,
+          "sha256": "28ed91f29878eec26a049b827b2cd5fe22797ce75c29db7603c2982c52d90a08"
+        },
+        {
+          "path": "resources/gachaLog/hero/姬子.webp",
+          "size": 60416,
+          "sha256": "f8044806e735eac7f5e9edcd8b08de9c344faffadd20f50a0d71ba428b26e90f"
+        },
+        {
+          "path": "resources/gachaLog/hero/寒鸦.webp",
+          "size": 50436,
+          "sha256": "1c5b1a6be635fa1f5a64f673c13f3637e2cc4c04bdc5ef6a87d52fb163d7f707"
+        },
+        {
+          "path": "resources/gachaLog/hero/布洛妮娅.webp",
+          "size": 73916,
+          "sha256": "29398d476248d51af323df4807b973392e88f96ac216412f541238ff07d8f88d"
+        },
+        {
+          "path": "resources/gachaLog/hero/景元.webp",
+          "size": 99918,
+          "sha256": "9500d69f6eb9af6ae2f318d0377c1d38d252a0fdd546214c5c3f174c6fb5992c"
+        },
+        {
+          "path": "resources/gachaLog/hero/桂乃芬.webp",
+          "size": 95796,
+          "sha256": "48387fe2c8017c64ddef75a650b1884d06660155b5aba0429ed9d7c960e77c2a"
+        },
+        {
+          "path": "resources/gachaLog/hero/椒丘.webp",
+          "size": 120788,
+          "sha256": "83fc50e92866e79372db824292d2f2b166a113a8fd4624bcf0f16ebba2ddac0b"
+        },
+        {
+          "path": "resources/gachaLog/hero/流萤.webp",
+          "size": 217446,
+          "sha256": "9414164eaafb95956246664a62bf28055aa805815db6a1600a8bdd45efce8216"
+        },
+        {
+          "path": "resources/gachaLog/hero/白厄.webp",
+          "size": 141056,
+          "sha256": "f815a52234a3a4f8f5a8d64c052fb05f9c7ee69654a4ce6aeb4257ddf4f88958"
+        },
+        {
+          "path": "resources/gachaLog/hero/白露.webp",
+          "size": 121500,
+          "sha256": "f28b927c7b08182a11c6692018e8269f70edb3a13fbd184e3b6d7951c696f540"
+        },
+        {
+          "path": "resources/gachaLog/hero/符玄.webp",
+          "size": 93154,
+          "sha256": "73a3be0cf2b6765291038404dd9604cc9a1c328b203c2d36b9abdcf21a89f36b"
+        },
+        {
+          "path": "resources/gachaLog/hero/翡翠.webp",
+          "size": 105874,
+          "sha256": "ab6e11666f0a8f918b305a05042e0c9fec007beb65d4beba81c6f23e58d09107"
+        },
+        {
+          "path": "resources/gachaLog/hero/艾丝妲.webp",
+          "size": 66758,
+          "sha256": "de79dcc469a3463b57857af9bc20204989b5569f15acc5386c9fec72bfb82974"
+        },
+        {
+          "path": "resources/gachaLog/hero/花火.webp",
+          "size": 138422,
+          "sha256": "182615a0c16699643c0cea65732e271bfe8277a106effef41fc9bda7132e1f36"
+        },
+        {
+          "path": "resources/gachaLog/hero/藿藿.webp",
+          "size": 135482,
+          "sha256": "c95cac919dd79a522f43b176b823d9053bca75068b8864d96a783812c3a44a5d"
+        },
+        {
+          "path": "resources/gachaLog/hero/虎克.webp",
+          "size": 61050,
+          "sha256": "ffabc30ba60ae4047fd3d9b2f6afbaca263071ea22e9082441279148d10da01c"
+        },
+        {
+          "path": "resources/gachaLog/hero/镜流.webp",
+          "size": 90506,
+          "sha256": "858a249f312e703c7caa3e4ccfe849f99e8b2df87bb7b0450eb41f7773bea073"
+        },
+        {
+          "path": "resources/gachaLog/hero/阿格莱雅.webp",
+          "size": 82892,
+          "sha256": "c7ebdff3257b3da42efa5b5ea594da954a21bacb4a8cb1db914dacf3f726101d"
+        },
+        {
+          "path": "resources/gachaLog/hero/风堇.webp",
+          "size": 107442,
+          "sha256": "95694bc886a8bdd8655f2e1fff6d0b9547eacd46e9c17c486ed9edda24fde3db"
+        },
+        {
+          "path": "resources/gachaLog/hero/飞霄.webp",
+          "size": 127266,
+          "sha256": "88e9b6344d49964e943096d70b2a1a38531303aaf125cdf92d90557deeb7f311"
+        },
+        {
+          "path": "resources/gachaLog/hero/黄泉.webp",
+          "size": 88694,
+          "sha256": "3e87e911e85c9ec218ab852ce67357d30e20cda98c9bd288d77710f4c68d3915"
+        },
+        {
+          "path": "resources/gachaLog/hero/黑塔.webp",
+          "size": 115634,
+          "sha256": "56ea747e6d08f056acfb8b556779eb0340d9850c6386e311fcc1c91a522a3340"
+        },
+        {
+          "path": "resources/gachaLog/hero/黑天鹅.webp",
+          "size": 118330,
+          "sha256": "73f38a743483dbaf0ec078a03750dfe84e61e2d99f0b9a9a4f5aca153ab7c581"
+        }
+      ]
+    },
+    {
+      "id": "assets_gacha_hero_2",
+      "label": "抽卡记录背景图资源分包",
+      "description": "抽卡记录背景图资源分包",
+      "coreApi": 2,
+      "dependencies": [],
+      "entries": [],
+      "internal": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {},
+      "version": "2.1.0-f6a6dcf3c47e",
+      "package": "packages/assets_gacha_hero_2/2.1.0-f6a6dcf3c47e.xhmp",
+      "sha256": "6c69191d994f0269660ea9e0f13000e46035ac638d616c42e0397f4dfb36e6c2",
+      "bytes": 2475241,
+      "files": [
+        {
+          "path": "resources/gachaLog/hero/万敌.webp",
+          "size": 121688,
+          "sha256": "a586a53922303cc0a3a1324497a2e8238d63c108c4967ed1468d22a1046c78cd"
+        },
+        {
+          "path": "resources/gachaLog/hero/三月七.webp",
+          "size": 134550,
+          "sha256": "6a1205be35584d8a9938caa994863d181f00125dbbf51237714bb62edf7f062e"
+        },
+        {
+          "path": "resources/gachaLog/hero/云璃.webp",
+          "size": 86578,
+          "sha256": "e3998000542e33cb13b7a3bf33d2fb9a06a6849edd8da852ba120c6283208780"
+        },
+        {
+          "path": "resources/gachaLog/hero/佩拉.webp",
+          "size": 93082,
+          "sha256": "0979f85c4e81e883d99b8122dd72300f048773f7da6f88f45427ca4ea8ae4b69"
+        },
+        {
+          "path": "resources/gachaLog/hero/停云.webp",
+          "size": 65968,
+          "sha256": "1598167318f5fc93b0c23e8d9c16cc332417a30ab980526b4da3a52e85714cf0"
+        },
+        {
+          "path": "resources/gachaLog/hero/刃.webp",
+          "size": 94826,
+          "sha256": "88a29535c3b2e3ffbac401328d92b9e8d806b3441f62a09ba039dd3fdd6b003b"
+        },
+        {
+          "path": "resources/gachaLog/hero/希儿.webp",
+          "size": 124984,
+          "sha256": "b6b164bfecdf07dfc59d6bd77bb6ed6dfa32aee9d5ca187efa2ad2f3e7c40b32"
+        },
+        {
+          "path": "resources/gachaLog/hero/彦卿.webp",
+          "size": 123624,
+          "sha256": "fd20b83391ff8461afe2863d34b4a8e54ce7b6cc757c87e6bca877e6b1c18142"
+        },
+        {
+          "path": "resources/gachaLog/hero/托帕账账.webp",
+          "size": 63304,
+          "sha256": "877f406d49a4a44ac3230d4e0663b3493bc81294c2fd50b73e3624136317cf3b"
+        },
+        {
+          "path": "resources/gachaLog/hero/昔涟.webp",
+          "size": 144674,
+          "sha256": "af72b05924bd171409bcfd33549eee6c49a773fd91b8ec7c8ff7b3d43384a1bb"
+        },
+        {
+          "path": "resources/gachaLog/hero/星期日.webp",
+          "size": 134368,
+          "sha256": "6eb93afea6c07e8cce33b8dbbf1bc74ba10f7e4ed13443808d5e9dbf4c05190e"
+        },
+        {
+          "path": "resources/gachaLog/hero/桑博.webp",
+          "size": 39568,
+          "sha256": "a2652e8dec73c257b200cd860764edd363e1d9a97bd28f83105d792f2c8b6fc4"
+        },
+        {
+          "path": "resources/gachaLog/hero/瓦尔特.webp",
+          "size": 62368,
+          "sha256": "edbbcaea08bdd946be9c99d698813226d1e070ea717d4ac5f0590b63c05399e9"
+        },
+        {
+          "path": "resources/gachaLog/hero/知更鸟.webp",
+          "size": 52294,
+          "sha256": "6107bdd4d4145b07d23ce3e7c6f904247687bbe17e252656033bef9d7c54290a"
+        },
+        {
+          "path": "resources/gachaLog/hero/砂金.webp",
+          "size": 94324,
+          "sha256": "34af9a63062e3b0e5335d134618cd0d129a1334904c3633746cf54eb93688002"
+        },
+        {
+          "path": "resources/gachaLog/hero/米沙.webp",
+          "size": 84928,
+          "sha256": "a9bdcc14d1110c2775eee8ab9b496572d8126fde7e22761ae8aa612d25cfaaaf"
+        },
+        {
+          "path": "resources/gachaLog/hero/素裳.webp",
+          "size": 135796,
+          "sha256": "1f1ebcd042a47a70b107a1fb3c6deb2a93f4358f7734518b4fac33875d64e7aa"
+        },
+        {
+          "path": "resources/gachaLog/hero/缇宝.webp",
+          "size": 116144,
+          "sha256": "54c8aee858b57dab78467d8039cbce1207ac6d2a1cffe7e0acf0c528555397fb"
+        },
+        {
+          "path": "resources/gachaLog/hero/罗刹.webp",
+          "size": 87980,
+          "sha256": "94e410d16e953f75c3f0db882623a1e05672597b0d1219f62b6e30642a08d72f"
+        },
+        {
+          "path": "resources/gachaLog/hero/貊泽.webp",
+          "size": 79512,
+          "sha256": "c3eac6753aa79088afbe9cdf0d4cda72be4c01a4dd1db3383be59d4f071ba65f"
+        },
+        {
+          "path": "resources/gachaLog/hero/银狼.webp",
+          "size": 137464,
+          "sha256": "a56e8abd797bbc919b99ea5f81ec64eea1ebc66f752b731fc108729b8185666c"
+        },
+        {
+          "path": "resources/gachaLog/hero/阮•梅.webp",
+          "size": 114268,
+          "sha256": "3465dc909709f54c9693ecb0432419aaee02825457a992e6c4678d695d8094b6"
+        },
+        {
+          "path": "resources/gachaLog/hero/雪衣.webp",
+          "size": 75042,
+          "sha256": "e93da7b494b2a64f6bc16a9bf68a61641001d8b32c705889f0b9ad019b44ee5d"
+        },
+        {
+          "path": "resources/gachaLog/hero/青雀.webp",
+          "size": 92202,
+          "sha256": "202f14b1bf2e137dd40d5307b9f8c2b2fdffa402c9b799e5b19d334c8bcdcd18"
+        },
+        {
+          "path": "resources/gachaLog/hero/驭空.webp",
+          "size": 103854,
+          "sha256": "1314cdf3753861f709b97a82477017f3b5f83cf7b968261b9b5411b7f7c195ae"
+        }
+      ]
+    },
+    {
+      "id": "assets_gacha_hero",
+      "label": "抽卡记录背景图",
+      "description": "星铁抽卡记录头图用的 50 张角色立绘，可单独移除；不装则用默认的星穹列车图。",
+      "coreApi": 2,
+      "dependencies": [
+        "assets_gacha_hero_1",
+        "assets_gacha_hero_2"
+      ],
+      "entries": [],
+      "internal": false,
+      "legacyResource": true,
+      "minCoreVersion": "2.1.0",
+      "minNodeVersion": "18.17.0",
+      "dependencyVersions": {
+        "assets_gacha_hero_1": "2.1.0-6af79d89e3ff",
+        "assets_gacha_hero_2": "2.1.0-f6a6dcf3c47e"
+      },
+      "version": "2.1.0-cb2756a057b1",
+      "package": "packages/assets_gacha_hero/2.1.0-cb2756a057b1.xhmp",
+      "sha256": "889d90e2e566f211c916f7848d2e387951f81bc7c86241ceddd297c362fcb65a",
+      "bytes": 95,
+      "files": []
+    },
+    {
       "id": "assets_waves_1",
       "label": "鸣潮内置角色立绘资源分包",
       "description": "鸣潮内置角色立绘资源分包",
@@ -2877,15 +3187,15 @@
         "shared_account": "2.1.0-5282f040854d",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-d93a83f1c7bf",
-      "package": "packages/shared_stamina/2.1.0-d93a83f1c7bf.xhmp",
-      "sha256": "83992c302569af8c277fb03276cceaeb7abc68dd19d9b57857c6617c8f40a628",
-      "bytes": 2023806,
+      "version": "2.1.0-78bd07adf5ca",
+      "package": "packages/shared_stamina/2.1.0-78bd07adf5ca.xhmp",
+      "sha256": "093bff268fa72e68047aaddbd7ffb1de19ad3cc7013d91013a9a480cf280089e",
+      "bytes": 2023446,
       "files": [
         {
           "path": "resources/Tl/Portrait.html",
-          "size": 3421,
-          "sha256": "1659ba425f8cafa4182ff08b7855bb0ce6e96d55b0af1041dd3c5774dd7a79fe"
+          "size": 3503,
+          "sha256": "b99ef280541754d72d53d36ec02adbfdb21b54abab0cf64e29c1afca42127b16"
         },
         {
           "path": "resources/Tl/Remind.html",
@@ -3049,8 +3359,8 @@
         },
         {
           "path": "resources/Tl/portrait.css",
-          "size": 8549,
-          "sha256": "631c35fc57cebe83da50f9a7ba72b2a340d81d1d2e5e950dee0965565c31c72c"
+          "size": 8183,
+          "sha256": "a26b33236b4905e5772398396570df33a6abf9c80ecdb0b54672a245ac0722c0"
         },
         {
           "path": "resources/Tl/remind.css",
@@ -3092,11 +3402,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-d93a83f1c7bf"
+        "shared_stamina": "2.1.0-78bd07adf5ca"
       },
-      "version": "2.1.0-ea73c37c0afd",
-      "package": "packages/shared_delivery/2.1.0-ea73c37c0afd.xhmp",
-      "sha256": "a304fba8bb4f19ac8773e14b827130e70ef3f3ad0b6a718b824eb45f244e3b89",
+      "version": "2.1.0-a7f4a56e2db4",
+      "package": "packages/shared_delivery/2.1.0-a7f4a56e2db4.xhmp",
+      "sha256": "d7847d7f6775a5a1d31502284b1f5f11ff87ee2c8f49be9e235e93c80dca61e7",
       "bytes": 7749,
       "files": [
         {
@@ -3125,11 +3435,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-ea73c37c0afd"
+        "shared_delivery": "2.1.0-a7f4a56e2db4"
       },
-      "version": "2.1.0-aabec3c1ed11",
-      "package": "packages/resin_push/2.1.0-aabec3c1ed11.xhmp",
-      "sha256": "83a17768ff3878b9daf4211dc163c2cc53faba1e52d9ebe21ef90694bfbc49cb",
+      "version": "2.1.0-6bdd37620265",
+      "package": "packages/resin_push/2.1.0-6bdd37620265.xhmp",
+      "sha256": "118d241d0274b1ff4c1ab34e1afe436b6fc7a4237beea7cfe032b770fe0f79f3",
       "bytes": 13828,
       "files": [
         {
@@ -3158,11 +3468,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-ea73c37c0afd"
+        "shared_delivery": "2.1.0-a7f4a56e2db4"
       },
-      "version": "2.1.0-4c1b61b88ec1",
-      "package": "packages/resin_timer/2.1.0-4c1b61b88ec1.xhmp",
-      "sha256": "06190833278923f04fb59bd842aa1096935cd3ccf7eb813d67c7fcd7faa3b77b",
+      "version": "2.1.0-a020407683dd",
+      "package": "packages/resin_timer/2.1.0-a020407683dd.xhmp",
+      "sha256": "412f203104b8c20427a42fc3b3a7b5e371c26a6f61cd64c4a20bdb9aca950cb6",
       "bytes": 22469,
       "files": [
         {
@@ -3353,10 +3663,10 @@
         "shared_account": "2.1.0-5282f040854d",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-3eafde037868",
-      "package": "packages/sr_gacha/2.1.0-3eafde037868.xhmp",
-      "sha256": "40bc279e97d124162daabec4d274c10b741762fa1a34ab67a2f0050046496050",
-      "bytes": 77612,
+      "version": "2.1.0-aa887209409b",
+      "package": "packages/sr_gacha/2.1.0-aa887209409b.xhmp",
+      "sha256": "487d6bc0eb2dcd0e573475a77b57a446d16ebc0903f0ec7132843a77329af68a",
+      "bytes": 158442,
       "files": [
         {
           "path": "apps/srGachaLog.js",
@@ -3365,13 +3675,18 @@
         },
         {
           "path": "resources/gachaLog/allLog.html",
-          "size": 9381,
-          "sha256": "651675a6469082b420b66a68d0594b135a2e732f1a88ef20807d707499635e58"
+          "size": 9670,
+          "sha256": "7b5b17d322b4e4973bc9f47b280cfb2d7f68b14b2fe8ea4ea21c894f41357e5b"
         },
         {
           "path": "resources/gachaLog/gachaLog.html",
-          "size": 13371,
-          "sha256": "50f2af2ffba506b038c3a4e3e94a169f21c472bcc5c85383c62e589fb4d683de"
+          "size": 13660,
+          "sha256": "045282f398778a6d3c7a66ecef225fc8c336a7d17639a83bbe50600380fccb07"
+        },
+        {
+          "path": "resources/gachaLog/hero-default.webp",
+          "size": 79364,
+          "sha256": "090dfd4fab1eaa2b9949976bc66f4de75acb99859bc94cfaef785c3521ccf485"
         },
         {
           "path": "utils/gachaImport.js",
@@ -3380,8 +3695,8 @@
         },
         {
           "path": "utils/gachaStat.js",
-          "size": 13794,
-          "sha256": "93805268687a96d09c9668f172b0c239db473da54878d608ca38858055b5c068"
+          "size": 13853,
+          "sha256": "f0dba2e654ff3e17beef52d7ac7756239f908143449925a05db6b3558e1fda87"
         },
         {
           "path": "utils/srGachaRebuild.js",
@@ -3472,12 +3787,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-d93a83f1c7bf"
+        "shared_stamina": "2.1.0-78bd07adf5ca"
       },
-      "version": "2.1.0-67824e7f4671",
-      "package": "packages/tl/2.1.0-67824e7f4671.xhmp",
-      "sha256": "0e6c328b35b4e2e922c4299d7092aac5080bd7cf43c09f7a703b3aae222b9835",
-      "bytes": 9197,
+      "version": "2.1.0-1222f78e168f",
+      "package": "packages/tl/2.1.0-1222f78e168f.xhmp",
+      "sha256": "e3cbeddc555974dacfab07442acac61465c47fad6d8023c57e367136bb786ec5",
+      "bytes": 9196,
       "files": [
         {
           "path": "apps/TL.js",
@@ -3529,13 +3844,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "tl": "2.1.0-67824e7f4671",
+        "tl": "2.1.0-1222f78e168f",
         "shared_sqlite": "2.1.0-b965389ca310"
       },
-      "version": "2.1.0-a04452f2e305",
-      "package": "packages/waves/2.1.0-a04452f2e305.xhmp",
-      "sha256": "e618680ff700d629815012c2f5130948efb440310f6f8cde3ddbfeb0da66298f",
-      "bytes": 12832,
+      "version": "2.1.0-2ef373857893",
+      "package": "packages/waves/2.1.0-2ef373857893.xhmp",
+      "sha256": "b895312a20dd5887adcc791172540a69d46a8129bd3da4453288dcbd2886f6f5",
+      "bytes": 12833,
       "files": [
         {
           "path": "utils/wavesData.js",
