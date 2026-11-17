@@ -1,10 +1,13 @@
 /**
- * #小火花帮助 — 指令总览图
+ * #小火花帮助 — 指令总览图（按板块分两级：总览 + 子帮助）
+ *
+ * 主图只列已安装并启用的板块入口，每个板块一张 `#xx帮助` 卡；
+ * 发入口才单独渲染那个板块的全部指令（同样只列已安装并启用的模块）。
+ * 新增板块/指令时的链条：buildHelpGroups() → SUB_HELP_WORDS → README。
+ *
  * 图标使用本插件 resources/help/icons 内独立角色/游戏图（原神用原神角色，星铁用星铁角色）
  */
 import path from 'path'
-import fs from 'fs'
-import moment from 'moment'
 import plugin from '../../../lib/plugins/plugin.js'
 import { pickHelpBgImage, pluginDir } from '../utils/pluginConfig.js'
 import { quoteEnabled } from '../utils/replyHelper.js'
@@ -27,15 +30,6 @@ function groupsToText(groups) {
     }
   }
   return lines.join('\n')
-}
-
-function readVersion() {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(pluginDir, 'package.json'), 'utf-8'))
-    return pkg.version || '1.0.0'
-  } catch (_) {
-    return '1.0.0'
-  }
 }
 
 /** 将 icon 文件名转为渲染用相对路径（相对 resources/） */
@@ -528,6 +522,59 @@ export function buildHelpGroups() {
   ]
 }
 
+/**
+ * 子帮助入口表：主图里每个业务板块只留一张入口卡，发 `<入口词>帮助` 才单独渲染该板块。
+ *
+ * - `word`：入口词（不含 # 和「帮助」），拼成 `#体力查询帮助` 这类指令
+ * - `group`：必须与 buildHelpGroups() 里的 group 完全一致，渲染时按它取板块
+ * - `desc`：主图入口卡上的摘要（手写，说明这个板块能干什么）
+ * - `icon`：入口卡图标，取 resources/help/icons 下已有文件
+ *
+ * ⚠️ 「管理 · 其它」故意不收入口：里面是帮助/更新/模块中心这类插件自身的运维信息，
+ *    再套一层子帮助等于让用户多点一次。
+ */
+const SUB_HELP_WORDS = [
+  { key: 'tl', word: '体力查询', group: '体力查询', icon: 'gs-logo.webp', icon2: 'sr-logo.webp', desc: '体力总览、单游戏查询、阈值推送、屏蔽列表' },
+  { key: 'gs_score', word: '原神成绩', group: '原神 · 成绩汇总', icon: 'gs-钟离.webp', desc: '全部深渊、配队、持有率、小剧诗与幻想角色' },
+  // 入口词不能用 #队伍伤害帮助 —— 那是 teamDamage.js 出详细用法教程图的自有指令
+  { key: 'gs_damage', word: '队伍', group: '原神 · 队伍伤害', icon: 'gs-胡桃.webp', desc: '队伍 DPS、自定义手法、换装模拟与详细用法' },
+  { key: 'sr_abyss', word: '星铁深渊', group: '星铁 · 全部深渊', icon: 'sr-黄泉.webp', desc: '混沌 / 虚构 / 末日 / 异相四模式合一' },
+  { key: 'sr_gacha', word: '抽卡记录', group: '星铁 · 抽卡记录', icon: 'sr-卡芙卡.webp', desc: '更新、查看、导入小助手与星穹工坊记录' },
+  { key: 'redeem', word: '兑换码', group: '兑换码 · 国服三游戏', icon: 'gs-丽莎.webp', desc: '原神 / 星铁 / 绝区零兑换码与自动订阅' },
+  { key: 'sign', word: '签到', group: '米游社签到', icon: 'signin.webp', desc: '三游戏签到、自动签到与签到列表' },
+  { key: 'bbs_coin', word: '米游币', group: '米游币任务', icon: 'gs-艾尔海森.webp', desc: '自动做任务、立即执行、查余额与订阅状态' },
+  { key: 'gs_version', word: '原神版本', group: '原神 · 版本配置', icon: 'gs-雷电将军.webp', desc: '版本深渊、剧诗、危战配置与期数回看' },
+  { key: 'sr_version', word: '星铁版本', group: '星铁 · 版本配置', icon: 'sr-景元.webp', desc: '混沌、虚构、末日、异相各模式配置' },
+].map((item) => ({ ...item, reg: new RegExp(`^\\s*#?${item.word}帮助\\s*$`) }))
+
+const SUB_HELP_BY_GROUP = new Map(SUB_HELP_WORDS.map((item) => [item.group, item]))
+
+/** 子帮助指令：#体力查询帮助 / #原神成绩帮助 / #抽卡记录帮助 … */
+const SUB_HELP_REG = new RegExp(`^\\s*#?(?:${SUB_HELP_WORDS.map((i) => `${i.word}帮助`).join('|')})\\s*$`)
+
+/**
+ * 由完整指令表生成主图：业务板块的入口收进一个「功能模块」导航板块
+ * （每个板块一条 `#xx帮助`），其余板块（管理 · 其它）原样保留。
+ *
+ * 传进来的 groups 必须已经过 filterHelpGroups —— 未安装/未启用模块的板块此时已消失，
+ * 所以主图里不会出现「点了入口却什么都没有」的空入口。
+ */
+export function buildHelpIndex(groups) {
+  const entries = []
+  const rest = []
+  for (const g of groups) {
+    const entry = SUB_HELP_BY_GROUP.get(g.group)
+    if (!entry) {
+      rest.push(g)
+      continue
+    }
+    entries.push({ icon: entry.icon, icon2: entry.icon2, title: `#${entry.word}帮助`, desc: entry.desc })
+  }
+  return entries.length
+    ? [{ group: '功能模块', desc: '点入口看该模块的全部指令', color: 'blue', list: entries }, ...rest]
+    : rest
+}
+
 export class help extends plugin {
   constructor() {
     super({
@@ -541,10 +588,16 @@ export class help extends plugin {
           reg: '^\\s*#?(?:小火花|xhh-?TL|xhh)(?:插件)?\\s*(?:命令|帮助|菜单|help|说明|功能|指令|使用说明)\\s*$',
           fnc: 'help',
         },
+        {
+          // 子帮助入口：#体力查询帮助 / #原神成绩帮助 / #抽卡记录帮助 …
+          reg: SUB_HELP_REG,
+          fnc: 'subHelp',
+        },
       ],
     })
   }
 
+  /** 主帮助：每个业务板块只给入口，只列已安装并启用的模块 */
   async help(e) {
     // 提到 try 外面：渲染失败时还要用它退文字版
     let groups = []
@@ -553,44 +606,21 @@ export class help extends plugin {
       checkIconUnique(rawGroups)
       // 关掉的模块连同它的板块一起从帮助图里去掉：
       // 板块内条目全被过滤时整组消失，不留空标题
-      groups = withIconSrc(filterHelpGroups(rawGroups))
-      const cmdCount = groups.reduce((n, g) => n + (g.list?.length || 0), 0)
-      const version = readVersion()
+      const filtered = filterHelpGroups(rawGroups)
+      groups = withIconSrc(buildHelpIndex(filtered))
       const offModules = disabledModuleLabels()
-      const hasBusiness = groups.some(g => g.list.some(item => item.module))
-      const note = '<b>安装模块</b>：锅巴 → 扩展页面 → 小火花模块中心；安装、卸载后重启机器人。' +
+      const hasBusiness = filtered.some(g => g.list.some(item => item.module))
+      const note = '<b>按模块查看</b>：发板块入口（如 #体力查询帮助）看该模块的全部指令，只列已安装并启用的模块。' +
+        '<br><b>安装模块</b>：锅巴 → 扩展页面 → 小火花模块中心；安装、卸载后重启机器人。' +
         (hasBusiness ? '<br><b>提示</b>：指令大多可省略 #；个人成绩类需先绑定账号。星铁查询请带 * 或“星铁”前缀。' : '') +
         (offModules.length ? `<br><b>未启用或未加载</b>（重新开启后需重启）：${offModules.join('、')}` : '')
 
-      // 出图服务不可用时退文字版，而不是只回一句「请稍后重试」
-      if (!e.runtime?.render) {
-        return e.reply(groupsToText(groups), quoteEnabled())
-      }
-
-      const bgImage = pickHelpBgImage({ logTag: 'xhh-TL[help]' })
-
-      const data = {
-        title: '小火花帮助',
-        subTitle: '按需安装 · 自由卸载 · 重启生效',
-        version,
-        cmdCount,
-        generatedAt: moment().format('YYYY-MM-DD HH:mm'),
+      return await this.renderHelpImage(e, {
         groups,
+        title: '小火花帮助',
         note,
-        bgImage,
         saveId: 'help',
-      }
-
-      const tplFile = path.join(pluginDir, 'resources/help/help.html')
-      const rendered = await renderTpl(e, {
-        tpl: 'help',
-        tplFile,
-        data,
-        baseScale: 1.5,
-        rem: true,
       })
-      if (rendered === false) return e.reply(groupsToText(groups), quoteEnabled())
-      return rendered
     } catch (err) {
       logger?.error?.('[xhh-TL][help]', err)
       // 图挂了也别只丢一句「稍后重试」——把同一份清单用文字发出去
@@ -601,5 +631,60 @@ export class help extends plugin {
       }
       return e.reply(`帮助图渲染失败，请稍后重试`, quoteEnabled())
     }
+  }
+
+  /** 子帮助：只渲染该板块的指令，过滤规则与主图同一套（未安装/未启用的模块不列） */
+  async subHelp(e) {
+    const text = String(e.msg || '').trim()
+    const entry = SUB_HELP_WORDS.find((item) => item.reg.test(text))
+    if (!entry) return false
+
+    const section = filterHelpGroups(buildHelpGroups()).find((g) => g.group === entry.group)
+    if (!section) {
+      return e.reply(`「${entry.group}」模块还没安装或未启用，先到 锅巴 → 扩展页面 → 小火花模块中心 安装/开启，装完重启机器人`, quoteEnabled())
+    }
+
+    const groups = withIconSrc([section])
+    try {
+      return await this.renderHelpImage(e, {
+        groups,
+        title: `小火花帮助 · ${section.group}`,
+        subTitle: entry.desc,
+        note: '<b>返回总览</b>：发送 #小火花帮助；这里只列已安装并启用的模块指令。',
+        saveId: `help-${entry.key}`,
+      })
+    } catch (err) {
+      logger?.error?.('[xhh-TL][help]', err)
+      return e.reply(groupsToText(groups), quoteEnabled())
+    }
+  }
+
+  /** 出帮助图（主图与子图共用）；出图服务不可用或渲染失败时退文字版 */
+  async renderHelpImage(e, { groups, title, subTitle, note, saveId }) {
+    // 出图服务不可用时退文字版，而不是只回一句「请稍后重试」
+    if (!e.runtime?.render) {
+      return e.reply(groupsToText(groups), quoteEnabled())
+    }
+
+    const data = {
+      title,
+      subTitle,
+      groups,
+      note,
+      bgImage: pickHelpBgImage({ logTag: 'xhh-TL[help]' }),
+      saveId,
+    }
+
+    const tplFile = path.join(pluginDir, 'resources/help/help.html')
+    const rendered = await renderTpl(e, {
+      tpl: 'help',
+      tplFile,
+      data,
+      baseScale: 1.5,
+      rem: true,
+      saveId,
+    })
+    if (rendered === false) return e.reply(groupsToText(groups), quoteEnabled())
+    return rendered
   }
 }
