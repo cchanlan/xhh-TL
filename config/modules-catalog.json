@@ -3516,10 +3516,10 @@
         "shared_fonts": "2.1.0-0e53a82b3dea",
         "shared_versions": "2.1.0-0e6a650cb52b"
       },
-      "version": "2.1.1",
-      "package": "packages/role_combat/2.1.1.xhmp",
-      "sha256": "827d917f8c29c4cd40bb2add1d6371d89f4b3414c42b3674bacda853c1030ff2",
-      "bytes": 26793,
+      "version": "2.1.2",
+      "package": "packages/role_combat/2.1.2.xhmp",
+      "sha256": "2bb368b18abec4538a52c8b51892b7d1038255c6f0fd76591cd6155d393ed558",
+      "bytes": 28354,
       "files": [
         {
           "path": "apps/miniRoleCombat.js",
@@ -3543,13 +3543,13 @@
         },
         {
           "path": "resources/role_combat/role_combat.css",
-          "size": 7672,
-          "sha256": "6ae24c6cee809720ed85a8b93e609b022d235d56fe4131ee2cc5b05effff290a"
+          "size": 9322,
+          "sha256": "2f50f680070f754f8fb92baca4254314e3e2c555fc24fc7da70caeb7dfa84e3a"
         },
         {
           "path": "resources/role_combat/role_combat.html",
-          "size": 3209,
-          "sha256": "bb0d354b6f5c864cd29f6cb6e2946527931b3bf65aabd5ecb6df58578825c6b4"
+          "size": 5037,
+          "sha256": "eaafbd1d0634b6015aa8b3fc3874c8a2570ad1942a0d783bc65edaec008fab82"
         }
       ]
     },
