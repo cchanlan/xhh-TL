@@ -3037,10 +3037,10 @@
         "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/hold_rate/2.1.1.xhmp",
-      "sha256": "f4a1c4dac42039eed0c94128e4bd9875bb8e47a3781b00146a8f0da25a15b734",
-      "bytes": 8149,
+      "version": "2.1.2",
+      "package": "packages/hold_rate/2.1.2.xhmp",
+      "sha256": "b13fc711c99322f1c49ff3c434667c3f44e6cc085b71eafa721068caed74dfe1",
+      "bytes": 8565,
       "files": [
         {
           "path": "apps/holdRate.js",
@@ -3049,13 +3049,13 @@
         },
         {
           "path": "resources/hold_rate/hold_rate.css",
-          "size": 7035,
-          "sha256": "620ef753b7e9bb574f5c977fff6fa37f21b8e48a5d49d026d5fb81b99c6640ab"
+          "size": 7136,
+          "sha256": "8c88d6dc576454ef9e61b1fc855b3b2c58e64ba3c12ae06a8043f9e2f281c7c2"
         },
         {
           "path": "resources/hold_rate/hold_rate.html",
-          "size": 3228,
-          "sha256": "d55c7cf5dede40b019f6bb378441453c7fa856819852761707ff67cd1c5864c8"
+          "size": 3697,
+          "sha256": "73f4c7355316faf6798b9a8d1a2a4172a5587df152b40be2573ddcfa7657f1c5"
         }
       ]
     },
