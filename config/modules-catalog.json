@@ -15,10 +15,10 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {},
-      "version": "2.1.0-5282f040854d",
-      "package": "packages/shared_account/2.1.0-5282f040854d.xhmp",
-      "sha256": "ef6303b47d2f732670224245f8332d001c25e3567b0a63807a1b695c0c0530a0",
-      "bytes": 40505,
+      "version": "2.1.0-08e66ec49899",
+      "package": "packages/shared_account/2.1.0-08e66ec49899.xhmp",
+      "sha256": "ce887d5a6421b1c8094a3a4c63725aab8d22bd2c2bf97a6a6f99a4eb65c81492",
+      "bytes": 39909,
       "files": [
         {
           "path": "utils/auth.js",
@@ -62,8 +62,8 @@
         },
         {
           "path": "utils/userBind.js",
-          "size": 24877,
-          "sha256": "94097c5f3127b6e857ac7b5181d7318cf930b9deebffd6a79561228870012e17"
+          "size": 23613,
+          "sha256": "c727cffc5475da19e3eb21c290b942270571a2e1b1a3bfa3d2523a900899bdaa"
         }
       ]
     },
@@ -81,12 +81,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d"
+        "shared_account": "2.1.0-08e66ec49899"
       },
-      "version": "2.1.0-71b276a31d73",
-      "package": "packages/shared_gs/2.1.0-71b276a31d73.xhmp",
-      "sha256": "1c582d0842a5e53fe16439aed7e2d6dfa10cd0cfd292a430caf31ad97da899c8",
-      "bytes": 5451,
+      "version": "2.1.0-03c2e683c789",
+      "package": "packages/shared_gs/2.1.0-03c2e683c789.xhmp",
+      "sha256": "0a8a2ee450c3a9ca0af832dd741a2b398d27e878beaf69cd9147d5c20a9d27df",
+      "bytes": 5450,
       "files": [
         {
           "path": "utils/gsHelper.js",
@@ -153,13 +153,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_gs": "2.1.0-03c2e683c789",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-3577e182a4a4",
-      "package": "packages/abyss_team/2.1.0-3577e182a4a4.xhmp",
-      "sha256": "f3ceb1cf60d76ab9475affe44fcd857f47f6e4ac5313e5a9e7483ab8e0709b4c",
-      "bytes": 11291,
+      "version": "2.1.0-c8a27afc2b36",
+      "package": "packages/abyss_team/2.1.0-c8a27afc2b36.xhmp",
+      "sha256": "49fce0718d46b2a905f8de74c1bbcb9d53f7dc4d82f80fc12ea5caf0fcd81c98",
+      "bytes": 11290,
       "files": [
         {
           "path": "apps/abyssTeam.js",
@@ -2758,12 +2758,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d",
+        "shared_account": "2.1.0-08e66ec49899",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-e73a4c98472e",
-      "package": "packages/auto_sign/2.1.0-e73a4c98472e.xhmp",
-      "sha256": "0ec4c8569d1ce9343c2c86c9666eadde58a3e5ad1c312fb826ea7669e119abe3",
+      "version": "2.1.0-a23de94c86df",
+      "package": "packages/auto_sign/2.1.0-a23de94c86df.xhmp",
+      "sha256": "5d85f090158b391215243689a779df3284635c3622d793fe8f189df88a07c3d4",
       "bytes": 18994,
       "files": [
         {
@@ -2827,13 +2827,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d",
+        "shared_account": "2.1.0-08e66ec49899",
         "shared_sqlite": "2.1.0-b965389ca310",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-c93758139522",
-      "package": "packages/bbs_coin/2.1.0-c93758139522.xhmp",
-      "sha256": "57d1a622c0ba02a3cfe0bfa685eb5b95e25de18f00300e690a919f15dd147445",
+      "version": "2.1.0-0fcf04eeb883",
+      "package": "packages/bbs_coin/2.1.0-0fcf04eeb883.xhmp",
+      "sha256": "ccfd4765e6d49138d5af375fc70371d494b4acd9f85fcbd3b166eec1cb89ca85",
       "bytes": 32710,
       "files": [
         {
@@ -2872,12 +2872,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d"
+        "shared_account": "2.1.0-08e66ec49899"
       },
-      "version": "2.1.0-b41ffbc13d3a",
-      "package": "packages/captcha/2.1.0-b41ffbc13d3a.xhmp",
-      "sha256": "1d7873ad9d765e9a7ab33c5bbb54c4678e8e43aed1c667e68e2f8be8f00f0c57",
-      "bytes": 5745,
+      "version": "2.1.0-ed6d6d0e9b90",
+      "package": "packages/captcha/2.1.0-ed6d6d0e9b90.xhmp",
+      "sha256": "9923e475c119dc60a14b38c6d21f4b640bef2efc8f51aa9182a0b1ae175a98ce",
+      "bytes": 5747,
       "files": [
         {
           "path": "apps/captchaNotice.js",
@@ -2905,12 +2905,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d"
+        "shared_account": "2.1.0-08e66ec49899"
       },
-      "version": "2.1.0-51fe831bdda6",
-      "package": "packages/del_ck/2.1.0-51fe831bdda6.xhmp",
-      "sha256": "bd489f0c7e826ef3a03a527f699ba90b9e9b39fed1c11146afac7b41ad25bfe2",
-      "bytes": 3808,
+      "version": "2.1.0-1d0ba6584817",
+      "package": "packages/del_ck/2.1.0-1d0ba6584817.xhmp",
+      "sha256": "317bb7ed69fec17de2eb5bf58970fdb6b797c9bbf748ac271db20596876cc89c",
+      "bytes": 3807,
       "files": [
         {
           "path": "apps/delCkHook.js",
@@ -2939,12 +2939,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_gs": "2.1.0-03c2e683c789",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-f4397dde6470",
-      "package": "packages/gs_all_abyss/2.1.0-f4397dde6470.xhmp",
-      "sha256": "d8985aeeeb6898efc051f0948ea3eebf429ddbf7be5096bf28c883e95dd7f392",
+      "version": "2.1.0-7536b5e76b02",
+      "package": "packages/gs_all_abyss/2.1.0-7536b5e76b02.xhmp",
+      "sha256": "4d54ef6e39a094f04ed735ce66b6e7158b794471c7f5dca9345ff1b2046eebf2",
       "bytes": 43342,
       "files": [
         {
@@ -2989,12 +2989,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_gs": "2.1.0-03c2e683c789",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-29e2d676ca80",
-      "package": "packages/hard_team/2.1.0-29e2d676ca80.xhmp",
-      "sha256": "d56605a1eb11cef8c8d72c76de4f96d61506aa3af5afbafc9e521be39cde481b",
+      "version": "2.1.0-6c40d4362ed6",
+      "package": "packages/hard_team/2.1.0-6c40d4362ed6.xhmp",
+      "sha256": "decd37eb67d483e498844dd861c2756e31d2216ece5d3e9fbdf39daf0328a755",
       "bytes": 10636,
       "files": [
         {
@@ -3034,13 +3034,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_gs": "2.1.0-03c2e683c789",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-b60cb0e1e134",
-      "package": "packages/hold_rate/2.1.0-b60cb0e1e134.xhmp",
-      "sha256": "92532c359787b6007608a5f4bd14700f8b2253cdbfe4b88ee5df3a08bb73524c",
-      "bytes": 8161,
+      "version": "2.1.0-00587418fba4",
+      "package": "packages/hold_rate/2.1.0-00587418fba4.xhmp",
+      "sha256": "5bb24d6716fd031e374af5e7c9012c825c366a828321b65096eb83f3fbf94d7e",
+      "bytes": 8162,
       "files": [
         {
           "path": "apps/holdRate.js",
@@ -3151,12 +3151,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d"
+        "shared_account": "2.1.0-08e66ec49899"
       },
-      "version": "2.1.0-12e131a9c5c5",
-      "package": "packages/redeem/2.1.0-12e131a9c5c5.xhmp",
-      "sha256": "7922979ab52ae325fe5ed95658a50b2447936a9afa0ff1fc3b8e343bd82137d2",
-      "bytes": 10435,
+      "version": "2.1.0-b57f0b3f6e27",
+      "package": "packages/redeem/2.1.0-b57f0b3f6e27.xhmp",
+      "sha256": "33ac79eef2477aec76b013f334ab9aae7a3e8ae487fa22a471b83c47052b022f",
+      "bytes": 10436,
       "files": [
         {
           "path": "apps/redeemCodes.js",
@@ -3184,13 +3184,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d",
+        "shared_account": "2.1.0-08e66ec49899",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-78bd07adf5ca",
-      "package": "packages/shared_stamina/2.1.0-78bd07adf5ca.xhmp",
-      "sha256": "093bff268fa72e68047aaddbd7ffb1de19ad3cc7013d91013a9a480cf280089e",
-      "bytes": 2023446,
+      "version": "2.1.0-8293f1723f48",
+      "package": "packages/shared_stamina/2.1.0-8293f1723f48.xhmp",
+      "sha256": "0fe8caf21bbffb7fa42f58994036560231657594b345da2d491a9b74159c0f82",
+      "bytes": 2023449,
       "files": [
         {
           "path": "resources/Tl/Portrait.html",
@@ -3402,11 +3402,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-78bd07adf5ca"
+        "shared_stamina": "2.1.0-8293f1723f48"
       },
-      "version": "2.1.0-a7f4a56e2db4",
-      "package": "packages/shared_delivery/2.1.0-a7f4a56e2db4.xhmp",
-      "sha256": "d7847d7f6775a5a1d31502284b1f5f11ff87ee2c8f49be9e235e93c80dca61e7",
+      "version": "2.1.0-4d9eb5bd44de",
+      "package": "packages/shared_delivery/2.1.0-4d9eb5bd44de.xhmp",
+      "sha256": "1f03ba1a5f3ba06a371b71a989a94f28e281bcb9a3e5d0b3639c3bdde0f3f2fc",
       "bytes": 7749,
       "files": [
         {
@@ -3435,11 +3435,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-a7f4a56e2db4"
+        "shared_delivery": "2.1.0-4d9eb5bd44de"
       },
-      "version": "2.1.0-6bdd37620265",
-      "package": "packages/resin_push/2.1.0-6bdd37620265.xhmp",
-      "sha256": "118d241d0274b1ff4c1ab34e1afe436b6fc7a4237beea7cfe032b770fe0f79f3",
+      "version": "2.1.0-14e19b803e41",
+      "package": "packages/resin_push/2.1.0-14e19b803e41.xhmp",
+      "sha256": "6a46c76e7e4e2871091b3db466c22974e2d1a083db4f5aa94446a1b183f2f1d5",
       "bytes": 13828,
       "files": [
         {
@@ -3468,11 +3468,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-a7f4a56e2db4"
+        "shared_delivery": "2.1.0-4d9eb5bd44de"
       },
-      "version": "2.1.0-a020407683dd",
-      "package": "packages/resin_timer/2.1.0-a020407683dd.xhmp",
-      "sha256": "412f203104b8c20427a42fc3b3a7b5e371c26a6f61cd64c4a20bdb9aca950cb6",
+      "version": "2.1.0-788b18e1277d",
+      "package": "packages/resin_timer/2.1.0-788b18e1277d.xhmp",
+      "sha256": "cab10ec1142d65aaea5f18d2ee6b686147d413a0cf482f9ba2b8b504b1a4370a",
       "bytes": 22469,
       "files": [
         {
@@ -3512,13 +3512,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73",
+        "shared_gs": "2.1.0-03c2e683c789",
         "shared_fonts": "2.1.0-0e53a82b3dea",
         "shared_versions": "2.1.0-0e6a650cb52b"
       },
-      "version": "2.1.0-576cc12b6118",
-      "package": "packages/role_combat/2.1.0-576cc12b6118.xhmp",
-      "sha256": "689ee857b668fead66b38a2438f49c525cd4c7637e3ab360a3840e18ca330e2a",
+      "version": "2.1.0-c94328907e8a",
+      "package": "packages/role_combat/2.1.0-c94328907e8a.xhmp",
+      "sha256": "d15f68072e270ad9d226704f4be853a2344cb5f00fc47ad5e41fddf14aa5ef10",
       "bytes": 26805,
       "files": [
         {
@@ -3606,11 +3606,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d"
+        "shared_account": "2.1.0-08e66ec49899"
       },
-      "version": "2.1.0-f8bc92f0380f",
-      "package": "packages/sr_all_abyss/2.1.0-f8bc92f0380f.xhmp",
-      "sha256": "8ac6fcec18c0a8d73315f22a7a430bfa19e4de0462df0c472c60a0766af38a9e",
+      "version": "2.1.0-0b53b1982394",
+      "package": "packages/sr_all_abyss/2.1.0-0b53b1982394.xhmp",
+      "sha256": "11accc69a32ebcd47d97ec39195f5d39c185d8d3713a2dae4e4f1b6736cd8a03",
       "bytes": 2689170,
       "files": [
         {
@@ -3660,18 +3660,18 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-5282f040854d",
+        "shared_account": "2.1.0-08e66ec49899",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-aa887209409b",
-      "package": "packages/sr_gacha/2.1.0-aa887209409b.xhmp",
-      "sha256": "487d6bc0eb2dcd0e573475a77b57a446d16ebc0903f0ec7132843a77329af68a",
-      "bytes": 158442,
+      "version": "2.1.0-395451e1434b",
+      "package": "packages/sr_gacha/2.1.0-395451e1434b.xhmp",
+      "sha256": "88a77eb623a136485c100a865b56df2b43bdd2cd098af24321b2813b28b692bd",
+      "bytes": 158071,
       "files": [
         {
           "path": "apps/srGachaLog.js",
-          "size": 94350,
-          "sha256": "8528f3344944653c5dcebad49725726df4867e9ffd3e9439d41e1059f36d7cc6"
+          "size": 93634,
+          "sha256": "56cc77ba3784086cda0a8bcbe075f2c4073b4c025af17dbf170fb4cba82c4cc4"
         },
         {
           "path": "resources/gachaLog/allLog.html",
@@ -3734,11 +3734,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-71b276a31d73"
+        "shared_gs": "2.1.0-03c2e683c789"
       },
-      "version": "2.1.0-ef775a9cfb5c",
-      "package": "packages/team_damage/2.1.0-ef775a9cfb5c.xhmp",
-      "sha256": "00cfeeeee2c11d8112034592f40fdfa890a1a6dab85bed7671634d7d96433e2e",
+      "version": "2.1.0-dab9c872dbef",
+      "package": "packages/team_damage/2.1.0-dab9c872dbef.xhmp",
+      "sha256": "2be7c66b126ed10c08a4a99cb72ab020449b9805b9cbfe4748d8f5a7e4077e31",
       "bytes": 39373,
       "files": [
         {
@@ -3787,11 +3787,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-78bd07adf5ca"
+        "shared_stamina": "2.1.0-8293f1723f48"
       },
-      "version": "2.1.0-1222f78e168f",
-      "package": "packages/tl/2.1.0-1222f78e168f.xhmp",
-      "sha256": "e3cbeddc555974dacfab07442acac61465c47fad6d8023c57e367136bb786ec5",
+      "version": "2.1.0-8f2127f568e5",
+      "package": "packages/tl/2.1.0-8f2127f568e5.xhmp",
+      "sha256": "e7558f70772f1e69d20b78cf19d9e3670b62c8d3e428248449650bba4b50e1e6",
       "bytes": 9196,
       "files": [
         {
@@ -3844,13 +3844,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "tl": "2.1.0-1222f78e168f",
+        "tl": "2.1.0-8f2127f568e5",
         "shared_sqlite": "2.1.0-b965389ca310"
       },
-      "version": "2.1.0-2ef373857893",
-      "package": "packages/waves/2.1.0-2ef373857893.xhmp",
-      "sha256": "b895312a20dd5887adcc791172540a69d46a8129bd3da4453288dcbd2886f6f5",
-      "bytes": 12833,
+      "version": "2.1.0-7900b6ece830",
+      "package": "packages/waves/2.1.0-7900b6ece830.xhmp",
+      "sha256": "702dad6f972aef5fe899e1cc0aa2e6359e968f6749daaef4397258d71a73ade1",
+      "bytes": 12832,
       "files": [
         {
           "path": "utils/wavesData.js",
