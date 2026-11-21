@@ -15,10 +15,10 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {},
-      "version": "2.1.0-08e66ec49899",
-      "package": "packages/shared_account/2.1.0-08e66ec49899.xhmp",
-      "sha256": "ce887d5a6421b1c8094a3a4c63725aab8d22bd2c2bf97a6a6f99a4eb65c81492",
-      "bytes": 39909,
+      "version": "2.1.1",
+      "package": "packages/shared_account/2.1.1.xhmp",
+      "sha256": "960e4b24ea5a615f6ddcc54ac5421c56c61985ea09822b57bde73d50b5bf381c",
+      "bytes": 39897,
       "files": [
         {
           "path": "utils/auth.js",
@@ -81,12 +81,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899"
+        "shared_account": "2.1.1"
       },
-      "version": "2.1.0-03c2e683c789",
-      "package": "packages/shared_gs/2.1.0-03c2e683c789.xhmp",
-      "sha256": "0a8a2ee450c3a9ca0af832dd741a2b398d27e878beaf69cd9147d5c20a9d27df",
-      "bytes": 5450,
+      "version": "2.1.1",
+      "package": "packages/shared_gs/2.1.1.xhmp",
+      "sha256": "711197d5fd8902dfe4d4075f19f6f3793ecb338a236b472791ccb55031d1ceec",
+      "bytes": 5439,
       "files": [
         {
           "path": "utils/gsHelper.js",
@@ -153,13 +153,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789",
+        "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-c8a27afc2b36",
-      "package": "packages/abyss_team/2.1.0-c8a27afc2b36.xhmp",
-      "sha256": "49fce0718d46b2a905f8de74c1bbcb9d53f7dc4d82f80fc12ea5caf0fcd81c98",
-      "bytes": 11290,
+      "version": "2.1.1",
+      "package": "packages/abyss_team/2.1.1.xhmp",
+      "sha256": "9fc4cc4d11995c864e89081a6c82dc12a9334cff5fa868087b9aa1a225c93135",
+      "bytes": 11279,
       "files": [
         {
           "path": "apps/abyssTeam.js",
@@ -2758,13 +2758,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899",
+        "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-a49be2863fbb",
-      "package": "packages/auto_sign/2.1.0-a49be2863fbb.xhmp",
-      "sha256": "8fe353216828994695e67991730a3ae395c3fd6fe250e526889957314f6879c8",
-      "bytes": 19106,
+      "version": "2.1.1",
+      "package": "packages/auto_sign/2.1.1.xhmp",
+      "sha256": "2e2383b1bbfb3fccf48584e3dbf9ef597fe5b6783f4a2e344aba31a39b1c63bc",
+      "bytes": 19094,
       "files": [
         {
           "path": "apps/autoSign.js",
@@ -2827,14 +2827,14 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899",
+        "shared_account": "2.1.1",
         "shared_sqlite": "2.1.0-b965389ca310",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-0fcf04eeb883",
-      "package": "packages/bbs_coin/2.1.0-0fcf04eeb883.xhmp",
-      "sha256": "ccfd4765e6d49138d5af375fc70371d494b4acd9f85fcbd3b166eec1cb89ca85",
-      "bytes": 32710,
+      "version": "2.1.1",
+      "package": "packages/bbs_coin/2.1.1.xhmp",
+      "sha256": "9a0fc7505760c65fea2e7134a18b5f1f7ebcec00a07441635ec5ede7a21792e8",
+      "bytes": 32698,
       "files": [
         {
           "path": "apps/autoBbsCoin.js",
@@ -2872,12 +2872,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899"
+        "shared_account": "2.1.1"
       },
-      "version": "2.1.0-9aaee097773b",
-      "package": "packages/captcha/2.1.0-9aaee097773b.xhmp",
-      "sha256": "51a5fbb85224f495dc4688fa9caae38bf3a5a836e3e87db985c8c2a5cc259c58",
-      "bytes": 4265,
+      "version": "2.1.1",
+      "package": "packages/captcha/2.1.1.xhmp",
+      "sha256": "4b24d043590cf1de98a40e18cedef4fcfb9c240314901d0ace0d35c8c0d2afc1",
+      "bytes": 4254,
       "files": [
         {
           "path": "apps/captchaNotice.js",
@@ -2905,12 +2905,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899"
+        "shared_account": "2.1.1"
       },
-      "version": "2.1.0-1d0ba6584817",
-      "package": "packages/del_ck/2.1.0-1d0ba6584817.xhmp",
-      "sha256": "317bb7ed69fec17de2eb5bf58970fdb6b797c9bbf748ac271db20596876cc89c",
-      "bytes": 3807,
+      "version": "2.1.1",
+      "package": "packages/del_ck/2.1.1.xhmp",
+      "sha256": "b541bd4c1b05a975674f462f1f1e7dde949eb04b6c82ac581ccdd256f6126244",
+      "bytes": 3796,
       "files": [
         {
           "path": "apps/delCkHook.js",
@@ -2939,13 +2939,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789",
+        "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-7536b5e76b02",
-      "package": "packages/gs_all_abyss/2.1.0-7536b5e76b02.xhmp",
-      "sha256": "4d54ef6e39a094f04ed735ce66b6e7158b794471c7f5dca9345ff1b2046eebf2",
-      "bytes": 43342,
+      "version": "2.1.1",
+      "package": "packages/gs_all_abyss/2.1.1.xhmp",
+      "sha256": "cfccb8ecf2c9398d93457834cb6342a4803a3602b3773864aa78f094e1e26406",
+      "bytes": 43330,
       "files": [
         {
           "path": "apps/gsAllAbyss.js",
@@ -2989,13 +2989,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789",
+        "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-6c40d4362ed6",
-      "package": "packages/hard_team/2.1.0-6c40d4362ed6.xhmp",
-      "sha256": "decd37eb67d483e498844dd861c2756e31d2216ece5d3e9fbdf39daf0328a755",
-      "bytes": 10636,
+      "version": "2.1.1",
+      "package": "packages/hard_team/2.1.1.xhmp",
+      "sha256": "bdd357e03b97a590cd3d36f8db547cf50359b9d7f7e21f3ac12367e8eebe08a6",
+      "bytes": 10624,
       "files": [
         {
           "path": "apps/hardTeam.js",
@@ -3034,13 +3034,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789",
+        "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-00587418fba4",
-      "package": "packages/hold_rate/2.1.0-00587418fba4.xhmp",
-      "sha256": "5bb24d6716fd031e374af5e7c9012c825c366a828321b65096eb83f3fbf94d7e",
-      "bytes": 8162,
+      "version": "2.1.1",
+      "package": "packages/hold_rate/2.1.1.xhmp",
+      "sha256": "f4a1c4dac42039eed0c94128e4bd9875bb8e47a3781b00146a8f0da25a15b734",
+      "bytes": 8149,
       "files": [
         {
           "path": "apps/holdRate.js",
@@ -3151,12 +3151,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899"
+        "shared_account": "2.1.1"
       },
-      "version": "2.1.0-b57f0b3f6e27",
-      "package": "packages/redeem/2.1.0-b57f0b3f6e27.xhmp",
-      "sha256": "33ac79eef2477aec76b013f334ab9aae7a3e8ae487fa22a471b83c47052b022f",
-      "bytes": 10436,
+      "version": "2.1.1",
+      "package": "packages/redeem/2.1.1.xhmp",
+      "sha256": "b94504ede39286c45bf869f5cb90395e525ff7d58b200ac6bbc4c5bd39307cab",
+      "bytes": 10425,
       "files": [
         {
           "path": "apps/redeemCodes.js",
@@ -3184,13 +3184,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899",
+        "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-45d95f4e7ac4",
-      "package": "packages/shared_stamina/2.1.0-45d95f4e7ac4.xhmp",
-      "sha256": "01f61d3287bb481aa713cf743353431c59335d3bac92660b489bc5b70f5f8de1",
-      "bytes": 2023499,
+      "version": "2.1.1",
+      "package": "packages/shared_stamina/2.1.1.xhmp",
+      "sha256": "85bb28f4feabdde9a9c54515e0b20846b26f79ed04c58de005a1531d71671aee",
+      "bytes": 2023482,
       "files": [
         {
           "path": "resources/Tl/Portrait.html",
@@ -3402,12 +3402,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-45d95f4e7ac4"
+        "shared_stamina": "2.1.1"
       },
-      "version": "2.1.0-f05b278c8d61",
-      "package": "packages/shared_delivery/2.1.0-f05b278c8d61.xhmp",
-      "sha256": "dc267eeac002478f45efd6e97afac6dd4bc7f3fada2a8f81236d3dc2b70f04d1",
-      "bytes": 7749,
+      "version": "2.1.1",
+      "package": "packages/shared_delivery/2.1.1.xhmp",
+      "sha256": "a08e09cd50fdf118eb04e9dc7b7283802ccb9890201541bf349146941d5992c8",
+      "bytes": 7737,
       "files": [
         {
           "path": "utils/staminaPushService.js",
@@ -3435,12 +3435,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-f05b278c8d61"
+        "shared_delivery": "2.1.1"
       },
-      "version": "2.1.0-d8ff1c0db607",
-      "package": "packages/resin_push/2.1.0-d8ff1c0db607.xhmp",
-      "sha256": "9c3952a5d0cfc05a99831d0eac07e94f13adbee5a4ca247425c524c5d40e347f",
-      "bytes": 13828,
+      "version": "2.1.1",
+      "package": "packages/resin_push/2.1.1.xhmp",
+      "sha256": "58ddd3b8ad5bc71f4e54f04e031b6b86c376e1e8fcdc5a106567c294e6500e50",
+      "bytes": 13817,
       "files": [
         {
           "path": "apps/resinPush.js",
@@ -3468,12 +3468,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.0-f05b278c8d61"
+        "shared_delivery": "2.1.1"
       },
-      "version": "2.1.0-ac28ad488763",
-      "package": "packages/resin_timer/2.1.0-ac28ad488763.xhmp",
-      "sha256": "06248b94252fa9448ca57bf9b718e9092977f0825440521e5cb3e27d4a2ed29d",
-      "bytes": 22469,
+      "version": "2.1.1",
+      "package": "packages/resin_timer/2.1.1.xhmp",
+      "sha256": "ed19464e68d1b8bb8b28b426d80fc25de22f6005c5e1759d4109ee026bf7f039",
+      "bytes": 22456,
       "files": [
         {
           "path": "apps/resinReminder.js",
@@ -3512,14 +3512,14 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789",
+        "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea",
         "shared_versions": "2.1.0-0e6a650cb52b"
       },
-      "version": "2.1.0-c94328907e8a",
-      "package": "packages/role_combat/2.1.0-c94328907e8a.xhmp",
-      "sha256": "d15f68072e270ad9d226704f4be853a2344cb5f00fc47ad5e41fddf14aa5ef10",
-      "bytes": 26805,
+      "version": "2.1.1",
+      "package": "packages/role_combat/2.1.1.xhmp",
+      "sha256": "827d917f8c29c4cd40bb2add1d6371d89f4b3414c42b3674bacda853c1030ff2",
+      "bytes": 26793,
       "files": [
         {
           "path": "apps/miniRoleCombat.js",
@@ -3606,12 +3606,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899"
+        "shared_account": "2.1.1"
       },
-      "version": "2.1.0-0b53b1982394",
-      "package": "packages/sr_all_abyss/2.1.0-0b53b1982394.xhmp",
-      "sha256": "11accc69a32ebcd47d97ec39195f5d39c185d8d3713a2dae4e4f1b6736cd8a03",
-      "bytes": 2689170,
+      "version": "2.1.1",
+      "package": "packages/sr_all_abyss/2.1.1.xhmp",
+      "sha256": "0212c858a01d33d798feb624d438978afdc196fb8c3341bb309924301c9b345a",
+      "bytes": 2689164,
       "files": [
         {
           "path": "apps/Abyss.js",
@@ -3660,13 +3660,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.0-08e66ec49899",
+        "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.0-395451e1434b",
-      "package": "packages/sr_gacha/2.1.0-395451e1434b.xhmp",
-      "sha256": "88a77eb623a136485c100a865b56df2b43bdd2cd098af24321b2813b28b692bd",
-      "bytes": 158071,
+      "version": "2.1.1",
+      "package": "packages/sr_gacha/2.1.1.xhmp",
+      "sha256": "2f05ab90a00fdb608fd638940117cef4e2ee4a470b773c493fb718f3e18c3b28",
+      "bytes": 158059,
       "files": [
         {
           "path": "apps/srGachaLog.js",
@@ -3734,12 +3734,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.0-03c2e683c789"
+        "shared_gs": "2.1.1"
       },
-      "version": "2.1.0-dab9c872dbef",
-      "package": "packages/team_damage/2.1.0-dab9c872dbef.xhmp",
-      "sha256": "2be7c66b126ed10c08a4a99cb72ab020449b9805b9cbfe4748d8f5a7e4077e31",
-      "bytes": 39373,
+      "version": "2.1.1",
+      "package": "packages/team_damage/2.1.1.xhmp",
+      "sha256": "1a952325b57c7a5dd21b531a180c7ad8aa73518e9e6264d9df8c1eef1bfbd486",
+      "bytes": 39361,
       "files": [
         {
           "path": "apps/teamDamage.js",
@@ -3787,12 +3787,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.0-45d95f4e7ac4"
+        "shared_stamina": "2.1.1"
       },
-      "version": "2.1.0-e3fcc38b63d6",
-      "package": "packages/tl/2.1.0-e3fcc38b63d6.xhmp",
-      "sha256": "c78c5bd033cd8b6b60b40af3940b07f432b845313f238032ff0dd5f9b9edacee",
-      "bytes": 9196,
+      "version": "2.1.1",
+      "package": "packages/tl/2.1.1.xhmp",
+      "sha256": "4460271246ededb7e43c8ec755c1c7607a5dfd53f634b0fd22c698ea2af8f811",
+      "bytes": 9185,
       "files": [
         {
           "path": "apps/TL.js",
@@ -3844,13 +3844,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "tl": "2.1.0-e3fcc38b63d6",
+        "tl": "2.1.1",
         "shared_sqlite": "2.1.0-b965389ca310"
       },
-      "version": "2.1.0-dc52fb2e3f97",
-      "package": "packages/waves/2.1.0-dc52fb2e3f97.xhmp",
-      "sha256": "b460033f62ad696f388431ddd51f28b2a726e654a43209ff8c294f2d5f9a6b62",
-      "bytes": 12832,
+      "version": "2.1.1",
+      "package": "packages/waves/2.1.1.xhmp",
+      "sha256": "f75ef8c2ec69ded7aff08bb89857d4ff367ac24d15f99a5cf9535225a1a31ebd",
+      "bytes": 12819,
       "files": [
         {
           "path": "utils/wavesData.js",
