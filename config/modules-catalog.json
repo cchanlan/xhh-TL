@@ -156,10 +156,10 @@
         "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/abyss_team/2.1.1.xhmp",
-      "sha256": "9fc4cc4d11995c864e89081a6c82dc12a9334cff5fa868087b9aa1a225c93135",
-      "bytes": 11279,
+      "version": "2.1.2",
+      "package": "packages/abyss_team/2.1.2.xhmp",
+      "sha256": "3ba8327446c71db8850c33bc2311bf750307af1a390179684dd7dbe4dbd71141",
+      "bytes": 11052,
       "files": [
         {
           "path": "apps/abyssTeam.js",
@@ -168,13 +168,13 @@
         },
         {
           "path": "resources/abyss_team/abyss_team.css",
-          "size": 8177,
-          "sha256": "751ea0dc7709630a55bda875a004e84dff8286d1c2507396e4705d7ecd8dc31e"
+          "size": 7749,
+          "sha256": "2462bbaeb14558a17a09d46bab18e17ed23fbb0ed65c02123fd6fe456a2ef0e5"
         },
         {
           "path": "resources/abyss_team/abyss_team.html",
-          "size": 4657,
-          "sha256": "3267278bcfe75fe0a185a687461635462838591815c9e9dd038db3cb096790ef"
+          "size": 4058,
+          "sha256": "6a92e9cabbb2d6d7b3192cda9c7a8a327546aa7afbbaaca38092024d13096d0b"
         }
       ]
     },
@@ -2992,10 +2992,10 @@
         "shared_gs": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/hard_team/2.1.1.xhmp",
-      "sha256": "bdd357e03b97a590cd3d36f8db547cf50359b9d7f7e21f3ac12367e8eebe08a6",
-      "bytes": 10624,
+      "version": "2.1.2",
+      "package": "packages/hard_team/2.1.2.xhmp",
+      "sha256": "6a4038bd85a21517f7f021ac95176025a65fbb92a032e4985022692aef91cad0",
+      "bytes": 10637,
       "files": [
         {
           "path": "apps/hardTeam.js",
@@ -3004,13 +3004,13 @@
         },
         {
           "path": "resources/hard_team/hard_team.css",
-          "size": 7686,
-          "sha256": "ecd1b507b17933e5fb5a15c7f1c92c0cd83c8e80f1d0364e15a75f2e578ba26f"
+          "size": 7749,
+          "sha256": "2462bbaeb14558a17a09d46bab18e17ed23fbb0ed65c02123fd6fe456a2ef0e5"
         },
         {
           "path": "resources/hard_team/hard_team.html",
-          "size": 3540,
-          "sha256": "a81aac42a3002c741207cd4db91dc4398d25b7d35b421d7e7f0ec3134ee0ebd1"
+          "size": 3293,
+          "sha256": "740bd5302d21485f5d7e2e036b9c2e5722577571eec31f13936a893ba9b4b785"
         }
       ]
     },
