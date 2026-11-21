@@ -40,92 +40,15 @@ export function supportGuoba() {
     },
     configInfo: {
       // 使用锅巴原生分组，共用表单模型，切换页签不会丢失未保存的值。
-      // 手机端沿用锅巴的横滑页签和竖排表单，不修改公共前端。
+      // 以使用场景分为六组；Next 导航自动换行，旧版锅巴沿用原生分组。
       // 这里只在 Linux / JiuLi 上实测，Yunzai 生态沿用同一 schema 协议。
       schemas: [
-        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '模块管理（兼容入口）' },
-        { field:'module_summary', label:'安装状态', block:false, component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
-        { field:'module_migration', label:'旧版迁移', component:'Input', componentProps:{readonly:true} },
-        { field:'download_proxy',label:'模块下载代理',component:'Input',bottomHelpMessage:'需要代理时填写 HTTP 或 HTTPS 代理地址并保存；留空使用 HTTPS_PROXY 环境变量或直连。'},
-        { field:'github_accel',label:'GitHub 加速前缀',component:'Input',bottomHelpMessage:'默认 https://ghp.lyln114514.top/，会拼在 GitHub 原始地址前面；留空直连。配置了模块下载代理时不生效。'},
-        { field:'download_source',label:'模块下载源',component:'Select',componentProps:{options:[
-          {label:'自动（测速选最快）',value:''},
-          {label:'GitHub',value:'github'},
-          {label:'Gitee',value:'gitee'},
-          {label:'GitCode',value:'gitcode'},
-        ]},bottomHelpMessage:'默认自动测速挑最快的平台；固定某个平台会跳过测速直接用它，下载失败仍会自动换源。'},
-        { field:'download_threads',label:'下载并发',component:'InputNumber',componentProps:{min:1,max:8,step:1},bottomHelpMessage:'同时下载几个模块包，默认 3；网络好多可以调到 6~8 加快安装，平台限流或带宽小时调低。'},
-        { field:'module_target', label:'选择模块（可多选）', component:'CheckboxGroup', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))}, bottomHelpMessage:'勾选一个或多个模块，安装会一次下完、重启后一起生效；卸载和更新同样支持多选。' },
-        { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
-          {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},
-          {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据；卸载素材包后出图会缺背景或立绘。')},
-          {label:'更新',action:'moduleUpdate',args:['#{module_target}']},
-          {label:'刷新目录',action:'moduleRefresh'},
-          {label:'迁移旧版功能',action:'moduleMigrate',confirm:confirmation('保留原有功能开关、配置和用户数据，准备模块文件。')},
-          {label:'取消待重启变更',action:'moduleCancel',confirm:confirmation('取消本次尚未生效的安装、更新和卸载。')},
-        ]}},
-        { field:'module_operation',label:'兼容操作',component:'Select',componentProps:{options:[
-          {label:'不执行模块操作',value:''},{label:'安装所选模块',value:'install'},
-          {label:'卸载所选模块（保留数据）',value:'uninstall'},{label:'更新所选模块',value:'update'},
-          {label:'迁移旧版功能',value:'migrate'},{label:'刷新模块目录',value:'refresh'},
-          {label:'取消待重启变更',value:'cancel'},
-        ]},bottomHelpMessage:'看不到上方按钮时，选择操作后点击保存。操作完成后重新打开本页，避免重复提交。'},
-
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '基础设置'
-        },
-        {
-          field: 'reply_quote',
-          label: '回复时引用消息',
-          bottomHelpMessage: '关掉后所有出图和提示都不再引用你的那条消息，直接单独发出来',
-          component: 'Switch'
-        },
-        {
-          component: 'Divider',
-          label: '出图'
-        },
-        {
-          field: 'img_type',
-          label: '输出图片类型',
-          helpMessage: '插件所有出图指令（体力卡 / 立绘卡 / 桌面小组件 / 全部深渊 / 抽卡记录 / 帮助面板…）统一用这个格式',
-          bottomHelpMessage:
-            '改完下次出图就生效，不用重启。' +
-            'JPEG 体积小、全平台通用（推荐）；PNG 无损但体积最大；' +
-            '⚠️ 选 WebP 之前先看你的适配器：微信（ComWeChat）的图片接口不认 webp，' +
-            '会把图降级成「文件」发出去 —— 群友收到的是 xxx.webp 文件卡片而不是图。' +
-            'QQ / OneBot 等平台用 webp 能省三成左右体积。' +
-            '另外 JPEG 装不下透明通道，质变仪 / 洞天宝钱到期提醒卡的圆角会自动改成直角（不然四角是黑的）。',
-          component: 'Select',
-          componentProps: {
-            options: [
-              { label: 'JPEG（推荐，全平台通用）', value: 'jpeg' },
-              { label: 'PNG（无损，体积最大）', value: 'png' },
-              { label: 'WebP（体积小，微信下会变成文件）', value: 'webp' }
-            ]
-          }
-        },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '体力查询'
-        },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '体力查询' },
         {
           field: 'Tl',
           label: '启用体力查询',
           bottomHelpMessage: '是否启用体力查询功能',
           component: 'Switch'
-        },
-        {
-          field: 'render_scale',
-          label: '渲染倍率',
-          bottomHelpMessage: '全局清晰度微调。1.0=模板推荐；想更清晰可调到 1.2~1.5（图更大）',
-          component: 'InputNumber',
-          componentProps: {
-            min: 0.8,
-            max: 1.5,
-            step: 0.1,
-            placeholder: '默认 1.0'
-          }
         },
         {
           field: 'tl_card_style',
@@ -188,7 +111,7 @@ export function supportGuoba() {
         },
         {
           field: 'tl_priority',
-          label: '插件优先级',
+          label: '体力查询优先级',
           bottomHelpMessage: '插件优先级，数字越小越优先',
           component: 'InputNumber',
           componentProps: {
@@ -248,10 +171,7 @@ export function supportGuoba() {
             placeholder: '默认 3'
           }
         },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '鸣潮体力'
-        },
+        { component: 'Divider' },
         {
           field: 'waves_tl_enable',
           label: '启用鸣潮体力',
@@ -261,6 +181,7 @@ export function supportGuoba() {
         },
         {
           field: 'waves_tl_gsuid_db',
+            block: false,
           label: 'gsuid_core 数据库路径',
           bottomHelpMessage:
             'core 的 GsData.db 文件路径（只读打开，取鸣潮绑定与凭证）。Windows 推荐填写 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠也会自动归一化）；留空自动探测 Linux 默认路径。多个路径用换行、逗号或分号分隔，按顺序尝试存在的路径；Docker/WSL 请填写 Yunzai 进程可见的路径。',
@@ -281,15 +202,12 @@ export function supportGuoba() {
             placeholder: '15'
           }
         },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '推送提醒'
-        },
+        { component: 'Divider' },
         {
           field: 'resin_push_enable',
           label: '启用体力阈值推送',
           bottomHelpMessage:
-            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需在「鸣潮体力」页打开「启用鸣潮体力」）',
+            '用户在群里各自设定阈值：原神看原粹树脂、星铁看开拓力、绝区零看电量、鸣潮看结晶波片，达到即在该群@用户并发体力图。达到后只提醒一次，回落到阈值以下自动重新监控。指令：#原神体力推送 130 / #星铁体力推送 200 / #开启鸣潮体力推送 200 / #原神体力推送关闭 / #体力推送列表（鸣潮另需在本页打开「启用鸣潮体力」）',
           component: 'Switch'
         },
         {
@@ -302,21 +220,26 @@ export function supportGuoba() {
             placeholder: '*/10 * * * *'
           }
         },
-        {
-          component: 'Divider',
-          label: '质变仪 / 洞天宝钱到期提醒'
-        },
+        { component: 'Divider' },
         {
           field: 'resin_timer_enable',
-          label: '启用到期提醒',
+          label: '启用质变仪 / 洞天宝钱到期提醒',
           bottomHelpMessage:
             '向已开启体力推送的人，在「参量质变仪可再次使用」「洞天宝钱已满」时于其订阅群 @ 提醒一次（配一张提醒卡）。数据来自用户查询体力时的快照，需至少查询过一次；到点时刻会落盘，重启后自动恢复定时',
           component: 'Switch'
         },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '原神设置' },
         {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '原神查询'
+          field: 'role_combat_bg_folder',
+          label: '原神查询共用背景',
+          bottomHelpMessage:
+            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 的背景来源。可填单张图片、角色面板目录或多层分类目录。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。支持 Win/Linux 相对或绝对路径；留空使用 bg1.png',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
+          }
         },
+        { component: 'Divider' },
         {
           field: 'gs_all_abyss',
           label: '启用原神全部深渊',
@@ -347,6 +270,7 @@ export function supportGuoba() {
             placeholder: '默认 -99'
           }
         },
+        { component: 'Divider' },
         {
           field: 'abyss_team',
           label: '启用深渊配队',
@@ -378,6 +302,7 @@ export function supportGuoba() {
             placeholder: '默认 -98'
           }
         },
+        { component: 'Divider' },
         {
           field: 'hard_team',
           label: '启用危战配队',
@@ -409,6 +334,7 @@ export function supportGuoba() {
             placeholder: '默认 -98'
           }
         },
+        { component: 'Divider' },
         {
           field: 'hold_rate',
           label: '启用角色持有率',
@@ -440,6 +366,7 @@ export function supportGuoba() {
             placeholder: '默认 -98'
           }
         },
+        { component: 'Divider' },
         {
           field: 'role_combat',
           label: '启用幻想真境剧诗 / 小剧诗',
@@ -459,20 +386,7 @@ export function supportGuoba() {
             ]
           }
         },
-        {
-          field: 'role_combat_bg_folder',
-          label: '深渊/剧诗/配队背景',
-          bottomHelpMessage:
-            '#幻想角色、#小剧诗、#全部深渊、#深渊配队、#危战配队、#角色持有率 的背景来源。可填单张图片、角色面板目录或多层分类目录。填写 plugins/xhh-TL/resources/bg 可随机使用内置50张观景点风景。支持 Win/Linux 相对或绝对路径；留空使用 bg1.png',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'plugins/xhh-TL/resources/bg/bg1.png'
-          }
-        },
-        {
-          component: 'Divider',
-          label: '原神 · 队伍伤害'
-        },
+        { component: 'Divider' },
         {
           field: 'team_damage',
           label: '启用队伍伤害',
@@ -503,13 +417,10 @@ export function supportGuoba() {
             placeholder: '默认 20'
           }
         },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '星铁查询'
-        },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '星铁设置' },
         {
           field: 'all_abyss',
-          label: '启用全部深渊查询',
+          label: '启用星铁全部深渊查询',
           bottomHelpMessage: '是否启用星铁全部深渊三合一查询（混沌回忆、虚构叙事、末日幻影）。关掉后 *全部深渊 / *深渊总览 / #星铁全部深渊 不再响应，帮助图里该板块一并隐藏',
           component: 'Switch'
         },
@@ -537,10 +448,7 @@ export function supportGuoba() {
             placeholder: '默认 -98'
           }
         },
-        {
-          component: 'Divider',
-          label: '星铁 · 抽卡记录'
-        },
+        { component: 'Divider' },
         {
           field: 'sr_gacha_enable',
           label: '启用星铁抽卡记录',
@@ -548,16 +456,7 @@ export function supportGuoba() {
             '启用抽卡查询、更新、强制重建、小助手文件导入和星穹工坊云端导入。关闭后隐藏帮助板块，抽卡链接交给其它插件处理',
           component: 'Switch'
         },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '米游社签到'
-        },
-        {
-          field: 'redeem_enable',
-          label: '启用三游戏兑换码',
-          bottomHelpMessage: '#使用兑换码 / *使用兑换码 / %使用兑换码。自动兑换需用户发送对应前缀的自动兑换码开启，每10分钟检查；可加关闭或状态。',
-          component: 'Switch'
-        },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '签到与兑换' },
         {
           field: 'auto_sign_enable',
           label: '启用自动签到',
@@ -589,39 +488,19 @@ export function supportGuoba() {
             ]
           }
         },
+        { component: 'Divider' },
         {
-          field: 'auto_verify_addr',
-          label: '全自动过码地址',
-          bottomHelpMessage:
-            '默认用插件自带的公共过码服务 https://geetest.lyln114514.com/solve，装了就能自动过码，不用部署。发 #过码部署 会在本机装一套并把这里改成 http://127.0.0.1:8766/solve（不依赖公共服务）；也可以填别人部署的远程服务。⚠️ 过码会把 ck 发给该地址的服务。撞码时自动解滑块并重试，全程不用手动操作；连不上则只提示稍后再试',
-          component: 'Input',
-          componentProps: {
-            placeholder: 'https://geetest.lyln114514.com/solve'
-          }
-        },
-        {
-          field: 'solver_deploy_enable',
-          label: '启用过码服务部署',
-          bottomHelpMessage:
-            '是否允许在群里发 #过码部署 / #过码服务状态。关掉后这两条指令不再响应（已装好的过码服务不受影响，撞码时照常自动处理）；不想让任何人在群里触发部署就关掉它',
+          field: 'redeem_enable',
+          label: '启用三游戏兑换码',
+          bottomHelpMessage: '#使用兑换码 / *使用兑换码 / %使用兑换码。自动兑换需用户发送对应前缀的自动兑换码开启，每10分钟检查；可加关闭或状态。',
           component: 'Switch'
         },
-        {
-          field: 'captcha_notice_enable',
-          label: '启用撞码自动处理',
-          bottomHelpMessage:
-            '查询撞米游社风控码（1034/10035/10041）时自动过码并重试原请求，用户无感。关掉后不再自动解滑块、不会自动重试，撞码只提示稍后再试',
-          component: 'Switch'
-        },
-        {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '米游币任务'
-        },
+        { component: 'Divider' },
         {
           field: 'bbs_coin_enable',
           label: '启用米游币任务',
           bottomHelpMessage:
-            '与「米游社签到」页的「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区任务（版块签到即拿满）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
+            '与本页的「自动签到」是两回事：签到领原石走游戏 UID+cookie_token；米游币是社区任务（版块签到即拿满）赚币，走米游社账号+stoken。用户 opt-in：发 #开启自动米游币 后才纳入。指令：#米游币签到（立即跑）/ #米游币余额（查余额）/ #关闭自动米游币 / #自动米游币列表。⚠️ 需要 stoken（#扫码登录才有），普通 CK 做不了',
           component: 'Switch'
         },
         {
@@ -660,6 +539,7 @@ export function supportGuoba() {
         },
         {
           field: 'bbs_coin_gsuid_db',
+            block: false,
           label: 'gsuid 数据库路径',
           bottomHelpMessage:
             '米游币任务需要 stoken。若你同时在跑 gsuid_core（早柚core），它#扫码登录的 stoken 存在 GsData.db 里，且带该账号注册过的真实 device_id/fp，比插件现派生的更不容易被风控，因此优先读取。留空自动探测 /opt/gsuid_core/data/GsData.db 与 /root/gsuid_core/data/GsData.db；Windows 需手填如 D:/QingShuiBot/gsuid_core/data/GsData.db（反斜杠会自动归一化）；多个路径用换行分隔。只读打开，不写入、不锁库，不影响 gsuid 运行',
@@ -669,20 +549,70 @@ export function supportGuoba() {
             placeholder: '/opt/gsuid_core/data/GsData.db',
           },
         },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '过码设置' },
         {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '版本配置'
-        },
-        {
-          field: 'nanoka_abyss_enable',
-          label: '启用版本配置查询',
+          field: 'captcha_notice_enable',
+          label: '启用撞码自动处理',
           bottomHelpMessage:
-            '是否启用 #版本深渊 / #版本剧诗 / #版本危战 与 *版本混沌 / *版本虚构 / *版本末日 / *版本异相 等静态版本配置查询（原神与星铁共用本开关）。关掉后这些指令不再响应，帮助图里两个版本板块一并隐藏',
+            '接管 genshin、miao-plugin 等通过公共处理器发起的米游社查询：遇到验证码后自动验证并重试当前请求，成功后继续本条指令；仍失败时提示稍后再试。签到和体力模块自身的验证重试不受此开关控制',
           component: 'Switch'
         },
         {
-          component: 'SOFT_GROUP_BEGIN', ifShow: false,
-          label: '管理设置'
+          field: 'auto_verify_addr',
+          label: '过码服务地址',
+          bottomHelpMessage:
+            '签到、体力和公共撞码处理共用此地址。默认用插件自带的公共过码服务 https://geetest.lyln114514.com/solve，装了就能自动过码，不用部署。发 #过码部署 会在本机装一套并把这里改成 http://127.0.0.1:8766/solve（不依赖公共服务）；也可以填别人部署的远程服务。⚠️ 过码会把 ck 发给该地址的服务。遇到验证码时尝试自动验证并重试；服务不可用或重试仍失败时提示稍后再试',
+          component: 'Input',
+          componentProps: {
+            placeholder: 'https://geetest.lyln114514.com/solve'
+          }
+        },
+        { component: 'Divider' },
+        {
+          field: 'solver_deploy_enable',
+          label: '启用过码服务部署',
+          bottomHelpMessage:
+            '是否允许在群里发 #过码部署 / #过码服务状态。关掉后这两条指令不再响应（已装好的过码服务不受影响，撞码时照常自动处理）；过码服务地址在「撞码自动处理」页设置',
+          component: 'Switch'
+        },
+        { component: 'SOFT_GROUP_BEGIN', ifShow: false, label: '其他设置' },
+        {
+          field: 'reply_quote',
+          label: '回复时引用消息',
+          bottomHelpMessage: '关掉后所有出图和提示都不再引用你的那条消息，直接单独发出来',
+          component: 'Switch'
+        },
+        {
+          field: 'img_type',
+          label: '输出图片类型',
+          helpMessage: '插件所有出图指令（体力卡 / 立绘卡 / 桌面小组件 / 全部深渊 / 抽卡记录 / 帮助面板…）统一用这个格式',
+          bottomHelpMessage:
+            '改完下次出图就生效，不用重启。' +
+            'JPEG 体积小、全平台通用（推荐）；PNG 无损但体积最大；' +
+            '⚠️ 选 WebP 之前先看你的适配器：微信（ComWeChat）的图片接口不认 webp，' +
+            '会把图降级成「文件」发出去 —— 群友收到的是 xxx.webp 文件卡片而不是图。' +
+            'QQ / OneBot 等平台用 webp 能省三成左右体积。' +
+            '另外 JPEG 装不下透明通道，质变仪 / 洞天宝钱到期提醒卡的圆角会自动改成直角（不然四角是黑的）。',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: 'JPEG（推荐，全平台通用）', value: 'jpeg' },
+              { label: 'PNG（无损，体积最大）', value: 'png' },
+              { label: 'WebP（体积小，微信下会变成文件）', value: 'webp' }
+            ]
+          }
+        },
+        {
+          field: 'render_scale',
+          label: '渲染倍率',
+          bottomHelpMessage: '全局清晰度微调。1.0=模板推荐；想更清晰可调到 1.2~1.5（图更大）',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0.8,
+            max: 1.5,
+            step: 0.1,
+            placeholder: '默认 1.0'
+          }
         },
         {
           field: 'help_bg',
@@ -696,6 +626,7 @@ export function supportGuoba() {
         },
         {
           field: 'stoken_paths',
+            block: false,
           label: 'SToken/CK 搜索路径',
           bottomHelpMessage:
             '按优先级从上到下查找 {QQ}.yaml。支持多行，可写绝对路径或相对 Yunzai 根目录。留空则用默认：xhh / 逍遥 / 本插件 data/Stoken',
@@ -706,6 +637,15 @@ export function supportGuoba() {
               'plugins/xhh/data/Stoken\nplugins/xiaoyao-cvs-plugin/data/yaml\nplugins/xhh-TL/data/Stoken'
           }
         },
+        { component: 'Divider' },
+        {
+          field: 'nanoka_abyss_enable',
+          label: '启用版本配置查询',
+          bottomHelpMessage:
+            '是否启用 #版本深渊 / #版本剧诗 / #版本危战 与 *版本混沌 / *版本虚构 / *版本末日 / *版本异相 等静态版本配置查询（原神与星铁共用本开关）。关掉后这些指令不再响应，帮助图里两个版本板块一并隐藏',
+          component: 'Switch'
+        },
+        { component: 'Divider' },
         {
           field: 'tmp_clean_enable',
           label: '启用 tmp 定时清理',
@@ -732,14 +672,41 @@ export function supportGuoba() {
             placeholder: '24'
           }
         },
+        { component: 'Divider' },
         {
           field: 'del_ck_hook_enable',
           label: '启用删除 CK 对账',
           bottomHelpMessage:
             '配合 genshin 的 #删除ck：记录被删账号的残留 stoken，避免它被体力查询「复活」。关掉后 #删除ck 照常由 genshin 执行，只是不再记录（没装 genshin 的环境本来就不会触发，关掉零影响）',
           component: 'Switch'
-        }
-      
+        },
+        { component: 'Divider' },
+        { field:'module_summary', label:'安装状态', block:false, component:'InputTextArea', componentProps:{rows:12,readonly:true}, bottomHelpMessage:'点击配置页右上角刷新按钮查看进度；准备完成后重启机器人。' },
+        { field:'module_migration', label:'旧版迁移', component:'Input', componentProps:{readonly:true} },
+        { field:'download_proxy',label:'模块下载代理',component:'Input',bottomHelpMessage:'需要代理时填写 HTTP 或 HTTPS 代理地址并保存；留空使用 HTTPS_PROXY 环境变量或直连。'},
+        { field:'github_accel',label:'GitHub 加速前缀',component:'Input',bottomHelpMessage:'默认 https://ghp.lyln114514.top/，会拼在 GitHub 原始地址前面；留空直连。配置了模块下载代理时不生效。'},
+        { field:'download_source',label:'模块下载源',component:'Select',componentProps:{options:[
+          {label:'自动（测速选最快）',value:''},
+          {label:'GitHub',value:'github'},
+          {label:'Gitee',value:'gitee'},
+          {label:'GitCode',value:'gitcode'},
+        ]},bottomHelpMessage:'默认自动测速挑最快的平台；固定某个平台会跳过测速直接用它，下载失败仍会自动换源。'},
+        { field:'download_threads',label:'下载并发',component:'InputNumber',componentProps:{min:1,max:8,step:1},bottomHelpMessage:'同时下载几个模块包，默认 3；网络好多可以调到 6~8 加快安装，平台限流或带宽小时调低。'},
+        { field:'module_target', label:'选择模块（可多选）', component:'CheckboxGroup', componentProps:{options:getCatalog().modules.filter(m=>!m.internal).map(m=>({label:m.label,value:m.id}))}, bottomHelpMessage:'勾选一个或多个模块，安装会一次下完、重启后一起生效；卸载和更新同样支持多选。' },
+        { field:'module_buttons', component:'GButtons', label:'操作', componentProps:{buttons:[
+          {label:'安装',action:'moduleInstall',type:'primary',args:['#{module_target}']},
+          {label:'卸载',action:'moduleUninstall',danger:true,args:['#{module_target}'],confirm:confirmation('重启后卸载所选模块，保留配置、账号和订阅数据；卸载素材包后出图会缺背景或立绘。')},
+          {label:'更新',action:'moduleUpdate',args:['#{module_target}']},
+          {label:'刷新目录',action:'moduleRefresh'},
+          {label:'迁移旧版功能',action:'moduleMigrate',confirm:confirmation('保留原有功能开关、配置和用户数据，准备模块文件。')},
+          {label:'取消待重启变更',action:'moduleCancel',confirm:confirmation('取消本次尚未生效的安装、更新和卸载。')},
+        ]}},
+        { field:'module_operation',label:'兼容操作',component:'Select',componentProps:{options:[
+          {label:'不执行模块操作',value:''},{label:'安装所选模块',value:'install'},
+          {label:'卸载所选模块（保留数据）',value:'uninstall'},{label:'更新所选模块',value:'update'},
+          {label:'迁移旧版功能',value:'migrate'},{label:'刷新模块目录',value:'refresh'},
+          {label:'取消待重启变更',value:'cancel'},
+        ]},bottomHelpMessage:'看不到上方按钮时，选择操作后点击保存。操作完成后重新打开本页，避免重复提交。'}
       ],
       actions: {
         moduleInstall: (args,ctx)=>moduleAction('install',args,ctx),
