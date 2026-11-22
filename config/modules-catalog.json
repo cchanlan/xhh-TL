@@ -3610,10 +3610,10 @@
         "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.2",
-      "package": "packages/sr_all_abyss/2.1.2.xhmp",
-      "sha256": "0b155623db59fb64a560a273c4a9a6cb9337ad1ec620f965c8541276c32afd42",
-      "bytes": 2680264,
+      "version": "2.1.3",
+      "package": "packages/sr_all_abyss/2.1.3.xhmp",
+      "sha256": "d6d2249f9487ff4200ca4bc3f37fbf0c53648f94bc22ae153368bcbedc7416f8",
+      "bytes": 2681470,
       "files": [
         {
           "path": "apps/Abyss.js",
@@ -3632,8 +3632,8 @@
         },
         {
           "path": "resources/all-abyss.html",
-          "size": 6060,
-          "sha256": "d7f603c8f7d50b72944ac504de37265d50668091755962f2ebe68c2cc61dfedb"
+          "size": 7594,
+          "sha256": "d8a2a528a63eab498db7171bacf419101d8ad9a113f13c9cbd18f20746982364"
         },
         {
           "path": "resources/background.png",
@@ -3642,8 +3642,8 @@
         },
         {
           "path": "resources/sr_all_abyss.css",
-          "size": 8040,
-          "sha256": "2134bf742365f69eee8e1ac7b367504106704e380e1239595eba68e3ac86fcef"
+          "size": 9962,
+          "sha256": "003bc4971e11f7314741bedc0ae927e263b1aae1e8f6114206c25caac8f2aea6"
         }
       ]
     },
