@@ -83,15 +83,15 @@
       "dependencyVersions": {
         "shared_account": "2.1.1"
       },
-      "version": "2.1.1",
-      "package": "packages/shared_gs/2.1.1.xhmp",
-      "sha256": "711197d5fd8902dfe4d4075f19f6f3793ecb338a236b472791ccb55031d1ceec",
-      "bytes": 5439,
+      "version": "2.1.2",
+      "package": "packages/shared_gs/2.1.2.xhmp",
+      "sha256": "f08dc152e70e38a0c33757184cc77fb7d2c56d5fcdad581cad13dcb90cb8335c",
+      "bytes": 5524,
       "files": [
         {
           "path": "utils/gsHelper.js",
-          "size": 4423,
-          "sha256": "5c9026f9f17914fd20c837086ed85d02598544f66da01dc2b4b558fad9b40dfb"
+          "size": 4818,
+          "sha256": "e9ce74bc02960666ed7d2e700a15a147a71b594f52c05da091ab0b37c38015a7"
         },
         {
           "path": "utils/yshelperApi.js",
@@ -153,28 +153,28 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1",
+        "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.2",
-      "package": "packages/abyss_team/2.1.2.xhmp",
-      "sha256": "3ba8327446c71db8850c33bc2311bf750307af1a390179684dd7dbe4dbd71141",
-      "bytes": 11052,
+      "version": "2.1.3",
+      "package": "packages/abyss_team/2.1.3.xhmp",
+      "sha256": "01295fc78cba37c273a71fcdf0c585d46030b87222e121644ed7ba237777e561",
+      "bytes": 11087,
       "files": [
         {
           "path": "apps/abyssTeam.js",
-          "size": 9530,
-          "sha256": "67e623b73091d41a1ac0fa394155c507015e538fbd3e3a1ac075ec01c54a114e"
+          "size": 9546,
+          "sha256": "c696db8b46597bfe37bdf180774fb922508027a412d79b4aa54f251619a4c311"
         },
         {
           "path": "resources/abyss_team/abyss_team.css",
-          "size": 7749,
-          "sha256": "2462bbaeb14558a17a09d46bab18e17ed23fbb0ed65c02123fd6fe456a2ef0e5"
+          "size": 7871,
+          "sha256": "d20a8ac0a7ed14d95c5c1b611b85b58720e7477735a206ad78527a9d96d8871c"
         },
         {
           "path": "resources/abyss_team/abyss_team.html",
-          "size": 4058,
-          "sha256": "6a92e9cabbb2d6d7b3192cda9c7a8a327546aa7afbbaaca38092024d13096d0b"
+          "size": 4116,
+          "sha256": "fa3de5be0cf8bc1036beca86ed09fb77b0509928af9375b645c4361d7295f339"
         }
       ]
     },
@@ -2939,13 +2939,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1",
+        "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/gs_all_abyss/2.1.1.xhmp",
-      "sha256": "cfccb8ecf2c9398d93457834cb6342a4803a3602b3773864aa78f094e1e26406",
-      "bytes": 43330,
+      "version": "2.1.3",
+      "package": "packages/gs_all_abyss/2.1.3.xhmp",
+      "sha256": "2c7cf5e6517ce9a3249c6441660ec0c06674c218d11cff6687cf6540c650c67f",
+      "bytes": 25183,
       "files": [
         {
           "path": "apps/gsAllAbyss.js",
@@ -2954,18 +2954,18 @@
         },
         {
           "path": "resources/gs_all_abyss/char-mcard.html",
-          "size": 1181,
-          "sha256": "efc234cc3a6370ca63dcb8ccf11739e53fc0cef1f7766dda07ca769eca4a49bf"
+          "size": 1741,
+          "sha256": "fc2a13cecaca9c9024f812c38831bc78ef3d4e9b94029287f0d5e7e94b662118"
         },
         {
           "path": "resources/gs_all_abyss/gs_all_abyss.css",
-          "size": 65830,
-          "sha256": "d767195b3ac0b81e12dd0b2e0ba1fffabdd394679b31469703b3c89365536ae3"
+          "size": 12664,
+          "sha256": "952818c6d3e4afdc70c59418391d36609af4eaf125a2014b68f6db7c5f6b0a59"
         },
         {
           "path": "resources/gs_all_abyss/gs_all_abyss.html",
-          "size": 28304,
-          "sha256": "1663369fa64f3e12ad47c90d664313986694774c0666b31d7f791a3ae8cb6ff0"
+          "size": 11005,
+          "sha256": "ef9100720aba16abfdf9a584137058caceda89a2de16b4aabf042505f4c31a2e"
         }
       ]
     },
@@ -2989,28 +2989,28 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1",
+        "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.2",
-      "package": "packages/hard_team/2.1.2.xhmp",
-      "sha256": "6a4038bd85a21517f7f021ac95176025a65fbb92a032e4985022692aef91cad0",
-      "bytes": 10637,
+      "version": "2.1.3",
+      "package": "packages/hard_team/2.1.3.xhmp",
+      "sha256": "3ff0ec5bd602d206078335828aa7b4ac1ee6d065471753b510a28e86887dc021",
+      "bytes": 10676,
       "files": [
         {
           "path": "apps/hardTeam.js",
-          "size": 8436,
-          "sha256": "56edc5ec934972c8f14ec8033cf4dc3529c4327f2dc2ccac2f3b5c211072bdcf"
+          "size": 8452,
+          "sha256": "1ea9dee100acabe158d45af35837defaf94c747c5a63bdbbd79e27002276045f"
         },
         {
           "path": "resources/hard_team/hard_team.css",
-          "size": 7749,
-          "sha256": "2462bbaeb14558a17a09d46bab18e17ed23fbb0ed65c02123fd6fe456a2ef0e5"
+          "size": 7871,
+          "sha256": "d20a8ac0a7ed14d95c5c1b611b85b58720e7477735a206ad78527a9d96d8871c"
         },
         {
           "path": "resources/hard_team/hard_team.html",
-          "size": 3293,
-          "sha256": "740bd5302d21485f5d7e2e036b9c2e5722577571eec31f13936a893ba9b4b785"
+          "size": 3351,
+          "sha256": "4bde9b4c42901059118734160076b440460367793aedead3c9741f2f3ac50158"
         }
       ]
     },
@@ -3034,28 +3034,28 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1",
+        "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.2",
-      "package": "packages/hold_rate/2.1.2.xhmp",
-      "sha256": "b13fc711c99322f1c49ff3c434667c3f44e6cc085b71eafa721068caed74dfe1",
-      "bytes": 8565,
+      "version": "2.1.3",
+      "package": "packages/hold_rate/2.1.3.xhmp",
+      "sha256": "52d2ecbcc1c56d576209ed49dc9c03683fc779dc3c412b62f7af2146fb0a87a2",
+      "bytes": 8611,
       "files": [
         {
           "path": "apps/holdRate.js",
-          "size": 4776,
-          "sha256": "2db6a99bb1efce7bc14e993dd00c0c29aaca3365286149d9469d4c97d47717cd"
+          "size": 4792,
+          "sha256": "61dc11503d8fc7cb3db134b4bf4fa911f12ec0df458f299ad1c9b8a7b1390010"
         },
         {
           "path": "resources/hold_rate/hold_rate.css",
-          "size": 7136,
-          "sha256": "8c88d6dc576454ef9e61b1fc855b3b2c58e64ba3c12ae06a8043f9e2f281c7c2"
+          "size": 7335,
+          "sha256": "388168225191d7bfed4e8fbff7444a660b095b10b9d7900a2dbfe017292f1b41"
         },
         {
           "path": "resources/hold_rate/hold_rate.html",
-          "size": 3697,
-          "sha256": "73f4c7355316faf6798b9a8d1a2a4172a5587df152b40be2573ddcfa7657f1c5"
+          "size": 3784,
+          "sha256": "aad690e47f18d8f72c3b0d2de3556828c4b4fac9f30b8caada01a738b4009f4b"
         }
       ]
     },
@@ -3187,10 +3187,10 @@
         "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/shared_stamina/2.1.1.xhmp",
-      "sha256": "85bb28f4feabdde9a9c54515e0b20846b26f79ed04c58de005a1531d71671aee",
-      "bytes": 2023482,
+      "version": "2.1.2",
+      "package": "packages/shared_stamina/2.1.2.xhmp",
+      "sha256": "d7c3e9d8554497470005b7ca14d387c104efe429d142f695b7d2e9bba4794433",
+      "bytes": 2023865,
       "files": [
         {
           "path": "resources/Tl/Portrait.html",
@@ -3384,8 +3384,8 @@
         },
         {
           "path": "utils/staminaService.js",
-          "size": 78730,
-          "sha256": "4cc02cea2ef5434add98e92b10572b70d28fe8bd09cdd0c004f92768091dd46c"
+          "size": 79618,
+          "sha256": "85f942c6cdd0905db91b4a135d9c7c7e826117cd67f9e2bce450f110ed55004c"
         }
       ]
     },
@@ -3402,11 +3402,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.1"
+        "shared_stamina": "2.1.2"
       },
-      "version": "2.1.1",
-      "package": "packages/shared_delivery/2.1.1.xhmp",
-      "sha256": "a08e09cd50fdf118eb04e9dc7b7283802ccb9890201541bf349146941d5992c8",
+      "version": "2.1.2",
+      "package": "packages/shared_delivery/2.1.2.xhmp",
+      "sha256": "e0bf828b19f4b91635e01811542c1c63b229aa8f6bf6b87387d944c4ff8464d6",
       "bytes": 7737,
       "files": [
         {
@@ -3435,11 +3435,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.1"
+        "shared_delivery": "2.1.2"
       },
-      "version": "2.1.1",
-      "package": "packages/resin_push/2.1.1.xhmp",
-      "sha256": "58ddd3b8ad5bc71f4e54f04e031b6b86c376e1e8fcdc5a106567c294e6500e50",
+      "version": "2.1.2",
+      "package": "packages/resin_push/2.1.2.xhmp",
+      "sha256": "7742ff5902ed3a621a9470505887ca33ef00384f96a1b712c890f18673da9292",
       "bytes": 13817,
       "files": [
         {
@@ -3468,11 +3468,11 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_delivery": "2.1.1"
+        "shared_delivery": "2.1.2"
       },
-      "version": "2.1.1",
-      "package": "packages/resin_timer/2.1.1.xhmp",
-      "sha256": "ed19464e68d1b8bb8b28b426d80fc25de22f6005c5e1759d4109ee026bf7f039",
+      "version": "2.1.2",
+      "package": "packages/resin_timer/2.1.2.xhmp",
+      "sha256": "e22284d3e0e0cf59930a6e95410b60d010590c470812371eee4e438011bed9b9",
       "bytes": 22456,
       "files": [
         {
@@ -3512,44 +3512,44 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1",
+        "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea",
         "shared_versions": "2.1.0-0e6a650cb52b"
       },
-      "version": "2.1.2",
-      "package": "packages/role_combat/2.1.2.xhmp",
-      "sha256": "2bb368b18abec4538a52c8b51892b7d1038255c6f0fd76591cd6155d393ed558",
-      "bytes": 28354,
+      "version": "2.1.3",
+      "package": "packages/role_combat/2.1.3.xhmp",
+      "sha256": "5aab67352cf836faf5db2538c549ad3a1b88a628d9a76a159f589bc0454b6e08",
+      "bytes": 27724,
       "files": [
         {
           "path": "apps/miniRoleCombat.js",
-          "size": 12122,
-          "sha256": "dc22034746af53cc9a50018116eb0299a4b88ae788c3f616ce444f730f04efc3"
+          "size": 14285,
+          "sha256": "3f1f3c4890fb6b1c58564c45e3da4444e3e7dd6abc52c04344d2daf5898e2f24"
         },
         {
           "path": "apps/role_combat.js",
-          "size": 17589,
-          "sha256": "b4a00e3099c9513b216db39363a902c86aed30146f758fc6faed0884e1bf4c51"
+          "size": 16884,
+          "sha256": "31ec56488528a07d2da0cdcaf36c6612ba36adb3fb94abe4d1abce70fd6178bb"
         },
         {
           "path": "resources/role_combat/mini_role_combat.css",
-          "size": 12293,
-          "sha256": "b776478cf4ee50ed3961d0579669e04724e16237418c76904ddd04404decb239"
+          "size": 7857,
+          "sha256": "60aa2d0afeb7b591eff9c32f738b0b21e48fe1a7cdcfc6817aadedd61fa27d95"
         },
         {
           "path": "resources/role_combat/mini_role_combat.html",
-          "size": 5246,
-          "sha256": "100f84ea71f421ae5581cb7443b1bc0c31b5293d256bd48e06aff47104652004"
+          "size": 5303,
+          "sha256": "2df165506ee900463aef353371ec794bdfcb0b4c44c35005eb173953ee61ac48"
         },
         {
           "path": "resources/role_combat/role_combat.css",
-          "size": 9322,
-          "sha256": "2f50f680070f754f8fb92baca4254314e3e2c555fc24fc7da70caeb7dfa84e3a"
+          "size": 9804,
+          "sha256": "69fa5549c616c561b58ace5d0cf7e981cee80bd405cae172bcef11069470f39b"
         },
         {
           "path": "resources/role_combat/role_combat.html",
-          "size": 5037,
-          "sha256": "eaafbd1d0634b6015aa8b3fc3874c8a2570ad1942a0d783bc65edaec008fab82"
+          "size": 5221,
+          "sha256": "2479635b6eeec051d94ce0c932b11076211f2878b6098f797f22e9a4c9433ed0"
         }
       ]
     },
@@ -3734,12 +3734,12 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.1"
+        "shared_gs": "2.1.2"
       },
-      "version": "2.1.1",
-      "package": "packages/team_damage/2.1.1.xhmp",
-      "sha256": "1a952325b57c7a5dd21b531a180c7ad8aa73518e9e6264d9df8c1eef1bfbd486",
-      "bytes": 39361,
+      "version": "2.1.2",
+      "package": "packages/team_damage/2.1.2.xhmp",
+      "sha256": "9cda48615d12767e3ec2eae8e4b70cafa0a3f08914ee27bf25f7c9ee9070332b",
+      "bytes": 39360,
       "files": [
         {
           "path": "apps/teamDamage.js",
@@ -3787,17 +3787,17 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_stamina": "2.1.1"
+        "shared_stamina": "2.1.2"
       },
-      "version": "2.1.1",
-      "package": "packages/tl/2.1.1.xhmp",
-      "sha256": "4460271246ededb7e43c8ec755c1c7607a5dfd53f634b0fd22c698ea2af8f811",
-      "bytes": 9185,
+      "version": "2.1.2",
+      "package": "packages/tl/2.1.2.xhmp",
+      "sha256": "8d4fb3426db901c06653c4b01197a658cf90a11a613caa3c81fd74b1b397fc5f",
+      "bytes": 9403,
       "files": [
         {
           "path": "apps/TL.js",
-          "size": 17270,
-          "sha256": "46b148107da4cda7d20ba434a25b883af28e22b5d4edaa462ee0ec30878ea078"
+          "size": 17799,
+          "sha256": "b6105a499ab1ccfb52370b0965738db33f95125725f1e24ed38878d64acb2a21"
         }
       ]
     },
@@ -3844,13 +3844,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "tl": "2.1.1",
+        "tl": "2.1.2",
         "shared_sqlite": "2.1.0-b965389ca310"
       },
-      "version": "2.1.1",
-      "package": "packages/waves/2.1.1.xhmp",
-      "sha256": "f75ef8c2ec69ded7aff08bb89857d4ff367ac24d15f99a5cf9535225a1a31ebd",
-      "bytes": 12819,
+      "version": "2.1.2",
+      "package": "packages/waves/2.1.2.xhmp",
+      "sha256": "86ead82fd03d6f22a5a63b39385e5dbb74417de3fb3c6ee7c6d81f4e1b5e74bf",
+      "bytes": 12818,
       "files": [
         {
           "path": "utils/wavesData.js",
