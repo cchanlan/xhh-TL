@@ -5,258 +5,70 @@
   <link rel="stylesheet" href="{{ppath}}help/help.css" />
   <style id="help-inline">
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
-
-html, body {
-  width: 900rem;
-  margin: 0;
-  padding: 0;
-  background: #07090f;
-}
-
+html, body { width: 900rem; margin: 0; padding: 0; }
 body {
-  color: #e8eaf0;
-  font-family: 'Sora', 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --page: #f7f9fb;
+  --ink: #142b36;
+  --secondary: #304553;
+  --accent: #124858;
+  --rule: rgba(24,58,71,.22);
+  --paper: rgba(255,255,255,.98);
+  --panel: rgba(235,241,247,.92);
+  color: var(--ink);
+  background: var(--page);
+  font: 14rem/1.6 HelpSans, 'NotoSansSC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   transform-origin: 0 0;
 }
-
 .hp-page {
-  position: relative;
   width: 900rem;
-  box-sizing: border-box;
-  min-height: 520rem;
-  padding: 28rem 30rem 20rem;
+  min-height: 360rem;
+  position: relative;
+  border-radius: 24rem;
+  background: var(--page) var(--hp-bg, none) center/cover no-repeat;
   overflow: hidden;
-  background-color: #0b0f18;
-  background-image:
-    linear-gradient(165deg, rgba(11, 15, 24, 0.72) 0%, rgba(10, 13, 20, 0.78) 45%, rgba(8, 10, 16, 0.84) 100%),
-    var(--hp-bg, none);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
 }
-
-.hp-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70rem);
-  pointer-events: none;
-  opacity: 0.45;
-}
-.hp-glow.a { width: 280rem; height: 280rem; background: #3d7eff; top: -80rem; right: -40rem; }
-.hp-glow.b { width: 240rem; height: 240rem; background: #7b61ff; bottom: 80rem; left: -60rem; }
-.hp-glow.c { width: 200rem; height: 200rem; background: #58a6ff; top: 45%; right: 10%; opacity: 0.2; }
-
-.hp-head {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  gap: 16rem;
-  align-items: flex-start;
-  margin-bottom: 20rem;
-  padding-bottom: 16rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
-}
-
-.hp-brand { min-width: 0; flex: 1 1 auto; }
-
-.hp-kicker {
-  font-size: 11rem;
-  letter-spacing: 0.22em;
-  font-weight: 700;
-  color: #7eb6ff;
-  text-transform: uppercase;
-  margin-bottom: 8rem;
-}
-
-.hp-title {
-  font-size: 30rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #fff;
-  line-height: 1.1;
-}
-
-.hp-sub {
-  margin-top: 8rem;
-  font-size: 13rem;
-  color: #8b93a7;
-  line-height: 1.45;
-}
-
-.hp-groups {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 14rem;
-}
-
-.hp-group {
-  background: rgba(14, 18, 28, 0.72);
-  border: 1rem solid rgba(255, 255, 255, 0.08);
-  border-radius: 16rem;
-  padding: 14rem 16rem 12rem;
-  backdrop-filter: blur(12rem);
-  -webkit-backdrop-filter: blur(12rem);
-  box-shadow: 0 10rem 30rem rgba(0, 0, 0, 0.22);
-}
-
-.hp-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10rem;
-  margin-bottom: 12rem;
-  padding-bottom: 10rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.06);
-}
-
-.hp-group-left {
-  display: flex;
-  align-items: center;
-  gap: 10rem;
-  min-width: 0;
-}
-
-.hp-dot {
-  width: 10rem;
-  height: 10rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 12rem currentColor;
-}
-.hp-dot.blue { color: #58a6ff; background: #58a6ff; }
-.hp-dot.purple { color: #9b7bff; background: #9b7bff; }
-.hp-dot.cyan { color: #5fd4c0; background: #5fd4c0; }
-.hp-dot.orange { color: #ffb86b; background: #ffb86b; }
-.hp-dot.pink { color: #ff7aa2; background: #ff7aa2; }
-.hp-dot.gold { color: #f0d45a; background: #f0d45a; }
-.hp-dot.gray { color: #8b93a7; background: #8b93a7; }
-
-.hp-group-title {
-  font-size: 16rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.01em;
-}
-
-.hp-group-desc {
-  font-size: 11rem;
-  color: #7a8499;
-  letter-spacing: 0.04em;
-}
-
-.hp-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8rem 12rem;
-}
-
-.hp-item {
-  display: flex;
-  gap: 10rem;
-  align-items: flex-start;
-  min-width: 0;
-  padding: 8rem 10rem 8rem 8rem;
-  border-radius: 12rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1rem solid rgba(255, 255, 255, 0.04);
-}
-
-/* 独立角色/游戏图标（resources/help/icons） */
-.hp-icon {
-  width: 40rem;
-  height: 40rem;
-  display: block;
-  flex-shrink: 0;
-  object-fit: cover;
-  border-radius: 8rem;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1rem rgba(255, 255, 255, 0.08);
-}
-
-/* 双图标并排（体力总览：原神 + 星铁 logo） */
-.hp-icon-dual {
-  position: relative;
-  width: 40rem;
-  height: 40rem;
-  flex-shrink: 0;
-  display: block;
-}
-.hp-icon-half {
-  position: absolute;
-  width: 26rem;
-  height: 26rem;
-  object-fit: cover;
-  border-radius: 7rem;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1rem rgba(0, 0, 0, 0.35);
-}
-.hp-icon-half.back {
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-}
-.hp-icon-dual .hp-icon-half:not(.back) {
-  left: 0;
-  top: 0;
-  z-index: 1;
-}
-
-.hp-body { min-width: 0; flex: 1 1 auto; padding-top: 2rem; }
-
-.hp-cmd {
-  font-size: 13rem;
-  font-weight: 700;
-  color: #f2f5ff;
-  line-height: 1.35;
-  word-break: break-all;
-}
-
-.hp-desc {
-  margin-top: 3rem;
-  font-size: 11.5rem;
-  color: #8b93a7;
-  line-height: 1.4;
-  word-break: break-all;
-}
-
-.hp-note {
-  position: relative;
-  z-index: 1;
-  margin-top: 14rem;
-  padding: 10rem 14rem;
-  border-radius: 12rem;
-  font-size: 12rem;
-  color: #c9d2e6;
-  line-height: 1.55;
-  background: rgba(88, 166, 255, 0.08);
-  border: 1rem solid rgba(88, 166, 255, 0.16);
-}
-
-.hp-note b { color: #9ec5ff; font-weight: 700; }
-
-.hp-foot {
-  position: relative;
-  z-index: 1;
-  margin-top: 16rem;
-  padding-top: 12rem;
-  border-top: 1rem solid rgba(255, 255, 255, 0.08);
-  text-align: center;
-  font-size: 11rem;
-  color: #5c6478;
-  letter-spacing: 0.04em;
-}
+.hp-paper { padding: 26rem 30rem 20rem; background: var(--paper); border-radius: inherit; }
+.hp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24rem; margin-bottom: 24rem; }
+.hp-brand { min-width: 0; flex: 1; }
+.hp-kicker { color: var(--accent); font-size: 12rem; letter-spacing: .16em; font-weight: 600; padding-bottom: 12rem; }
+.hp-title { color: var(--ink); font-size: 34rem; font-weight: 700; line-height: 1.6; letter-spacing: .02em; overflow-wrap: anywhere; }
+.hp-sub { margin-top: 10rem; color: var(--secondary); font-size: 14rem; line-height: 1.7; overflow-wrap: anywhere; }
+.hp-label { flex-shrink: 0; padding: 6rem 13rem; margin-top: 3rem; color: #fff; background: var(--accent); border-radius: 7rem; font-size: 12rem; letter-spacing: .08em; }
+.hp-groups { display: flex; flex-direction: column; gap: 20rem; }
+.hp-group { min-width: 0; background: var(--panel); border-radius: 18rem; padding: 18rem 20rem 12rem; }
+.hp-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14rem; padding-bottom: 12rem; border-bottom: 1rem solid var(--rule); }
+.hp-group-left { display: flex; align-items: center; gap: 10rem; min-width: 0; }
+.hp-dot { display: block; width: 5rem; height: 20rem; border-radius: 3rem; flex-shrink: 0; background: var(--accent); }
+.hp-dot.blue { background: #216781; }
+.hp-dot.purple { background: #665787; }
+.hp-dot.cyan { background: #267368; }
+.hp-dot.orange { background: #9b5932; }
+.hp-dot.pink { background: #975970; }
+.hp-dot.gold { background: #826a29; }
+.hp-dot.gray { background: #596c79; }
+.hp-group-title { font-size: 19rem; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.hp-group-desc { font-size: 12rem; color: var(--secondary); line-height: 1.6; text-align: right; overflow-wrap: anywhere; }
+.hp-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 24rem; }
+.hp-module-index .hp-list { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 24rem; }
+.hp-item { display: flex; gap: 12rem; align-items: flex-start; min-width: 0; padding: 16rem 0; border-bottom: 1rem solid var(--rule); }
+.hp-icon { width: 42rem; height: 42rem; display: block; object-fit: cover; border-radius: 50%; flex-shrink: 0; background: rgba(24,58,71,.07); }
+.hp-icon-dual { position: relative; width: 42rem; height: 42rem; display: block; flex-shrink: 0; }
+.hp-icon-half { position: absolute; width: 28rem; height: 28rem; object-fit: cover; border-radius: 50%; background: var(--page); }
+.hp-icon-half.back { right: 0; bottom: 0; z-index: 2; }
+.hp-icon-dual .hp-icon-half:not(.back) { left: 0; top: 0; z-index: 1; }
+.hp-body { min-width: 0; flex: 1; padding-top: 1rem; }
+.hp-cmd { font-size: 15rem; font-weight: 700; color: var(--accent); line-height: 1.55; overflow-wrap: anywhere; }
+.hp-desc { margin-top: 5rem; color: var(--secondary); font-size: 13rem; line-height: 1.7; overflow-wrap: anywhere; }
+.hp-note { margin-top: 22rem; padding-top: 16rem; border-top: 1rem solid var(--rule); color: var(--secondary); font-size: 13rem; line-height: 1.9; overflow-wrap: anywhere; }
+.hp-note b { color: var(--accent); font-weight: 700; }
+.hp-foot { margin-top: 20rem; padding-top: 14rem; border-top: 1rem solid var(--rule); text-align: left; font-size: 12rem; color: var(--secondary); letter-spacing: .04em; overflow-wrap: anywhere; }
   </style>
+  <style id="help-font">@font-face { font-family: HelpSans; src: url('{{ppath}}font/NotoSansCJKsc-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }</style>
   <style id="rem-root">html { font-size: {{scalePx}}px; }</style>
 </head>
-<body>
+<body class="{{subTitle ? 'hp-detail' : 'hp-index'}}">
   <div class="hp-page" id="container" {{if bgImage}}style="--hp-bg:url('{{bgImage}}')"{{/if}}>
-    <div class="hp-glow a"></div>
-    <div class="hp-glow b"></div>
-    <div class="hp-glow c"></div>
+    <div class="hp-paper">
 
     <header class="hp-head">
       <div class="hp-brand">
@@ -264,11 +76,12 @@ body {
         <h1 class="hp-title">{{title}}</h1>
         {{if subTitle}}<p class="hp-sub">{{subTitle}}</p>{{/if}}
       </div>
+      <div class="hp-label">{{subTitle ? '指令速查' : '功能导航'}}</div>
     </header>
 
     <div class="hp-groups">
       {{each groups g}}
-      <section class="hp-group">
+      <section class="hp-group {{g.group === '功能模块' ? 'hp-module-index' : ''}}">
         <div class="hp-group-head">
           <div class="hp-group-left">
             <span class="hp-dot {{g.color}}"></span>
@@ -305,6 +118,7 @@ body {
     {{/if}}
 
     <footer class="hp-foot">Xhh-TL · 小火花多功能小插件</footer>
+    </div>
   </div>
 </body>
 </html>
