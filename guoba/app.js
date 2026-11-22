@@ -48,7 +48,9 @@ function render(){
  const sorted=[...snapshot.modules].sort((a,b)=>(a.category==='assets')-(b.category==='assets')||((priority.indexOf(a.id)+1)||99)-((priority.indexOf(b.id)+1)||99))
  const modules=sorted.filter(m=>(filter==='all'||(filter==='installed'?m.installed:filter==='updates'?canUpdate(m):!m.installed))&&(category==='all'||m.category===category)&&(!q||(m.label+' '+m.description).toLowerCase().includes(q)))
  $('result-label').textContent=modules.length+' 个模块';$('list-title').textContent=filter==='installed'?'我的模块':filter==='available'?'待发现的功能':filter==='updates'?'可更新的模块':'发现模块'
- const updates=snapshot.modules.filter(canUpdate).length,op=snapshot.operation
+ const updateIds=snapshot.modules.filter(canUpdate).map(m=>m.id),updates=updateIds.length,op=snapshot.operation
+ $('update-all').hidden=filter!=='updates';$('update-all').textContent=updates?'一键更新 '+updates+' 个':'一键更新'
+ $('update-all').title='更新全部可更新的已安装模块，不受搜索和类型筛选影响'
  $('updates-filter').textContent='可更新'+(updates?' '+updates:'')
  $('update-summary').textContent=updates?'本地目录中有 '+updates+' 个已安装模块可更新':'本地目录中暂无可更新模块'
  if(op.action==='refresh'){
@@ -88,6 +90,7 @@ function updateButtons(){
  const busy=requesting||snapshot?.busy||authFailed
  $('refresh').textContent=checking||(snapshot?.busy&&snapshot.operation.action==='refresh')?'检查中…':'↻ 检查更新'
  for(const b of document.querySelectorAll('[data-action],#refresh,#migrate,#cancel-pending'))b.disabled=!!busy
+ $('update-all').disabled=!!busy||!snapshot||snapshot.migrationRequired||!snapshot.modules.some(canUpdate)
  if(snapshot?.migrationRequired)for(const b of document.querySelectorAll('[data-action]'))b.disabled=true
 }
 function schedule(){clearTimeout(timer);if(!authFailed&&!document.hidden)timer=setTimeout(load,snapshot?.busy?1200:10000)}
@@ -111,12 +114,13 @@ async function preview(action,id){
  try{
   const body={action,...(id?{moduleId:id}:{})},plan=await api('/modules/preview',body)
   dialogAction=body;returnFocus=document.activeElement
-  const name=snapshot.modules.find(m=>m.id===id)?.label||''
-  $('dialog-title').textContent=verbs[action]+(name?' · '+name:'')
+  const bulk=action==='update'&&Array.isArray(id)
+  const name=bulk?'全部可更新模块（'+id.length+' 个）':snapshot.modules.find(m=>m.id===id)?.label||''
+  $('dialog-title').textContent=(bulk?'一键更新':verbs[action])+(name?' · '+name:'')
   const target=snapshot.modules.find(m=>m.id===id)
   $('dialog-note').textContent=action==='uninstall'
     ? (target?.category==='assets'?'重启后移除该素材包；相关卡片会缺少对应背景/立绘，出图可能缺图。账号、配置与订阅保留。':'重启后移除所选功能及不再使用的依赖，保留账号、配置与订阅。')
-    : action==='cancel'?'取消全部尚未生效的变更，已生效的模块不受影响。':action==='refresh'?'获取最新模块目录，不自动安装或更新任何功能。':'准备以下模块及依赖，重启机器人后生效。'
+    : bulk?'更新全部可更新的已安装模块及相关依赖；不受搜索筛选影响，不修改显示开关，不自动重启机器人。':action==='cancel'?'取消全部尚未生效的变更，已生效的模块不受影响。':action==='refresh'?'获取最新模块目录，不自动安装或更新任何功能。':'准备以下模块及依赖，重启机器人后生效。'
   $('dialog-changes').replaceChildren(...plan.changes.map(m=>node('li',(verbs[m.action]||m.action)+' · '+m.label)))
   $('dialog-size').textContent=plan.downloadBytes?'本次预计下载 '+size(plan.downloadBytes):'无需额外下载'
   $('confirm').textContent='确认'+verbs[action];$('modal').hidden=false;$('dismiss').focus()
@@ -147,6 +151,7 @@ for(const b of document.querySelectorAll('[data-filter]'))b.onclick=()=>{
  filter=b.dataset.filter;for(const tab of document.querySelectorAll('[data-filter]')){tab.classList.toggle('selected',tab===b);tab.setAttribute('aria-pressed',String(tab===b))}render()
 }
 $('search').oninput=render;$('category').onchange=render
+$('update-all').onclick=()=>{const ids=(snapshot?.modules||[]).filter(canUpdate).map(m=>m.id);if(ids.length)preview('update',ids)}
 $('refresh').onclick=checkUpdates;$('migrate').onclick=()=>preview('migrate');$('cancel-pending').onclick=()=>preview('cancel');$('retry').onclick=()=>{actionError=false;load()}
 document.addEventListener('visibilitychange',()=>{clearTimeout(timer);if(!document.hidden)load()})
 window.addEventListener('pagehide',()=>clearTimeout(timer))

@@ -17,3 +17,5 @@ main{max-width:1440px;margin:auto;padding:38px 40px 20px}.hero{display:flex;just
 /* 更新结果单独显示，待重启与关闭/失败状态仍保留。 */
 .update-info{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin:20px 0 0}.update-info strong{font-size:13px;font-weight:600}.update-info>span{font-size:12px;color:var(--muted)}.badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.badge.update-available{background:var(--soft);color:var(--accent);font-weight:600}
 @media(max-width:600px){.tabs button{padding:7px 9px;white-space:nowrap}.update-info{align-items:flex-start;flex-direction:column}}
+
+.section-title{display:flex;align-items:baseline;gap:12px}.section-heading{justify-content:space-between;gap:12px}#update-all{white-space:nowrap}#update-all:disabled{opacity:.55;cursor:not-allowed}@media(max-width:600px){.section-title{gap:8px}.section-heading h2{font-size:18px}#update-all{padding:8px 12px}}

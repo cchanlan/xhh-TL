@@ -41,7 +41,12 @@ export function init(ctx){
     const body=req.body
     if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['action','moduleId'].includes(k)))throw new Error('未知模块操作参数')
     if(!['install','uninstall','update','refresh','cancel','migrate'].includes(body.action))throw new Error('未知模块操作')
-    if(body.moduleId!==undefined&&(typeof body.moduleId!=='string'||!/^[a-z][a-z0-9_]{0,63}$/.test(body.moduleId)))throw new Error('请选择可管理的模块')
+    if(body.moduleId!==undefined){
+      const valid=id=>typeof id==='string'&&/^[a-z][a-z0-9_]{0,63}$/.test(id)
+      if(Array.isArray(body.moduleId)){
+        if(body.action!=='update'||!body.moduleId.length||body.moduleId.length>64||!body.moduleId.every(valid)||new Set(body.moduleId).size!==body.moduleId.length)throw new Error('请选择可管理的模块')
+      }else if(!valid(body.moduleId))throw new Error('请选择可管理的模块')
+    }
     return body
   }
   ctx.registerApi('get','/icons',safe(()=>moduleIcons()))

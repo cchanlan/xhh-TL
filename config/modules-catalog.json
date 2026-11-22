@@ -156,10 +156,10 @@
         "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.3",
-      "package": "packages/abyss_team/2.1.3.xhmp",
-      "sha256": "01295fc78cba37c273a71fcdf0c585d46030b87222e121644ed7ba237777e561",
-      "bytes": 11087,
+      "version": "2.1.4",
+      "package": "packages/abyss_team/2.1.4.xhmp",
+      "sha256": "791f8783632e07460afd809ca6e1f2fad2444e8ef10ce21ff001f5e089e817ca",
+      "bytes": 11056,
       "files": [
         {
           "path": "apps/abyssTeam.js",
@@ -168,8 +168,8 @@
         },
         {
           "path": "resources/abyss_team/abyss_team.css",
-          "size": 7871,
-          "sha256": "d20a8ac0a7ed14d95c5c1b611b85b58720e7477735a206ad78527a9d96d8871c"
+          "size": 7857,
+          "sha256": "3cea2c003135ecd60f5c7e423c49d7e88008f02045b966db05ecead4b5cd2e72"
         },
         {
           "path": "resources/abyss_team/abyss_team.html",
@@ -2942,10 +2942,10 @@
         "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.3",
-      "package": "packages/gs_all_abyss/2.1.3.xhmp",
-      "sha256": "2c7cf5e6517ce9a3249c6441660ec0c06674c218d11cff6687cf6540c650c67f",
-      "bytes": 25183,
+      "version": "2.1.4",
+      "package": "packages/gs_all_abyss/2.1.4.xhmp",
+      "sha256": "e6c43c7192259118583ddefdcca8e5d2528fe7e8f31d05dc3400ff63f8f0f4e7",
+      "bytes": 25235,
       "files": [
         {
           "path": "apps/gsAllAbyss.js",
@@ -2959,8 +2959,8 @@
         },
         {
           "path": "resources/gs_all_abyss/gs_all_abyss.css",
-          "size": 12664,
-          "sha256": "952818c6d3e4afdc70c59418391d36609af4eaf125a2014b68f6db7c5f6b0a59"
+          "size": 12662,
+          "sha256": "03c830464237cfa83ec1b163cd37353face0f188af6677b17e3dc3f2bd2593ae"
         },
         {
           "path": "resources/gs_all_abyss/gs_all_abyss.html",
@@ -2992,10 +2992,10 @@
         "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.3",
-      "package": "packages/hard_team/2.1.3.xhmp",
-      "sha256": "3ff0ec5bd602d206078335828aa7b4ac1ee6d065471753b510a28e86887dc021",
-      "bytes": 10676,
+      "version": "2.1.4",
+      "package": "packages/hard_team/2.1.4.xhmp",
+      "sha256": "45801460c759307b5194c8d7a2a1b0b2792dcae6e2fceac6e1c387e5396a0533",
+      "bytes": 10651,
       "files": [
         {
           "path": "apps/hardTeam.js",
@@ -3004,8 +3004,8 @@
         },
         {
           "path": "resources/hard_team/hard_team.css",
-          "size": 7871,
-          "sha256": "d20a8ac0a7ed14d95c5c1b611b85b58720e7477735a206ad78527a9d96d8871c"
+          "size": 7857,
+          "sha256": "3cea2c003135ecd60f5c7e423c49d7e88008f02045b966db05ecead4b5cd2e72"
         },
         {
           "path": "resources/hard_team/hard_team.html",
@@ -3037,10 +3037,10 @@
         "shared_gs": "2.1.2",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.3",
-      "package": "packages/hold_rate/2.1.3.xhmp",
-      "sha256": "52d2ecbcc1c56d576209ed49dc9c03683fc779dc3c412b62f7af2146fb0a87a2",
-      "bytes": 8611,
+      "version": "2.1.4",
+      "package": "packages/hold_rate/2.1.4.xhmp",
+      "sha256": "4dfa05031a4ea93793a63500114912f2ee59d6878ed5fe197becfcb1f9588227",
+      "bytes": 8585,
       "files": [
         {
           "path": "apps/holdRate.js",
@@ -3049,8 +3049,8 @@
         },
         {
           "path": "resources/hold_rate/hold_rate.css",
-          "size": 7335,
-          "sha256": "388168225191d7bfed4e8fbff7444a660b095b10b9d7900a2dbfe017292f1b41"
+          "size": 7321,
+          "sha256": "c5643cd9f64ab22aa084c7d932bb089fe14f339b498a75e03cd4e461a4b2f5d0"
         },
         {
           "path": "resources/hold_rate/hold_rate.html",
@@ -3516,10 +3516,10 @@
         "shared_fonts": "2.1.0-0e53a82b3dea",
         "shared_versions": "2.1.0-0e6a650cb52b"
       },
-      "version": "2.1.3",
-      "package": "packages/role_combat/2.1.3.xhmp",
-      "sha256": "5aab67352cf836faf5db2538c549ad3a1b88a628d9a76a159f589bc0454b6e08",
-      "bytes": 27724,
+      "version": "2.1.4",
+      "package": "packages/role_combat/2.1.4.xhmp",
+      "sha256": "7ebb8b87f1b9b0db0f72a98d3d2c1af7adeb05fe9b0f7502e875db2c17978966",
+      "bytes": 27644,
       "files": [
         {
           "path": "apps/miniRoleCombat.js",
@@ -3533,8 +3533,8 @@
         },
         {
           "path": "resources/role_combat/mini_role_combat.css",
-          "size": 7857,
-          "sha256": "60aa2d0afeb7b591eff9c32f738b0b21e48fe1a7cdcfc6817aadedd61fa27d95"
+          "size": 7855,
+          "sha256": "9b6a5a45c737588b42d9ccdb5a7ce330c91c72829536e98fa4bdb4a7ce9056db"
         },
         {
           "path": "resources/role_combat/mini_role_combat.html",
@@ -3543,8 +3543,8 @@
         },
         {
           "path": "resources/role_combat/role_combat.css",
-          "size": 9804,
-          "sha256": "69fa5549c616c561b58ace5d0cf7e981cee80bd405cae172bcef11069470f39b"
+          "size": 9790,
+          "sha256": "17b2e54efcbfa1a04c9ff88bef4544fc806e0d89598d4abe80302060f2cfd799"
         },
         {
           "path": "resources/role_combat/role_combat.html",
@@ -3593,7 +3593,8 @@
       "description": "汇总星铁混沌回忆、虚构叙事、末日幻影与异相仲裁。",
       "coreApi": 2,
       "dependencies": [
-        "shared_account"
+        "shared_account",
+        "shared_fonts"
       ],
       "entries": [
         {
@@ -3606,12 +3607,13 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_account": "2.1.1"
+        "shared_account": "2.1.1",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/sr_all_abyss/2.1.1.xhmp",
-      "sha256": "0212c858a01d33d798feb624d438978afdc196fb8c3341bb309924301c9b345a",
-      "bytes": 2689164,
+      "version": "2.1.2",
+      "package": "packages/sr_all_abyss/2.1.2.xhmp",
+      "sha256": "0b155623db59fb64a560a273c4a9a6cb9337ad1ec620f965c8541276c32afd42",
+      "bytes": 2680264,
       "files": [
         {
           "path": "apps/Abyss.js",
@@ -3620,23 +3622,28 @@
         },
         {
           "path": "apps/allAbyssModule.js",
-          "size": 27086,
-          "sha256": "bb6d13a2e986a3004b6ac75d2d18b60e5dacf4c2b22c4a20c61dc2aec396a1d2"
+          "size": 28072,
+          "sha256": "b996001835b073e711c87a1b02d559cb70cf0ffcbb5df5bca11927762247479c"
         },
         {
           "path": "resources/all-abyss-mobile.html",
-          "size": 29050,
-          "sha256": "7ea788c14d05e01d2b8c976b49c4ead7b41016d5dc9173643d3b2f65b37dff53"
+          "size": 6059,
+          "sha256": "84166472a8ee6ad87615c8ae1a20d6b03f1a16fa1536e9af278959f22355f8ed"
         },
         {
           "path": "resources/all-abyss.html",
-          "size": 31665,
-          "sha256": "ba73fe4712a4fe46758fd62cc2fc83213fd79081cd059128aa628b8aec0643bc"
+          "size": 6060,
+          "sha256": "d7f603c8f7d50b72944ac504de37265d50668091755962f2ebe68c2cc61dfedb"
         },
         {
           "path": "resources/background.png",
           "size": 2655895,
           "sha256": "af09e8e509acfc914cdaf0ed453cf40786222f1ac91b9df380ccea05692e1ac3"
+        },
+        {
+          "path": "resources/sr_all_abyss.css",
+          "size": 8040,
+          "sha256": "2134bf742365f69eee8e1ac7b367504106704e380e1239595eba68e3ac86fcef"
         }
       ]
     },
@@ -3721,7 +3728,8 @@
       "description": "读取喵喵面板，计算队伍伤害并比较搭配。",
       "coreApi": 2,
       "dependencies": [
-        "shared_gs"
+        "shared_gs",
+        "shared_fonts"
       ],
       "entries": [
         {
@@ -3734,32 +3742,33 @@
       "minCoreVersion": "2.1.0",
       "minNodeVersion": "18.17.0",
       "dependencyVersions": {
-        "shared_gs": "2.1.2"
+        "shared_gs": "2.1.2",
+        "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.2",
-      "package": "packages/team_damage/2.1.2.xhmp",
-      "sha256": "9cda48615d12767e3ec2eae8e4b70cafa0a3f08914ee27bf25f7c9ee9070332b",
-      "bytes": 39360,
+      "version": "2.1.3",
+      "package": "packages/team_damage/2.1.3.xhmp",
+      "sha256": "698ada110ea8bac454de0c3cbe0fc7f6b5f7cc24f66f83047666f9d9a44a720d",
+      "bytes": 37728,
       "files": [
         {
           "path": "apps/teamDamage.js",
-          "size": 25889,
-          "sha256": "b06f14b56c068ce6f5fcfbc0549607d18ca4222a805f15c687735414908ac04e"
+          "size": 26216,
+          "sha256": "c322ddb95c2dc313eb64dc9e875091c07329c855cc8d4a9c9773f39e7b435f16"
         },
         {
           "path": "resources/team_damage/team_damage.css",
-          "size": 13132,
-          "sha256": "f2931fb015447b520a0cf435270bbb1b4f88a2df5b59908770cec1bd4cbe85b7"
+          "size": 7891,
+          "sha256": "43395371e15a31d498abc66d11cc15c507ba22d25b6065400e1d37606c775b80"
         },
         {
           "path": "resources/team_damage/team_damage.html",
-          "size": 7528,
-          "sha256": "ff18c7c9cba9ff4f380c1bda9573ef406889d63d02459279f13aa7eb6b2909ef"
+          "size": 5662,
+          "sha256": "c77035d1043cf98a66d403d7f4c4bff829fb70004a06078fc6ce8e43670bbe59"
         },
         {
           "path": "resources/team_damage/team_damage_help.html",
-          "size": 2522,
-          "sha256": "d2899241c868ee1077777e0269ba1d2dd37169b8cae509214c6deee834461948"
+          "size": 2491,
+          "sha256": "3258d36eacc0ed2e271e8e4ade5194083889a6acc23fbc0f77f81d86d8f23c8a"
         },
         {
           "path": "utils/teyvatDamage.js",
