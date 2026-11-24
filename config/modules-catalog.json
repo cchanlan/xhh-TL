@@ -3670,15 +3670,15 @@
         "shared_account": "2.1.1",
         "shared_fonts": "2.1.0-0e53a82b3dea"
       },
-      "version": "2.1.1",
-      "package": "packages/sr_gacha/2.1.1.xhmp",
-      "sha256": "2f05ab90a00fdb608fd638940117cef4e2ee4a470b773c493fb718f3e18c3b28",
-      "bytes": 158059,
+      "version": "2.1.2",
+      "package": "packages/sr_gacha/2.1.2.xhmp",
+      "sha256": "15a7b5507e913a13abd602435efd56dc978a7b7e315df2d3eadbaaa1f5b2dd9e",
+      "bytes": 160071,
       "files": [
         {
           "path": "apps/srGachaLog.js",
-          "size": 93634,
-          "sha256": "56cc77ba3784086cda0a8bcbe075f2c4073b4c025af17dbf170fb4cba82c4cc4"
+          "size": 97859,
+          "sha256": "a206a2057b4f9b0b2e911cc5eed688998ca07c086607da598164170a04267b13"
         },
         {
           "path": "resources/gachaLog/allLog.html",
